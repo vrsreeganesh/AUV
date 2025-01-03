@@ -17,5 +17,3 @@ The aim is to build an autonomous underwater vehicle simulation and system pipel
 
 ![Figure 3D](Code/Figures/floor_coordinates_3D.png)
 
-
-Figures/floor_coordinates_3D.png

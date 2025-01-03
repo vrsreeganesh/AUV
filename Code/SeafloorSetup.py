@@ -52,7 +52,7 @@ plt.figure(1)
 plt.scatter(floor_coordinates_2D[0,:], floor_coordinates_2D[1,:],
             c = 'lightgreen', marker='o', s = 0.1, alpha = 0.5)
 plt.xlabel('X-axis'); plt.ylabel('Y-axis')
-plt.title('Scatter Plot Example')
+plt.title('Top View')
 plt.draw(); plt.pause(0.1)
 plt.savefig("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Figures/floor_coordinates_2D.png")
 
@@ -70,7 +70,9 @@ ax.scatter(floor_coordinates_3D[0,:],
            alpha    = 0.5)
 
 # Add labels
-ax.set_xlabel('X Label'); ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label'); 
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
+plt.title('Side View')
 plt.savefig("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Figures/floor_coordinates_3D.png")
 plt.draw(); plt.pause(1)
