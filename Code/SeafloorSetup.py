@@ -50,10 +50,12 @@ np.save("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Assets/floor_scatterers.n
 # plotting - 2D
 plt.figure(1)
 plt.scatter(floor_coordinates_2D[0,:], floor_coordinates_2D[1,:],
-            c = 'blue', marker='o', s = 1, alpha = 0.5)
+            c = 'lightgreen', marker='o', s = 0.1, alpha = 0.5)
 plt.xlabel('X-axis'); plt.ylabel('Y-axis')
 plt.title('Scatter Plot Example')
 plt.draw(); plt.pause(0.1)
+plt.savefig("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Figures/floor_coordinates_2D.png")
+
 
 # plotting - 3D
 fig = plt.figure()
@@ -62,8 +64,13 @@ ax  = fig.add_subplot(111, projection='3d')
 # Scatter plot
 ax.scatter(floor_coordinates_3D[0,:], 
            floor_coordinates_3D[1,:],
-           floor_coordinates_3D[2,:], c='blue', marker='o')
+           floor_coordinates_3D[2,:], c='lightgreen', 
+           marker   ='o',
+           s        = 0.1,
+           alpha    = 0.5)
 
 # Add labels
 ax.set_xlabel('X Label'); ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label'); plt.show()
+ax.set_zlabel('Z Label'); 
+plt.savefig("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Figures/floor_coordinates_3D.png")
+plt.draw(); plt.pause(1)
