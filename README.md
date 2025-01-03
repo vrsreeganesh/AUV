@@ -27,3 +27,7 @@ The aim is to build an autonomous underwater vehicle simulation and system pipel
   </div>
 </div>
 
+### Signal Setup
+
+![Transmitted Signal](Code/Figures/transmitted_signal.png)
+
