@@ -18,11 +18,11 @@ The aim is to build an autonomous underwater vehicle simulation and system pipel
 
 <div style="display: flex; justify-content: space-around;">
   <div>
-    <img src="Code/Figures/floor_coordinates_2D.png" alt="Figure 2D" width="48%">
+    <img src="Code/Figures/floor_coordinates_2D.png" alt="Figure 2D" width="40%">
     <p style="text-align: center;">Figure 2D</p>
   </div>
   <div>
-    <img src="Code/Figures/floor_coordinates_3D.png" alt="Figure 3D" width="48%">
+    <img src="Code/Figures/floor_coordinates_3D.png" alt="Figure 3D" width="40%">
     <p style="text-align: center;">Figure 3D</p>
   </div>
 </div>
