@@ -9,3 +9,5 @@ The aim is to build an autonomous underwater vehicle simulation and system pipel
 - Floor mapping
 - anomaly detection
 - perception and control
+
+### Floor Setup
