@@ -6,8 +6,9 @@ Note:
 # packages/libraries
 import numpy as np
 import os
-import pdb
+import pdb; import pickle
 import matplotlib.pyplot as plt
+from CustomClasses import Scatterer
 
 # clearing python terminal
 os.system('cls' if os.name == 'nt' else 'clear')
@@ -37,15 +38,17 @@ floor_coordinates_3D = np.concatenate((floor_coordinates_2D,
                                        axis = 0);
 
 # setting up scatter strengths
-floor_scatterers = np.random.normal(loc    = 10.0,
+floor_scatterers_reflectivity = np.random.normal(loc    = 10.0,
                                     scale  = 1.0,
                                     size   = (1, floor_coordinates_3D.shape[1]))
 
+# creating class object
+floor_scatterers = Scatterer(coordinates    = floor_coordinates_3D,
+                             reflectivity   = floor_scatterers_reflectivity)
 
-# Saving tensors
-np.save("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Assets/floor_coordinates_2D.npy", floor_coordinates_2D)
-np.save("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Assets/floor_coordinates_3D.npy", floor_coordinates_3D)
-np.save("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Assets/floor_scatterers.npy", floor_scatterers)
+# Saving objects
+with open("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Assets/floor_scatterers.pkl", "wb") as file:
+    pickle.dump(floor_scatterers, file)
 
 # plotting - 2D
 plt.figure(1)
@@ -56,15 +59,15 @@ plt.title('Top View')
 plt.draw(); plt.pause(0.1)
 plt.savefig("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Figures/floor_coordinates_2D.png")
 
-
 # plotting - 3D
 fig = plt.figure()
 ax  = fig.add_subplot(111, projection='3d')
 
 # Scatter plot
-ax.scatter(floor_coordinates_3D[0,:], 
-           floor_coordinates_3D[1,:],
-           floor_coordinates_3D[2,:], c='lightgreen', 
+ax.scatter(floor_scatterers.coordinates[0,:], 
+           floor_scatterers.coordinates[1,:],
+           floor_scatterers.coordinates[2,:], 
+           c = 'lightgreen', 
            marker   ='o',
            s        = 0.1,
            alpha    = 0.5)

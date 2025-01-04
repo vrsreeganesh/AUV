@@ -9,6 +9,11 @@ import pdb
 import matplotlib.pyplot as plt
 import scipy
 
+# function: convert from angle to radian
+def fCart2Rad(cartesian_angle):
+    var00 = cartesian_angle * np.pi / 180
+    return var00
+
 # function to calculate speed from velocity
 def fCalculateSpeed(AUV_velocity):
     speed = np.linalg.norm(AUV_velocity,

@@ -1,6 +1,9 @@
 # ignore numpy files
 *.npy
 
+# assets
+*.pkl
+
 # ignore tex related stuff
 *.aux
 *.fdb_latexmk
