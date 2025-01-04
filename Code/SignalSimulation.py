@@ -7,7 +7,11 @@ Note:
 # packages/libraries
 import numpy as np; import os; import pdb; import matplotlib.pyplot as plt
 import scipy; import CustomFunctions as cf; import math; import pickle
-from CustomClasses import ULA, AUV, Projector, Scatterer; import sys;
+import sys;
+from Classes.Class_Scatterer import Scatterer
+from Classes.Class_AUV import AUV
+from Classes.Class_Projector import Projector
+from Classes.Class_ULA import ULA
 
 # clearing python terminal
 os.system('cls' if os.name == 'nt' else 'clear')

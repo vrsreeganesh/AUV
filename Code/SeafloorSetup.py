@@ -8,7 +8,7 @@ import numpy as np
 import os
 import pdb; import pickle
 import matplotlib.pyplot as plt
-from CustomClasses import Scatterer
+from Classes.Class_Scatterer import Scatterer
 
 # clearing python terminal
 os.system('cls' if os.name == 'nt' else 'clear')
