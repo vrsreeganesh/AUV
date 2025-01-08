@@ -1,8 +1,9 @@
 #include <iostream>
+#include <torch/torch.h>
 
-// Projector Class
 class Projector{
 public:
+
   // public members
   torch::Tensor location;       // location of projector
   double azimuthal_angle;       // azimuthal angle to which the projector is pointing
@@ -31,4 +32,18 @@ public:
     azimuthal_beamwidth   = input_object.azimuthal_beamwidth;
     vertical_beamwidth    = input_object.vertical_beamwidth;
   }
+
+  // illumination function
+  std::unordered_map<std::string, torch::Tensor> fIlluminate(std::unordered_map<std::string, torch::Tensor> inputScatterers){
+    
+    // setting up output
+    std::unordered_map<std::string, torch::Tensor> outputScatterers = inputScatterers;
+
+    // change origin
+    outputScatterers["coordinates"] = inputScatterers["coordinates"] - location;
+
+    // 
+    return outputScatterers;
+  };
+
 };

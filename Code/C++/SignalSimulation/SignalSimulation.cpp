@@ -1,26 +1,31 @@
 /*
-========================================
+================================================================================
 Aim: Signal Simulation
-========================================
+--------------------------------------------------------------------------------
+Note:
+  > Load simulated scatterers
+  > Setup AUV
+
+To Do:
+  > write function to update 
+================================================================================
 */ 
 
 // including standard 
 #include <ostream>
 #include <torch/torch.h>
 #include <iostream>
-#include <fstream>
-#include <unordered_map>
 
-// including custom headers 
+// including custom headers: for classes 
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/AUV.h"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/Projector.h"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ULA.h"
 
+// hash defines
+#define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+#define PRINTLINE       std::cout<<"================================================"<<std::endl;
+#define PI 3.14159265
 
-
-
-// Projector Class ============================================================
-// Projector Class ============================================================
 // Projector Class ============================================================
 // Projector Class ============================================================
 // Projector Class ============================================================
@@ -28,6 +33,7 @@ Aim: Signal Simulation
 // Projector Class ============================================================
 class Projector{
 public:
+
   // public members
   torch::Tensor location;       // location of projector
   double azimuthal_angle;       // azimuthal angle to which the projector is pointing
@@ -72,8 +78,8 @@ public:
 
 };
 
-// function for ULA ============================================================
-// function for ULA ============================================================
+
+
 // function for ULA ============================================================
 // function for ULA ============================================================
 // function for ULA ============================================================
@@ -81,13 +87,17 @@ public:
 // function for ULA ============================================================
 class ULA{
 
+private:
+  torch::Tensor ula_sensor_locations;   // location of sensors in the ULA
+
 public:
   // public members: public cause we want the AUV to edit this
   int num_sensors;                      // number of sensors
   double intersensor_distance;          // distance between sensors
   torch::Tensor first_sensor_location;  // location of first sensor
   torch::Tensor ula_sensor_direction;   // vector from first sensor to rest
-  torch::Tensor ula_sensor_locations;   // location of sensors in the ULA
+  
+
 
   // constructor
   ULA(int num_sensors                     = 32,
@@ -99,6 +109,23 @@ public:
         first_sensor_location(first_sensor_location),
         ula_sensor_direction(ula_sensor_direction) {}
 
+
+
+  // calculating sensor location
+  void fCalculateSensorLocations(){
+    // length-normalizing signal
+    torch::Tensor length  = torch::norm(ula_sensor_direction, 2, 0, true);  // calculating length
+    ula_sensor_direction  = ula_sensor_direction/length;                    // length normalizing
+    ula_sensor_direction  = intersensor_distance * ula_sensor_direction;    // multiplying with intersensor distance
+
+    // building the counting array
+    torch::Tensor number_array = torch::arange(0, num_sensors, 1).view({1, num_sensors});
+
+    // building sensor locations
+    ula_sensor_locations  = ula_sensor_direction * number_array;
+  }
+
+
   // copy assignment operator
   ULA& operator=(const ULA& inputobject){
     num_sensors     = inputobject.num_sensors;
@@ -106,19 +133,21 @@ public:
     first_sensor_location = inputobject.first_sensor_location;
     ula_sensor_direction  = inputobject.ula_sensor_direction;
     ula_sensor_locations  = inputobject.ula_sensor_locations;
-
     return *this;
   }
 
 
+
   // printing state
-  friend std::ostream& operator<<(std::ostream& os, const ULA& ula){
+  friend std::ostream& operator<<(std::ostream& os, ULA& ula){
     os<<"\t> num sensors = "<<ula.num_sensors<<std::endl;
     os<<"\t> intersensor distance = "<<ula.intersensor_distance<<std::endl;
+    ula.fCalculateSensorLocations();  
+    os<<"\t> ULA sensor locations = "<<ula.ula_sensor_locations.view({1, ula.num_sensors})<<std::endl;
     return os;
   }
-};
 
+};
 
 
 
@@ -165,23 +194,18 @@ public:
 
 
 
-
-
-// class definition for AUV ====================================================
 // class definition for AUV ====================================================
 // class definition for AUV ====================================================
 // class definition for AUV ====================================================
 // class definition for AUV ====================================================
 // class definition for AUV ====================================================
 class AUV{
-private:
+public:
   // independent attributes
   torch::Tensor location;               // current location of AUV
   torch::Tensor velocity;               // velocity of AUV
   torch::Tensor acceleration;           // acceleration of AUV
   torch::Tensor pointing_direction;     // direction in which AUV is pointed
-
-public:
 
   // Projectors
   Projector projector_portside;         // Projector to the left of the AUV
@@ -205,26 +229,86 @@ public:
 
   // printing
   friend std::ostream& operator<<(std::ostream& os, const AUV& auv){
-    os<<"location = \n"<<auv.location<<std::endl;
-    os<<"velocity = \n"<<auv.velocity<<std::endl;
-    os<<"acceleration = \n"<<auv.acceleration<<std::endl;
-    os<<"pointing_direction = \n"<<auv.pointing_direction<<std::endl;
+
+    // printing the AUV parameters
+    PRINTLINE
+    os<<"AUV Parameters"<<std::endl;
+    os<<"> location = "<<auv.location.view({1,3})<<std::endl;                     
+    os<<"> velocity = "<<auv.velocity.view({1,3})<<std::endl;                     
+    os<<"> acceleration = "<<auv.acceleration.view({1,3})<<std::endl;             
+    os<<"> pointing_direction = "<<auv.pointing_direction.view({1,3})<<std::endl; 
+
+
+
+    // printing the projector parameters
+    PRINTLINE
+    os<<"Projector Parameters"<<std::endl;
+    os<<"\t Projector: Portside"<<std::endl;
+    os<<"\t\t > location = "<<auv.projector_portside.location.view({1,3})<<std::endl;
+    os<<"\t\t > azimuthal_angle = "<<auv.projector_portside.azimuthal_angle<<std::endl;
+    os<<"\t\t > elevation_angle = "<<auv.projector_portside.elevation_angle<<std::endl;
+    os<<"\t\t > azimuthal_beamwidth = "<<auv.projector_portside.azimuthal_beamwidth<<std::endl;
+    os<<"\t\t > vertical_beamwidth = "<<auv.projector_portside.vertical_beamwidth<<std::endl;
+    PRINTSMALLLINE
+    os<<"\t Projector: fbls"<<std::endl;
+    os<<"\t\t > location = "<<auv.projector_fbls.location.view({1,3})<<std::endl;       
+    os<<"\t\t > azimuthal_angle = "<<auv.projector_fbls.azimuthal_angle<<std::endl;
+    os<<"\t\t > elevation_angle = "<<auv.projector_fbls.elevation_angle<<std::endl;
+    os<<"\t\t > azimuthal_beamwidth = "<<auv.projector_fbls.azimuthal_beamwidth<<std::endl;
+    os<<"\t\t > vertical_beamwidth = "<<auv.projector_fbls.vertical_beamwidth<<std::endl;
+    PRINTSMALLLINE
+    os<<"\t Projector: Portside"<<std::endl;
+    os<<"\t\t > location = "<<auv.projector_starboard.location.view({1,3})<<std::endl;
+    os<<"\t\t > azimuthal_angle = "<<auv.projector_starboard.azimuthal_angle<<std::endl;
+    os<<"\t\t > elevation_angle = "<<auv.projector_starboard.elevation_angle<<std::endl;
+    os<<"\t\t > azimuthal_beamwidth = "<<auv.projector_starboard.azimuthal_beamwidth<<std::endl;
+    os<<"\t\t > vertical_beamwidth = "<<auv.projector_starboard.vertical_beamwidth<<std::endl;
+    
+
+
+    // printing the ULA parameters
+    PRINTLINE
+    os<<"ULA Parameters"<<std::endl;
+    os<<"\t ULA: portside"<<std::endl;
+    os<<"\t\t > num_sensors = "<<auv.ula_portside.num_sensors<<std::endl;
+    os<<"\t\t > intersensor_distance = "<<auv.ula_portside.intersensor_distance<<std::endl;
+    os<<"\t\t > location = "<<auv.ula_portside.first_sensor_location.view({1,3})<<std::endl;
+    os<<"\t\t > ula_sensor_direction = "<<auv.ula_portside.ula_sensor_direction.view({1,3})<<std::endl;
+    // os<<"\t\t\t > sensor locations = "<<auv.ula_portside.ula_sensor_locations.view({1,3})<<std::endl;
+    PRINTSMALLLINE
+    os<<"\t ULA: fbls"<<std::endl;
+    os<<"\t\t > num_sensors = "<<auv.ula_fbls.num_sensors<<std::endl;
+    os<<"\t\t > intersensor_distance = "<<auv.ula_fbls.intersensor_distance<<std::endl;
+    os<<"\t\t > location = "<<auv.ula_fbls.first_sensor_location.view({1,3})<<std::endl;
+    os<<"\t\t > ula_sensor_direction"<<auv.ula_fbls.ula_sensor_direction.view({1,3})<<std::endl;
+    // os<<"\t\t\t > sensor locations = "<<auv.ula_fbls.ula_sensor_locations.view({1,3})<<std::endl;
+    PRINTSMALLLINE
+    os<<"\t ULA: starboard"<<std::endl;
+    os<<"\t\t > num_sensors = "<<auv.ula_starboard.num_sensors<<std::endl;
+    os<<"\t\t > intersensor_distance = "<<auv.ula_starboard.intersensor_distance<<std::endl;
+    os<<"\t\t > location = "<<auv.ula_starboard.first_sensor_location.view({1,3})<<std::endl;
+    os<<"\t\t > ula_sensor_direction"<<auv.ula_starboard.ula_sensor_direction.view({1,3})<<std::endl;
+    // os<<"\t\t\t > sensor locations = "<<auv.ula_starboard.ula_sensor_locations.view({1,3})<<std::endl;
+
     return os;
   }
 
   // synchronizing 
   void _fAttach(){
     // attach ULA:portside
-    ula_portside.first_sensor_location  = location;
-    ula_portside.ula_sensor_direction   = -1 * pointing_direction;
+    ula_portside.first_sensor_location  = location;                 // assigning ULA location to ULA:portside
+    ula_portside.ula_sensor_direction   = -1 * pointing_direction;  // assigning opposite direction as that of AUV
+    ula_portside.fCalculateSensorLocations();                       // updating sensor-locations
 
     // attach ULA:fbls
-    ula_fbls.first_sensor_location      = location;
-    ula_fbls.ula_sensor_direction       = -1 * pointing_direction;
+    ula_fbls.first_sensor_location      = location;                 // assigning ULA location to ULA:fbls
+    ula_fbls.ula_sensor_direction       = -1 * pointing_direction;  // assigning opposite direction as that of AUV
+    ula_fbls.fCalculateSensorLocations();                           // updating sensor-locations
 
     // attach ULA:starboard
-    ula_starboard.first_sensor_location = location;
-    ula_starboard.ula_sensor_direction  = -1 * pointing_direction;
+    ula_starboard.first_sensor_location = location;                 // assigning ULA location to ULA:starboard
+    ula_starboard.ula_sensor_direction  = -1 * pointing_direction;  // assigning opposite direction as that of AUV
+    ula_starboard.fCalculateSensorLocations();                      // updating sensor-locations
 
     // attach projector:portside
     projector_portside.location         = location;
@@ -277,13 +361,27 @@ void print_tensor_size(const torch::Tensor& inputTensor) {
 
 
 // converting from degrees to radian
-#define PRINTLINE std::cout<<"================================================"<<std::endl;
-#define PI 3.14159265
 float fDeg2Rad(float deg){
   float deg_value = static_cast<float>(PI * deg / 180);
   return deg_value;
 }
 
+
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
+// MAIN ====================================================
 int main() {
 
   // encapsulating coordinates and reflectivity in a dictionary
@@ -308,15 +406,17 @@ int main() {
           auv_initial_pointing_direction);
 
 
+
   // Setting up ULAs for the AUV: front, portside and starboard
-  const int num_sensors             = 32;
-  const double intersensor_distance = 1e-4;
-  ULA ula_portside(num_sensors, intersensor_distance);      // Initializing ULA objects
-  ULA ula_fbls(num_sensors, intersensor_distance);
-  ULA ula_starboard(num_sensors, intersensor_distance);
-  auv.ula_portside  = ula_portside;     // Attaching ULAs to the AUVs
-  auv.ula_fbls      = ula_fbls;
-  auv.ula_starboard = ula_starboard;
+  const int num_sensors             = 32;                   // number of sensors
+  const double intersensor_distance = 1e-4;                 // distance between sensors
+  ULA ula_portside(num_sensors, intersensor_distance);      // ULA onbject for portside
+  ULA ula_fbls(num_sensors, intersensor_distance);          // ULA object for front-side
+  ULA ula_starboard(num_sensors, intersensor_distance);     // ULA object for starboard
+  auv.ula_portside  = ula_portside;                         // attaching portside-ULAs to the AUV
+  auv.ula_fbls      = ula_fbls;                             // attaching front-ULA to the AUV
+  auv.ula_starboard = ula_starboard;                        // attaching starboard-ULA to the AUV
+
 
 
   // Setting up Projector: front, portside and starboard
@@ -325,23 +425,51 @@ int main() {
                                fDeg2Rad(-30),               // elevation angle
                                fDeg2Rad(30),                // azimuthal beamwidth
                                fDeg2Rad(20));               // elevation beamwidth
-  Projector projector_fbls(torch::zeros({3,1}),   // location
-                           fDeg2Rad(0),           // azimuthal angle
-                           fDeg2Rad(-30),         // elevation angle
-                           fDeg2Rad(120),         // azimuthal beamwidth
-                           fDeg2Rad(60));         // elevation beamwidth;
+  Projector projector_fbls(torch::zeros({3,1}),             // location
+                           fDeg2Rad(0),                     // azimuthal angle
+                           fDeg2Rad(-30),                   // elevation angle
+                           fDeg2Rad(120),                   // azimuthal beamwidth
+                           fDeg2Rad(60));                   // elevation beamwidth;
   Projector projector_starboard(torch::zeros({3,1}),        // location
                                 fDeg2Rad(-90),              // azimuthal angle
                                 fDeg2Rad(-30),              // elevation angle
                                 fDeg2Rad(30),               // azimuthal beamwidth
                                 fDeg2Rad(20));              // elevation beamwidth;
 
-
   // Attaching projectors to AUV
   auv.projector_portside  = projector_portside;
   auv.projector_fbls      = projector_fbls;
   auv.projector_starboard = projector_starboard;
 
+
+  // testing something
+  std::cout<<"num_sensors = "<<num_sensors<<std::endl;
+  torch::Tensor number_array = torch::arange(0, num_sensors, 1).view({1, num_sensors});
+  std::cout<<"number_array = \n"<<number_array<<std::endl;
+
+
+  
+  // // checking all the properties
+  // PRINTLINE
+  // torch::Tensor bruh = torch::tensor({2, 2, 0, 0, 0, 0}).view({3,2}).to(torch::kFloat);
+  // torch::Tensor column_norms = torch::norm(bruh, 2, 0, true);
+  // torch::Tensor normalized_bruh = bruh/column_norms;
+
+  // PRINTSMALLLINE
+  // std::cout<<"bruh.shape = "<<std::endl;
+  // print_tensor_size(bruh);
+
+  // std::cout<<"column_norms.shape = "<<std::endl;
+  // print_tensor_size(column_norms);
+  
+  // std::cout<<"normalized_bruh.shape = "<<std::endl;
+  // print_tensor_size(normalized_bruh);
+
+  // PRINTSMALLLINE
+  // std::cout<<"bruh = \n"<<bruh<<std::endl;
+  // std::cout<<"column_norms = \n"<<column_norms<<std::endl;
+  // std::cout<<"normalized_bruh = \n"<<normalized_bruh<<std::endl;
+  
   
 
 
