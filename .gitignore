@@ -3,6 +3,10 @@
 
 # assets
 *.pkl
+*.pt
+*.cmake
+build/
+libtorch/
 
 # ignore tex related stuff
 *.aux
@@ -15,5 +19,9 @@
 .vscode
 
 # Mac related
-*.DS_Store
+.DS_Store
 *.pyc
+*.zip
+
+# ignoring torch library
+Code/libtorch/
