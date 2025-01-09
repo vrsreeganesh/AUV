@@ -26,6 +26,50 @@ To Do:
 #define PRINTLINE       std::cout<<"================================================"<<std::endl;
 #define PI 3.14159265
 
+
+// Functions ===============================================
+// Functions ===============================================
+// Functions ===============================================
+// Functions ===============================================
+// Functions ===============================================
+// Functions ===============================================
+
+// function to column normalize a tensor
+torch::Tensor fColumnNormalize(torch::Tensor inputTensor){
+  // finding norm
+  torch::Tensor inputTensorNorm = torch::linalg::norm(inputTensor,    //A
+                                                      2,              // order
+                                                      0,              // dimension
+                                                      true,           // keep-dims
+                                                      torch::kFloat); // d-type       
+
+  // dividing the input by the norm
+  torch::Tensor outputTensor = inputTensor/inputTensorNorm;
+
+  // returning result tensor
+  return outputTensor;
+}
+
+
+// function to calculate cosine of two tensors
+torch::Tensor fCalculateCosine(torch::Tensor inputTensor1,
+                               torch::Tensor inputTensor2)
+{
+  // column normalizing the the two signals
+  inputTensor1 = fColumnNormalize(inputTensor1);
+  inputTensor2 = fColumnNormalize(inputTensor2);
+
+  // finding their dot product
+  torch::Tensor dotProduct = inputTensor1 * inputTensor2;
+  torch::Tensor cosineBetweenVectors = torch::sum(dotProduct, 
+                                                  0,
+                                                  true);
+
+  // returning the value
+  return cosineBetweenVectors;
+
+}
+
 // Projector Class ============================================================
 // Projector Class ============================================================
 // Projector Class ============================================================
@@ -67,12 +111,34 @@ public:
   std::unordered_map<std::string, torch::Tensor> fIlluminate(std::unordered_map<std::string, torch::Tensor> inputScatterers){
     
     // setting up output
-    std::unordered_map<std::string, torch::Tensor> outputScatterers = inputScatterers;
+    std::unordered_map<std::string, torch::Tensor> outputScatterers;
+    outputScatterers["coordinates"]     = inputScatterers["coordinates"].clone();
+    outputScatterers["reflectivity"]    = inputScatterers["reflectivity"].clone();
 
     // change origin
-    outputScatterers["coordinates"] = inputScatterers["coordinates"] - location;
+    outputScatterers["coordinates"] = inputScatterers["coordinates"].clone() - location;
 
-    // 
+
+    // finding their corresponding planar projections
+    torch::Tensor scatterer_coords_xy_projected   = outputScatterers["coordinates"].clone();
+    scatterer_coords_xy_projected[2]              = torch::zeros({scatterer_coords_xy_projected.size(1)});
+    
+    // finding the angle between vector and xy-projected vector
+    torch::Tensor elevationCosine        = fCalculateCosine(outputScatterers["coordinates"], 
+                                                            scatterer_coords_xy_projected);
+
+
+    // finding the angle between xy-projected vector and xz-plane
+    torch::Tensor scatterer_coords_xz_projected   = outputScatterers["coordinates"].clone();
+    scatterer_coords_xz_projected[1]              = torch::zeros({scatterer_coords_xz_projected.size(1)});
+    
+    // finding the angle between xy-projected vector and xz projected vector
+    torch::Tensor azimuthalCosine       = fCalculateCosine(outputScatterers["coordinates"], 
+                                                           scatterer_coords_xz_projected);
+
+
+
+    // returning
     return outputScatterers;
   };
 
@@ -367,6 +433,10 @@ float fDeg2Rad(float deg){
 }
 
 
+
+
+
+
 // MAIN ====================================================
 // MAIN ====================================================
 // MAIN ====================================================
@@ -442,10 +512,46 @@ int main() {
   auv.projector_starboard = projector_starboard;
 
 
-  // testing something
-  std::cout<<"num_sensors = "<<num_sensors<<std::endl;
-  torch::Tensor number_array = torch::arange(0, num_sensors, 1).view({1, num_sensors});
-  std::cout<<"number_array = \n"<<number_array<<std::endl;
+  // // testing something
+  // std::cout<<"num_sensors = "<<num_sensors<<std::endl;
+  // torch::Tensor number_array = torch::arange(0, num_sensors, 1).view({1, num_sensors}).view({4, 8}).to(torch::kFloat);
+  // torch::Tensor bruh = number_array.clone();
+  // bruh[0] = torch::zeros({bruh.size(1)});
+  
+  // std::cout<<"number_array = \n"<<number_array<<std::endl;
+  // PRINTLINE
+  // // std::cout<<"bruh = \n"<<bruh[0]<<std::endl;
+  // std::cout<<"bruh = \n"<<bruh<<std::endl;
+
+  // testing projection
+  
+  torch::Tensor coordinates = torch::tensor({ 1,  2,  3,  4,
+                                              0,  0,  0,  0,
+                                             -1, -1, -1, -1}).view({3,4}).to(torch::kFloat);
+  torch::Tensor coordinates_normalized = fColumnNormalize(coordinates);
+  torch::Tensor coordinates_projected = coordinates.clone();
+  coordinates_projected[2]  = torch::zeros({coordinates.size(1)});
+
+  torch::Tensor innerproduct = coordinates * coordinates_projected;
+  innerproduct = torch::sum(innerproduct, 0, true);
+
+
+  PRINTLINE
+  // std::cout<<"coordinates = \n"<<coordinates<<std::endl;                                            PRINTSMALLLINE
+  // std::cout<<"coordinates_normalized = \n"<<coordinates_normalized<<std::endl;                      PRINTSMALLLINE
+  // torch::Tensor coordinates_abs = torch::norm(coordinates_normalized, 2, 0, true, torch::kFloat);   PRINTSMALLLINE
+  // std::cout<<"coordinates_abs = \n"<<coordinates_abs<<std::endl;                                    PRINTSMALLLINE
+
+  torch::Tensor bruh = fCalculateCosine(coordinates, coordinates_projected);
+  std::cout<<"bruh = \n"<<bruh<<std::endl;
+
+
+  // std::cout<<"coordinates_projected = \n"<<coordinates_projected<<std::endl;
+  // std::cout<<"innerproduct = \n"<<innerproduct<<std::endl;
+  PRINTSMALLLINE
+
+
+
 
 
   
