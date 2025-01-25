@@ -1,6 +1,7 @@
 // header-files
 #include <iostream>
 #include <ostream>
+#include <torch/torch.h>
 
 // function to print tensor size
 void print_tensor_size(const torch::Tensor& inputTensor) {
@@ -12,7 +13,6 @@ void print_tensor_size(const torch::Tensor& inputTensor) {
     std::cout << "\b]" <<std::endl;
 }
 
-
 // Scatterer Class = Scatterer Class
 // Scatterer Class = Scatterer Class
 // Scatterer Class = Scatterer Class
@@ -20,16 +20,24 @@ void print_tensor_size(const torch::Tensor& inputTensor) {
 // Scatterer Class = Scatterer Class
 class ScattererClass{
 public:
-    // public members
-    torch::Tensor coordinates;
-    torch::Tensor reflectivity;
+    
+    // public variables
+    torch::Tensor coordinates;  // tensor holding coordinates [3, x]
+    torch::Tensor reflectivity; // tensor holding reflectivity [1, x]
 
+    
+    
+    
+    
     // constructor = constructor
     ScattererClass(torch::Tensor arg_coordinates    = torch::zeros({3,1}), 
                    torch::Tensor arg_reflectivity   = torch::zeros({3,1})):
                    coordinates(arg_coordinates),
                    reflectivity(arg_reflectivity) {}
 
+    
+    
+    
     // overloading output
     friend std::ostream& operator<<(std::ostream& os, ScattererClass& scatterer){
 
