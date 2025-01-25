@@ -13,8 +13,13 @@ To Do:
 
 // including standard 
 #include <ostream>
+#include <string>
 #include <torch/torch.h>
 #include <iostream>
+#include <thread>
+#include <fstream>
+#include <unordered_map>
+#include "math.h"
 
 // including custom headers: for classes 
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/AUV.h"
@@ -22,6 +27,7 @@ To Do:
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ULA.h"
 
 // hash defines
+#define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
 #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
 #define PRINTLINE       std::cout<<"================================================"<<std::endl;
 #define PI 3.14159265
@@ -33,6 +39,19 @@ To Do:
 // Functions ===============================================
 // Functions ===============================================
 // Functions ===============================================
+
+// function: angles to vector
+torch::Tensor fAnglesToTensor(float azimuthal_angle,
+                              float elevation_angle)
+{
+  // calculating tensor
+  torch::Tensor coordinateTensor = torch::tensor({cos(elevation_angle) * cos(azimuthal_angle),
+                                                  cos(elevation_angle) * sin(azimuthal_angle),
+                                                  sin(elevation_angle)}).view({3,1});
+
+  // returning value
+  return coordinateTensor;
+}
 
 // function to column normalize a tensor
 torch::Tensor fColumnNormalize(torch::Tensor inputTensor){
@@ -49,7 +68,6 @@ torch::Tensor fColumnNormalize(torch::Tensor inputTensor){
   // returning result tensor
   return outputTensor;
 }
-
 
 // function to calculate cosine of two tensors
 torch::Tensor fCalculateCosine(torch::Tensor inputTensor1,
@@ -79,49 +97,123 @@ class Projector{
 public:
 
   // public members
-  torch::Tensor location;       // location of projector
-  double azimuthal_angle;       // azimuthal angle to which the projector is pointing
-  double elevation_angle;       // elevation angle to which the projector is pointing
-  double azimuthal_beamwidth;   // azimuthal beamwidth of the projected signal
-  double vertical_beamwidth;    // vertical beamwidth of the projected signal
+  torch::Tensor location;               // location of projector
+  double azimuthal_angle;               // azimuthal angle to which the projector is pointing
+  double elevation_angle;               // elevation angle to which the projector is pointing
+  double azimuthal_beamwidth;           // azimuthal beamwidth of the projected signal
+  double vertical_beamwidth;            // vertical beamwidth of the projected signal
+  torch::Tensor vectorCoordinates;      // vector coordinates
 
   // constructor
-  Projector(torch::Tensor location = torch::zeros({3,1}),
-            double azimuthal_angle = 0.0,
-            double elevation_angle = 0.0,
-            double azimuthal_beamwidth = 0.0,
-            double vertical_beamwidth = 0.0)
+  Projector(torch::Tensor location = torch::zeros({3,1}),   // default location
+            double azimuthal_angle = 0.0,                   // default azimuthal angle
+            double elevation_angle = 0.0,                   // default elevation angle
+            double azimuthal_beamwidth = 0.0,               // default azimuthal beamwidth
+            double vertical_beamwidth = 0.0)                // default elevation beamwidth
             : location(location),
               azimuthal_angle(azimuthal_angle),
               elevation_angle(elevation_angle),
               azimuthal_beamwidth(azimuthal_beamwidth),
-              vertical_beamwidth(vertical_beamwidth) {}
+              vertical_beamwidth(vertical_beamwidth) {
+                
+                // initializing vector-coordinates
+                vectorCoordinates = fAnglesToTensor(azimuthal_angle, 
+                                                    elevation_angle);
+
+              }
 
   // copy constructor
   Projector(const Projector& input_object){    
     // copying one by one
-    location              = input_object.location;
-    azimuthal_angle       = input_object.azimuthal_angle;
-    elevation_angle       = input_object.elevation_angle;
-    azimuthal_beamwidth   = input_object.azimuthal_beamwidth;
-    vertical_beamwidth    = input_object.vertical_beamwidth;
+    location              = input_object.location;              // copying location
+    azimuthal_angle       = input_object.azimuthal_angle;       // copying azimuthal angle
+    elevation_angle       = input_object.elevation_angle;       // copying elevation angle
+    azimuthal_beamwidth   = input_object.azimuthal_beamwidth;   // copying azimuthal beamwidth
+    vertical_beamwidth    = input_object.vertical_beamwidth;    // copying vertical beamwidth
+    vectorCoordinates     = input_object.vectorCoordinates;     // copying vector-coordinates
   }
 
   // illumination function
   std::unordered_map<std::string, torch::Tensor> fIlluminate(std::unordered_map<std::string, torch::Tensor> inputScatterers){
+    /*
+    ========================================================
+    Aim: Subset scatterers 
+    --------------------------------------------------------
+    Note:
+    > Translationally change coordinates. 
+    > Calculate azimuthal angle coordinates. 
+    ========================================================
+    */
     
-    // setting up output
+    // shifting origin translationally
+    std::unordered_map<std::string, torch::Tensor> translatedCoordinates;
+    translatedCoordinates["coordinates"]  = inputScatterers["coordinates"].clone() - location;
+    translatedCoordinates["reflectivity"] = inputScatterers["reflectivity"].clone();
+
+
+
+    // projecting scatterer onto the xy-plane ======================================================
+    torch::Tensor xy_projected_coordinates = translatedCoordinates["coordinates"].clone();    // cloning tensors
+    xy_projected_coordinates[2] = torch::zeros({xy_projected_coordinates.size(1)});           // setting z coordinate to be zeros
+
+    // projecting pointing-vector into xy-coordinates
+    torch::Tensor xyProjectedPointingVector = vectorCoordinates.clone();
+    xyProjectedPointingVector[2] = torch::zeros({xyProjectedPointingVector.size(1)});
+
+    // finding delta-azimuthal angle
+    torch::Tensor deltaAzimuthal = fCalculateCosine(xy_projected_coordinates,
+                                                    xyProjectedPointingVector);
+
+
+    
+    
+    
+    // finding elevation of scatter ================================================================
+    
+    torch::Tensor scatter_xylength  = translatedCoordinates["coordinates"].clone();               // cloning translation shifted
+    scatter_xylength[2]             = torch::zeros({scatter_xylength.size(1)});                   // putting z = 0
+    scatter_xylength                = torch::norm(scatter_xylength, 2, 0, true, torch::kFloat);```// finding length of the xy components
+
+    torch::Tensor scatterTan        = translatedCoordinates["coordinates"].clone();
+    scatterTan                      = scatterTan[2];                                              // getting z-coordinate
+    scatterTan                      = scatterTan/scatter_xylength;                                // finding tan-theta value
+
+
+
+
+
+    // creating a copy of the inputs
     std::unordered_map<std::string, torch::Tensor> outputScatterers;
     outputScatterers["coordinates"]     = inputScatterers["coordinates"].clone();
     outputScatterers["reflectivity"]    = inputScatterers["reflectivity"].clone();
 
-    // change origin
+    // change origin to that of the AUV
     outputScatterers["coordinates"] = inputScatterers["coordinates"].clone() - location;
 
 
-    // finding their corresponding planar projections
+
+
+
+
+    // calculating scatterer's projection onto xy-plane ============================================
     torch::Tensor scatterer_coords_xy_projected   = outputScatterers["coordinates"].clone();
     scatterer_coords_xy_projected[2]              = torch::zeros({scatterer_coords_xy_projected.size(1)});
+
+    // calculating reference 
+    torch::Tensor azimuthalReferenceCoordinate    = fAnglesToTensor(azimuthal_angle, 0);
+
+    // calculating relative angle between xy-projections and reference
+    torch::Tensor azimuthalRelativeAngles         = fCalculateCosine(scatterer_coords_xy_projected, 
+                                                                     azimuthalReferenceCoordinate);
+
+
+
+
+    // calculating scatterer's projection 
+    torch::Tensor elevations175  = 
+
+
+
     
     // finding the angle between vector and xy-projected vector
     torch::Tensor elevationCosine        = fCalculateCosine(outputScatterers["coordinates"], 
@@ -460,74 +552,71 @@ int main() {
               "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/floor_coordinates_3D.pt");
   torch::load(floor_scatterers["reflectivity"], 
               "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/floor_scatterers_reflectivity.pt");
+  
+  // sending to GPU
+  floor_scatterers["coordinates"]   = floor_scatterers["coordinates"].to(   torch::kMPS);
+  floor_scatterers["reflectivity"]  = floor_scatterers["reflectivity"].to(  torch::kMPS);
+
+
 
 
   // AUV Setup
-  torch::Tensor auv_initial_location            = torch::tensor({0.0, 2.0, 2.0}).view({3,1});
-  torch::Tensor auv_initial_velocity            = torch::tensor({1.0, 0.0, 0.0}).view({3,1});
-  torch::Tensor auv_initial_acceleration        = torch::tensor({0.0, 0.0, 0.0}).view({3,1});
-  torch::Tensor auv_initial_pointing_direction  = torch::tensor({1.0, 0.0, 0.0}).view({3,1});
-  
+  torch::Tensor auv_initial_location            = torch::tensor({0.0, 2.0, 2.0}).view({3,1}).to(torch::kMPS);  // initial location
+  torch::Tensor auv_initial_velocity            = torch::tensor({1.0, 0.0, 0.0}).view({3,1}).to(torch::kMPS);  // initial velocity
+  torch::Tensor auv_initial_acceleration        = torch::tensor({0.0, 0.0, 0.0}).view({3,1}).to(torch::kMPS);  // initial acceleration
+  torch::Tensor auv_initial_pointing_direction  = torch::tensor({1.0, 0.0, 0.0}).view({3,1}).to(torch::kMPS);  // initial pointing direction
 
   // Initializing a member of class, AUV
-  AUV auv(auv_initial_location,
-          auv_initial_velocity,
-          auv_initial_acceleration,
-          auv_initial_pointing_direction);
+  AUV auv(auv_initial_location,               // assigning initial location
+          auv_initial_velocity,               // assigning initial velocity
+          auv_initial_acceleration,           // assigning initial acceleration
+          auv_initial_pointing_direction);    // assigning initial pointing direction
 
 
 
   // Setting up ULAs for the AUV: front, portside and starboard
   const int num_sensors             = 32;                   // number of sensors
   const double intersensor_distance = 1e-4;                 // distance between sensors
-  ULA ula_portside(num_sensors, intersensor_distance);      // ULA onbject for portside
-  ULA ula_fbls(num_sensors, intersensor_distance);          // ULA object for front-side
-  ULA ula_starboard(num_sensors, intersensor_distance);     // ULA object for starboard
-  auv.ula_portside  = ula_portside;                         // attaching portside-ULAs to the AUV
-  auv.ula_fbls      = ula_fbls;                             // attaching front-ULA to the AUV
-  auv.ula_starboard = ula_starboard;                        // attaching starboard-ULA to the AUV
+  
+  ULA ula_portside(num_sensors,   intersensor_distance);    // ULA onbject for portside
+  ULA ula_fbls(num_sensors,       intersensor_distance);    // ULA object for front-side
+  ULA ula_starboard(num_sensors,  intersensor_distance);    // ULA object for starboard
+  
+  auv.ula_portside                  = ula_portside;         // attaching portside-ULAs to the AUV
+  auv.ula_fbls                      = ula_fbls;             // attaching front-ULA to the AUV
+  auv.ula_starboard                 = ula_starboard;        // attaching starboard-ULA to the AUV
 
 
 
   // Setting up Projector: front, portside and starboard
-  Projector projector_portside(torch::zeros({3,1}),         // location
-                               fDeg2Rad(90),                // azimuthal angle
-                               fDeg2Rad(-30),               // elevation angle
-                               fDeg2Rad(30),                // azimuthal beamwidth
-                               fDeg2Rad(20));               // elevation beamwidth
-  Projector projector_fbls(torch::zeros({3,1}),             // location
-                           fDeg2Rad(0),                     // azimuthal angle
-                           fDeg2Rad(-30),                   // elevation angle
-                           fDeg2Rad(120),                   // azimuthal beamwidth
-                           fDeg2Rad(60));                   // elevation beamwidth;
-  Projector projector_starboard(torch::zeros({3,1}),        // location
-                                fDeg2Rad(-90),              // azimuthal angle
-                                fDeg2Rad(-30),              // elevation angle
-                                fDeg2Rad(30),               // azimuthal beamwidth
-                                fDeg2Rad(20));              // elevation beamwidth;
+  Projector projector_portside(torch::zeros({3,1}).to(torch::kMPS),   // location
+                               fDeg2Rad(90),                          // azimuthal angle
+                               fDeg2Rad(-30),                         // elevation angle
+                               fDeg2Rad(30),                          // azimuthal beamwidth
+                               fDeg2Rad(20));                         // elevation beamwidth
+  Projector projector_fbls(torch::zeros({3,1}).to(torch::kMPS),       // location
+                           fDeg2Rad(0),                               // azimuthal angle
+                           fDeg2Rad(-30),                             // elevation angle
+                           fDeg2Rad(120),                             // azimuthal beamwidth
+                           fDeg2Rad(60));                             // elevation beamwidth;
+  Projector projector_starboard(torch::zeros({3,1}).to(torch::kMPS),  // location
+                                fDeg2Rad(-90),                        // azimuthal angle
+                                fDeg2Rad(-30),                        // elevation angle
+                                fDeg2Rad(30),                         // azimuthal beamwidth
+                                fDeg2Rad(20));                        // elevation beamwidth;
 
-  // Attaching projectors to AUV
-  auv.projector_portside  = projector_portside;
-  auv.projector_fbls      = projector_fbls;
-  auv.projector_starboard = projector_starboard;
+  auv.projector_portside  = projector_portside;             // Attaching projectors to AUV
+  auv.projector_fbls      = projector_fbls;                 // Attaching projectors to AUV
+  auv.projector_starboard = projector_starboard;            // Attaching projectors to AUV
 
 
-  // // testing something
-  // std::cout<<"num_sensors = "<<num_sensors<<std::endl;
-  // torch::Tensor number_array = torch::arange(0, num_sensors, 1).view({1, num_sensors}).view({4, 8}).to(torch::kFloat);
-  // torch::Tensor bruh = number_array.clone();
-  // bruh[0] = torch::zeros({bruh.size(1)});
   
-  // std::cout<<"number_array = \n"<<number_array<<std::endl;
-  // PRINTLINE
-  // // std::cout<<"bruh = \n"<<bruh[0]<<std::endl;
-  // std::cout<<"bruh = \n"<<bruh<<std::endl;
+
 
   // testing projection
-  
   torch::Tensor coordinates = torch::tensor({ 1,  2,  3,  4,
                                               0,  0,  0,  0,
-                                             -1, -1, -1, -1}).view({3,4}).to(torch::kFloat);
+                                             -1, -1, -1, -1}).view({3,4}).to(torch::kFloat).to(torch::kMPS);
   torch::Tensor coordinates_normalized = fColumnNormalize(coordinates);
   torch::Tensor coordinates_projected = coordinates.clone();
   coordinates_projected[2]  = torch::zeros({coordinates.size(1)});
@@ -535,21 +624,53 @@ int main() {
   torch::Tensor innerproduct = coordinates * coordinates_projected;
   innerproduct = torch::sum(innerproduct, 0, true);
 
+  // // test function threads
+  // std::thread t1(print_tensor_size, innerproduct);
+  // t1.join();
+
+
 
   PRINTLINE
-  // std::cout<<"coordinates = \n"<<coordinates<<std::endl;                                            PRINTSMALLLINE
-  // std::cout<<"coordinates_normalized = \n"<<coordinates_normalized<<std::endl;                      PRINTSMALLLINE
-  // torch::Tensor coordinates_abs = torch::norm(coordinates_normalized, 2, 0, true, torch::kFloat);   PRINTSMALLLINE
-  // std::cout<<"coordinates_abs = \n"<<coordinates_abs<<std::endl;                                    PRINTSMALLLINE
-
-  torch::Tensor bruh = fCalculateCosine(coordinates, coordinates_projected);
-  std::cout<<"bruh = \n"<<bruh<<std::endl;
-
-
-  // std::cout<<"coordinates_projected = \n"<<coordinates_projected<<std::endl;
-  // std::cout<<"innerproduct = \n"<<innerproduct<<std::endl;
+  torch::Tensor xy = coordinates.clone();
+  xy[2] = torch::zeros({xy.size(1)});
+  std::cout<<"coordinates = \n"<<coordinates<<std::endl;
   PRINTSMALLLINE
+  std::cout<<"xy = \n"<<xy<<std::endl;
+  torch::Tensor xylengths = torch::norm(xy, 2, 0, true, torch::kFloat);
+  std::cout<<"xylengths = \n"<<xylengths<<std::endl;
+  PRINTLINE
 
+
+
+
+
+
+
+
+
+
+  // PRINTLINE
+  // // std::cout<<"coordinates = \n"<<coordinates<<std::endl;                                            PRINTSMALLLINE
+  // // std::cout<<"coordinates_normalized = \n"<<coordinates_normalized<<std::endl;                      PRINTSMALLLINE
+  // // torch::Tensor coordinates_abs = torch::norm(coordinates_normalized, 2, 0, true, torch::kFloat);   PRINTSMALLLINE
+  // // std::cout<<"coordinates_abs = \n"<<coordinates_abs<<std::endl;                                    PRINTSMALLLINE
+
+  // torch::Tensor bruh = fCalculateCosine(coordinates, coordinates_projected);
+  // bruh = bruh.to(torch::kMPS);
+  // std::cout<<"bruh = \n"<<bruh<<std::endl;
+  // std::cout<<"bruh.device() = \n"<<bruh.device()<<std::endl;
+
+  // PRINTSMALLLINE
+  // std::cout<<"bruh = \n"<<bruh<<std::endl;
+
+
+
+  // // std::cout<<"coordinates_projected = \n"<<coordinates_projected<<std::endl;
+  // // std::cout<<"innerproduct = \n"<<innerproduct<<std::endl;
+  // PRINTSMALLLINE
+
+  // PRINTLINE
+  // std::cout<<sin(PI/2)<<std::endl;
 
 
 
