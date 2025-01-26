@@ -4,6 +4,13 @@
 
 #pragma once
 
+// hash defines
+#define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
+#define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+#define PRINTLINE       std::cout<<"================================================"<<std::endl;
+#define PI              3.14159265
+
+
 class TransmitterClass{
 public:
     // basic parameters
@@ -47,16 +54,53 @@ public:
                      azimuthal_beamwidth(azimuthal_beamwidth), 
                      elevation_beamwidth(elevation_beamwidth) {}
 
-
-
     // overloading output 
     friend std::ostream& operator<<(std::ostream& os, TransmitterClass& transmitter){
         os<<"\t> azimuth            : "<<transmitter.azimuthal_angle    <<std::endl;
         os<<"\t> elevation          : "<<transmitter.elevation_angle    <<std::endl;
         os<<"\t> azimuthal beamwidth: "<<transmitter.azimuthal_beamwidth<<std::endl;
         os<<"\t> elevation beamwidth: "<<transmitter.elevation_beamwidth<<std::endl;
+        PRINTSMALLLINE
         return os;
     }
+
+    // overloading copyign operator
+    TransmitterClass& operator=(const TransmitterClass& other){
+
+        // checking self-assignment
+        if(this==&other){
+            return *this;
+        }
+
+        // allocating memory
+        this->location              = other.location;
+        this->Signal                = other.Signal;
+        this->azimuthal_angle       = other.azimuthal_angle;
+        this->elevation_angle       = other.elevation_angle;
+        this->azimuthal_beamwidth   = other.azimuthal_beamwidth;
+        this->elevation_beamwidth   = other.elevation_beamwidth;
+        this->range                 = other.range;
+
+        // transmitted signal attributes
+        this->f_low                 = other.f_low;
+        this->f_high                = other.f_high;
+        this->fc                    = other.fc;
+        this->bandwidth             = other.bandwidth;
+
+        // shadowing properties
+        this->azimuthQuantDensity       = other.azimuthQuantDensity;
+        this->elevationQuantDensity     = other.elevationQuantDensity;
+        this->rangeQuantSize            = other.rangeQuantSize;
+        this->azimuthShadowThreshold    = other.azimuthShadowThreshold;
+        this->elevationShadowThreshold  = other.elevationShadowThreshold;
+        this->checkbox                  = other.checkbox;
+        this->finalScatterBox           = other.finalScatterBox;
+        this->finalReflectivityBox      = other.finalReflectivityBox;
+
+        // returning 
+        return *this;
+
+    };
 
     // subsetting scatterers
     void subsetScatters(ScattererClass& scatters){

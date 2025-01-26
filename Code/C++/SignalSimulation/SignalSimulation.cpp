@@ -2,12 +2,6 @@
 ================================================================================
 Aim: Signal Simulation
 --------------------------------------------------------------------------------
-Note:
-  > Load simulated scatterers
-  > Setup AUV
-
-To Do:
-  > write function to update 
 ================================================================================
 */ 
 
@@ -18,53 +12,87 @@ To Do:
 #include <thread>
 #include "math.h"
 
-// including custom headers: for classes 
+// class definitions
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ULAClass.h"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/TransmitterClass.h"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/AUVClass.h"
+
+// setup-scripts
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/ULASetup/ULASetup.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/TransmitterSetup/TransmitterSetup.cpp"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/SeafloorSetup/SeafloorSetup.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/SeafloorSetup/SeafloorSetup.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/AUVSetup/AUVSetup.cpp"
+
+// functions
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fAnglesToTensor.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCalculateCosine.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fColumnNormalize.cpp"
 // // #include ""
 
-
-
 // hash defines
 #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
 #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
 #define PRINTLINE       std::cout<<"================================================"<<std::endl;
-#define PI 3.14159265
+#define PI              3.14159265
 
-// Main = Main = Main = Main = Main = Main = Main = Main = Main
-// Main = Main = Main = Main = Main = Main = Main = Main = Main
-// Main = Main = Main = Main = Main = Main = Main = Main = Main
-// Main = Main = Main = Main = Main = Main = Main = Main = Main
-// Main = Main = Main = Main = Main = Main = Main = Main = Main
+
+
+
+
+
+
+
+
+
 int main() {
+
+    PRINTLINE
+    PRINTLINE
     PRINTLINE
 
-    // Building Sea-floor
-    ULAClass ula;
-    std::thread ulaThread_t(ULASetup, &ula);
+
+    // Builing Sea-floor
+    ScattererClass SeafloorScatter;
+    std::thread scatterThread_t(SeafloorSetup, &SeafloorScatter);
+
+    // Building ULA
+    ULAClass ula_port, ula_starboard;
+    std::thread ulaThread_t(ULASetup, &ula_port, &ula_starboard);
     
     // Building Transmitter
-    TransmitterClass transmitter; 
-    std::thread transmitterThread_t(TransmitterSetup, &transmitter);
-
-
-
+    TransmitterClass transmitter_port, transmitter_starboard; 
+    std::thread transmitterThread_t(TransmitterSetup, 
+                                    &transmitter_port, 
+                                    &transmitter_starboard);
 
 
 
     // Joining threads
-    ulaThread_t.join();
-    transmitterThread_t.join();
+    ulaThread_t.join();         // making the ULA population thread join back
+    transmitterThread_t.join(); // making the transmitter population thread join back
+    scatterThread_t.join();     // making the scattetr population thread join back
+
+
+
+    // building AUV 
+    AUVClass auv;               // instantiating class object
+    AUVSetup(&auv);        // populating 
+    
+    // attaching
+    auv.ULA_port                = ula_port;
+    auv.ULA_starboard           = ula_starboard;
+    auv.transmitter_port        = transmitter_port;
+    auv.transmitter_starboard   = transmitter_starboard;
 
     // printing status
-    std::cout<<"ula = \n"<<ula<<std::endl;
-    std::cout<<"transmitter = \n"<<transmitter<<std::endl;
+    std::cout<<"auv.ULA_port = \n"              << auv.ULA_port;
+    std::cout<<"auv.ULA_starboard = \n"         << auv.ULA_starboard;
+    std::cout<<"auv.transmitter_port = \n"      << auv.transmitter_port;
+    std::cout<<"auv.transmitter_starboard = \n" << auv.transmitter_starboard;
+    std::cout<<"sea-floor = \n"                 << SeafloorScatter;
+    std::cout<<"AUV = \n"                       << auv;
+
 
     PRINTLINE
 

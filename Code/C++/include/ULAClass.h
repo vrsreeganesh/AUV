@@ -3,6 +3,13 @@
 
 #pragma once
 
+// hash defines
+#define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
+#define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+#define PRINTLINE       std::cout<<"================================================"<<std::endl;
+#define PI              3.14159265
+
+
 class ULAClass{
 public:
     // intrinsic parameters
@@ -36,6 +43,7 @@ public:
                     sensorDirection = sensorDirection / normvalue;
                 }
                 
+                // copying direction 
                 this->sensorDirection = sensorDirection;
         }
 
@@ -43,7 +51,28 @@ public:
     friend std::ostream& operator<<(std::ostream& os, ULAClass& ula){
         os<<"\t number of sensors    : "<<ula.num_sensors           <<std::endl;
         os<<"\t inter-element spacing: "<<ula.inter_element_spacing <<std::endl;
-        os<<"\t sensor-direction \n"    <<ula.sensorDirection<<std::endl;
+        os<<"\t sensor-direction "      <<torch::transpose(ula.sensorDirection, 0, 1)<<std::endl;
+        PRINTSMALLLINE
         return os;
+    }
+
+    // overloading the "=" operator
+    ULAClass& operator=(const ULAClass& other){
+        // checking if copying to the same object
+        if(this == &other){
+            return *this;
+        }
+
+        // copying everything
+        this->num_sensors           = other.num_sensors;
+        this->inter_element_spacing = other.inter_element_spacing;
+        this->coordinates           = other.coordinates.clone();
+        this->sampling_frequency    = other.sampling_frequency;
+        this->recording_period      = other.recording_period;
+        this->sensorDirection       = other.sensorDirection.clone(); 
+
+        // returning
+        return *this;
+
     }
 };

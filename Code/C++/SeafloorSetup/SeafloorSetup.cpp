@@ -2,50 +2,41 @@
 Aim: Setup sea floor
 ======================================*/ 
 #include <torch/torch.h>
-#include <iostream>
-#include <fstream>
-#include <unordered_map>
-#include <vector>
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 
-int main() {
+void SeafloorSetup(ScattererClass* scatterers) {
+    
     // sea-floor bounds
-    int along_track_length  = 100; 
-    int across_track_length = 100;
-
+    int bed_width   = 100;  // width of the bed (x-dimension)
+    int bed_length  = 100;  // length of the bed (y-dimension)
+    
     // scatter-intensity
-    int along_track_scatter_density   = 10;
-    int across_track_scatter_density  = 10;
+    int bed_width_density       = 100;  // density of points along x-dimension
+    int bed_length_density      = 100;  // density of points along y-dimension
 
     // setting up coordinates
     auto xpoints = torch::linspace(0, \
-                                    across_track_length, \
-                                    across_track_length * across_track_scatter_density);
+                                    bed_width, \
+                                    bed_width * bed_width_density);
     auto ypoints = torch::linspace(0, \
-                                    along_track_length,  \
-                                    along_track_length * along_track_scatter_density);
+                                    bed_length,  \
+                                    bed_length * bed_length_density);
 
     // creating mesh
-    auto mesh_grid  = torch::meshgrid({xpoints, ypoints}, "ij");
-    auto X          = mesh_grid[0]; 
+    auto mesh_grid  = torch::meshgrid({xpoints, ypoints}, "ij");    
+    auto X          = mesh_grid[0];                                 
     auto Y          = mesh_grid[1];
-
     X               = torch::reshape(X, {1, X.numel()});
     Y               = torch::reshape(Y, {1, Y.numel()});
+    
+    // creating heights of scattereres
     torch::Tensor Z = torch::zeros({1, Y.numel()});
 
     // setting up floor coordinates
     torch::Tensor floorScatter_coordinates    = torch::cat({X, Y, Z}, 0);
     torch::Tensor floorScatter_reflectivity   = torch::ones({3, Y.numel()});
 
-    // initializing object of class
-    ScattererClass SeafloorScatter(floorScatter_coordinates,
-                                    floorScatter_reflectivity);
-
-    // printing 
-    std::cout<<"SeafloorScatter = "<<std::endl;
-    std::cout<<SeafloorScatter;
-
-    // returning
-    return 0;
+    // populating the values of the incoming argument. 
+    scatterers->coordinates     = floorScatter_coordinates; // assigning coordinates
+    scatterers->reflectivity    = floorScatter_reflectivity;// assigning reflectivity
 }
