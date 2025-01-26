@@ -1,6 +1,8 @@
 #include <iostream>
 #include <ostream>
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 
+#pragma once
 
 class TransmitterClass{
 public:
@@ -16,18 +18,19 @@ public:
     // transmitted signal attributes
     float f_low;                // lowest frequency of LFM
     float f_high;               // highest frequency of LFM
-    float fc;                  // center frequency of LFM
+    float fc;                   // center frequency of LFM
     float bandwidth;            // bandwidth of LFM
 
     // shadowing properties
     int azimuthQuantDensity;            // quantization of angles along the azimuth
     int elevationQuantDensity;          // quantization of angles along the elevation
     float rangeQuantSize;               // range-cell size when shadowing
-    float azimuthShadowThreshold;       // thresholding 
-    float elevationShadowThreshold;           // thresholding
+    float azimuthShadowThreshold;       // azimuth thresholding 
+    float elevationShadowThreshold;     // elevation thresholding
     torch::Tensor checkbox;             // box indicating whether a scatter for a range-angle pair has been found
     torch::Tensor finalScatterBox;      // a 3D tensor where the third dimension represnets the vector length
     torch::Tensor finalReflectivityBox; // to store the reflectivity
+
 
 
     // Constructor
@@ -45,17 +48,21 @@ public:
                      elevation_beamwidth(elevation_beamwidth) {}
 
 
+
     // overloading output 
     friend std::ostream& operator<<(std::ostream& os, TransmitterClass& transmitter){
-        // printing the outputs
-        // os<<"\t> location: "<<transmitter.location<<std::endl;
-        os<<"\t> azimuth: "<<transmitter.azimuthal_angle<<std::endl;
-        os<<"\t> elevation: "<<transmitter.elevation_angle<<std::endl;
-        os<<"\t> azimuthal beamwidth"<<transmitter.azimuthal_beamwidth<<std::endl;
-        os<<"\t> elevation beamwidth"<<transmitter.elevation_beamwidth<<std::endl;
-
+        os<<"\t> azimuth            : "<<transmitter.azimuthal_angle    <<std::endl;
+        os<<"\t> elevation          : "<<transmitter.elevation_angle    <<std::endl;
+        os<<"\t> azimuthal beamwidth: "<<transmitter.azimuthal_beamwidth<<std::endl;
+        os<<"\t> elevation beamwidth: "<<transmitter.elevation_beamwidth<<std::endl;
         return os;
     }
 
+    // subsetting scatterers
+    void subsetScatters(ScattererClass& scatters){
+
+        // changing coordinates of scatterers to that of transmitter
+        scatters.coordinates = scatters.coordinates - this->location;
+    }
 
 };

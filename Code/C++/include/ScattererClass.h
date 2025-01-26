@@ -3,6 +3,8 @@
 #include <ostream>
 #include <torch/torch.h>
 
+#pragma once
+
 // function to print tensor size
 void print_tensor_size(const torch::Tensor& inputTensor) {
     // Printing size
@@ -26,7 +28,8 @@ public:
     torch::Tensor reflectivity; // tensor holding reflectivity [1, x]
 
     
-    
+    // a simpler constructor
+    ScattererClass();
     
     
     // constructor = constructor
@@ -34,6 +37,8 @@ public:
                    torch::Tensor arg_reflectivity   = torch::zeros({3,1})):
                    coordinates(arg_coordinates),
                    reflectivity(arg_reflectivity) {}
+
+    
 
     
     
