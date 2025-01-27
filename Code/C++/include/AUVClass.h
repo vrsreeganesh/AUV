@@ -11,6 +11,7 @@
 #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
 #define PRINTLINE       std::cout<<"================================================"<<std::endl;
 #define PI              3.14159265
+#define DEBUGMODE       false
 
 
 class AUVClass{
@@ -19,6 +20,7 @@ public:
     torch::Tensor location;                 // location of vessel
     torch::Tensor velocity;                 // current speed of the vessel [a vector]
     torch::Tensor acceleration;             // current acceleration of vessel [a vector]
+    torch::Tensor pointing_direction;       // direction to which the AUV is pointed
     
     ULAClass ULA_port;                 // mounted ULA [object of class, ULAClass]        
     ULAClass ULA_starboard;            // mounted ULA [object of class, ULAClass]        

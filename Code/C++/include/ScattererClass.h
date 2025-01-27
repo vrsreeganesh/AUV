@@ -40,11 +40,6 @@ public:
                    coordinates(arg_coordinates),
                    reflectivity(arg_reflectivity) {}
 
-    
-
-    
-    
-    
     // overloading output
     friend std::ostream& operator<<(std::ostream& os, ScattererClass& scatterer){
 

@@ -1,9 +1,7 @@
-/*
-================================================================================
+/*==============================================================================
 Aim: Signal Simulation
 --------------------------------------------------------------------------------
-================================================================================
-*/ 
+==============================================================================*/ 
 
 // including standard 
 #include <ostream>
@@ -25,10 +23,20 @@ Aim: Signal Simulation
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/AUVSetup/AUVSetup.cpp"
 
 // functions
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fAnglesToTensor.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCalculateCosine.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fColumnNormalize.cpp"
 // // #include ""
+
+// void fPrintTensorSize(const torch::Tensor inputTensor) {
+//     // Printing size
+//     std::cout << "[";
+//     for (const auto& size : inputTensor.sizes()) {
+//         std::cout << size << ",";
+//     }
+//     std::cout << "\b]" <<std::endl;
+// }
 
 // hash defines
 #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
@@ -36,15 +44,7 @@ Aim: Signal Simulation
 #define PRINTLINE       std::cout<<"================================================"<<std::endl;
 #define PI              3.14159265
 
-
-
-
-
-
-
-
-
-
+// main-function
 int main() {
 
     PRINTLINE
@@ -66,14 +66,10 @@ int main() {
                                     &transmitter_port, 
                                     &transmitter_starboard);
 
-
-
     // Joining threads
     ulaThread_t.join();         // making the ULA population thread join back
     transmitterThread_t.join(); // making the transmitter population thread join back
     scatterThread_t.join();     // making the scattetr population thread join back
-
-
 
     // building AUV 
     AUVClass auv;               // instantiating class object
@@ -85,13 +81,58 @@ int main() {
     auv.transmitter_port        = transmitter_port;
     auv.transmitter_starboard   = transmitter_starboard;
 
-    // printing status
-    std::cout<<"auv.ULA_port = \n"              << auv.ULA_port;
-    std::cout<<"auv.ULA_starboard = \n"         << auv.ULA_starboard;
-    std::cout<<"auv.transmitter_port = \n"      << auv.transmitter_port;
-    std::cout<<"auv.transmitter_starboard = \n" << auv.transmitter_starboard;
-    std::cout<<"sea-floor = \n"                 << SeafloorScatter;
-    std::cout<<"AUV = \n"                       << auv;
+    // // saving the sea-floors
+    // torch::save(SeafloorScatter.coordinates, "SeafloorScatter_coordinates.pt");
+
+    // storing 
+    ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
+
+    // mimicking movement
+    for(int i = 0; i<1; ++i){
+
+        PRINTLINE
+        PRINTLINE
+        PRINTLINE
+        std::cout<<"i = "<<i<<std::endl;
+        PRINTLINE
+        PRINTLINE
+        PRINTLINE
+
+        // making the deep copy
+        ScattererClass SeafloorScatter_port        = SeafloorScatter_deepcopy;
+        ScattererClass SeafloorScatter_seaboard    = SeafloorScatter_deepcopy;
+        
+        // printing 
+        PRINTLINE
+        std::cout<<"SeafloorScatter_port.coordinates.shape (before)      = "; 
+        fPrintTensorSize(SeafloorScatter_port.coordinates);
+        std::cout<<"SeafloorScatter_seaboard.coordinates.shape (before)  = "; 
+        fPrintTensorSize(SeafloorScatter_seaboard.coordinates);
+
+        // subsetting scatterers
+        std::thread transmitterPortSubset_t(&TransmitterClass::subsetScatterers, \
+                                            &auv.transmitter_port, \
+                                            &SeafloorScatter_port);
+        std::thread transmitterStarboardSubset_t(&TransmitterClass::subsetScatterers, \
+                                                 &auv.transmitter_starboard, \
+                                                 &SeafloorScatter_seaboard);
+        
+        // auv.transmitter_port.subsetScatterers(&SeafloorScatter_port);          // subsetting scatterers in portside
+        // auv.transmitter_starboard.subsetScatterers(&SeafloorScatter_seaboard); // subsetting scatterers in starboard
+
+        // joining the subset threads back
+        transmitterPortSubset_t.join();
+        transmitterStarboardSubset_t.join();
+
+
+        // printing tensor size
+        std::cout<<"SeafloorScatter_port.coordinates.shape (after)      = "; 
+        fPrintTensorSize(SeafloorScatter_port.coordinates);
+        std::cout<<"SeafloorScatter_seaboard.coordinates.shape (after)  = "; 
+        fPrintTensorSize(SeafloorScatter_seaboard.coordinates);
+        PRINTSPACE
+
+    }
 
 
     PRINTLINE
