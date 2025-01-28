@@ -4,6 +4,13 @@ NOAA: 50 to 100 KHz is the transmission frequency
 we'll create our LFM with 50 to 70KHz
 ======================================*/ 
 
+#ifndef DEVICE
+    #define DEVICE          torch::kMPS
+    // #define DEVICE          torch::kCPU
+#endif
+
+
+
 // =========================================================
 void ULASetup(ULAClass* ula_1, 
               ULAClass* ula_2) {
@@ -15,12 +22,13 @@ void ULASetup(ULAClass* ula_1,
     float recording_period      = 1;                            // sampling-period
 
     // building the direction for the sensors
-    torch::Tensor ULA_direction = torch::tensor({0,1,0}).reshape({3,1}).to(torch::kFloat);
-    ULA_direction       = ULA_direction/torch::linalg_norm(ULA_direction, 2, 0, true, torch::kFloat);
+    torch::Tensor ULA_direction = torch::tensor({0,1,0}).reshape({3,1}).to(torch::kFloat).to(DEVICE);
+    ULA_direction       = ULA_direction/torch::linalg_norm(ULA_direction, 2, 0, true, torch::kFloat).to(DEVICE);
     ULA_direction       = ULA_direction * inter_element_spacing;
 
     // building the coordinates for the sensors
-    torch::Tensor ULA_coordinates = torch::mul(torch::linspace(0, num_sensors-1, num_sensors), ULA_direction);
+    torch::Tensor ULA_coordinates = torch::mul(torch::linspace(0, num_sensors-1, num_sensors).to(DEVICE), \
+                                               ULA_direction);
 
     // assigning values 
     ula_1->num_sensors            = num_sensors;              // assigning number of sensors

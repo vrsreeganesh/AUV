@@ -12,11 +12,23 @@
 #pragma once
 
 // hash defines
-#define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
-#define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
-#define PRINTLINE       std::cout<<"================================================"<<std::endl;
+#ifndef PRINTSPACE
+#   define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
+#endif
+#ifndef PRINTSMALLLINE
+#   define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+#endif
+#ifndef PRINTLINE
+#   define PRINTLINE       std::cout<<"================================================"<<std::endl;
+#endif
+
 #define PI              3.14159265
-#define DEBUGMODE       false
+#define DEBUGMODE_TRANSMITTER       false
+
+#ifndef DEVICE
+    #define DEVICE          torch::kMPS
+    // #define DEVICE          torch::kCPU
+#endif
 
 
 class TransmitterClass{
@@ -117,26 +129,24 @@ public:
     // subsetting scatterers
     void subsetScatterers(ScattererClass* scatterers){
 
-        // changing coordinates of scatterers to that of transmitter
-        scatterers->coordinates = scatterers->coordinates - this->location;
-
-        PRINTLINE
-        if (DEBUGMODE) {
+        
+        if (DEBUGMODE_TRANSMITTER) {
             std::cout<<"scatterers->coordinates.shape           = "; 
             fPrintTensorSize(scatterers->coordinates);
         }
 
-        PRINTSMALLLINE
 
         // converting from cartesian tensors to spherical tensors
         torch::Tensor scatterers_spherical = fCart2Sph(scatterers->coordinates);
-        if (DEBUGMODE){ 
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass::subsetScatterers 140 \n";
+        scatterers_spherical = scatterers_spherical.to(DEVICE);
+        if (DEBUGMODE_TRANSMITTER){ 
             std::cout<<"scatterers_spherical.shape              = ";
             fPrintTensorSize(scatterers_spherical); PRINTSMALLLINE
         }
 
         // printing some status
-        if (DEBUGMODE){
+        if (DEBUGMODE_TRANSMITTER){
             PRINTSPACE
             PRINTLINE
             std::cout<<"\t TransmitterClass > this->azimuthal_angle = "     <<this->azimuthal_angle     <<std::endl;
@@ -149,14 +159,19 @@ public:
 
 
 
-        if (DEBUGMODE) std::cout<<"\t TransmitterClass >reached line 136 \n";
-        torch::Tensor scatter_boolean = \
-            (torch::mul( \
-                torch::square((scatterers_spherical[0] - this->azimuthal_angle))/torch::square(torch::tensor({this->azimuthal_beamwidth/2})), \
-                torch::square((scatterers_spherical[1] - this->elevation_angle))/torch::square(torch::tensor({this->elevation_beamwidth/2}))) <= 1);
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass >reached line 136 \n";
 
-        if (DEBUGMODE) std::cout<<"\t TransmitterClass >reached line 141 \n";
-        if (DEBUGMODE){ 
+        // finding points that are in the cone
+        torch::Tensor scatter_boolean = \
+            (torch::square((scatterers_spherical[0] - \
+                            torch::tensor({this->azimuthal_angle}).to(torch::kFloat).to(DEVICE)))/torch::square(torch::tensor({this->azimuthal_beamwidth/2}).to(DEVICE))
+             + \
+             torch::square((scatterers_spherical[1] - \
+                            torch::tensor({this->elevation_angle}).to(torch::kFloat).to(DEVICE)))/torch::square(torch::tensor({this->elevation_beamwidth/2}).to(DEVICE)) \
+             < 1);
+
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass >reached line 141 \n";
+        if (DEBUGMODE_TRANSMITTER){ 
             std::cout<<"scatter_boolean.shape                   = "; 
             fPrintTensorSize(scatter_boolean); 
             PRINTSMALLLINE;
@@ -164,21 +179,20 @@ public:
 
         // subsetting points within the elliptical beam
         auto mask = (scatter_boolean == 1);    // creating a mask 
-        if (DEBUGMODE) std::cout<<"\t TransmitterClass >reached line 146 \n";
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass >reached line 146 \n";
         scatterers->coordinates = scatterers->coordinates.index({torch::indexing::Slice(), mask});
-        if (DEBUGMODE) {
+        if (DEBUGMODE_TRANSMITTER) {
             std::cout<<"scatterers->coordinates.shape                   = "; 
             fPrintTensorSize(scatterers->coordinates); PRINTSMALLLINE;
         }
-        if (DEBUGMODE) std::cout<<"\t TransmitterClass >reached line 148 \n";
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass >reached line 148 \n";
         scatterers->reflectivity = scatterers->reflectivity.index({torch::indexing::Slice(), mask});
-        if (DEBUGMODE) std::cout<<"\t TransmitterClass >reached line 150 \n";
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass >reached line 150 \n";
 
         // this is where histogram shadowing comes in (later)
 
-        // bringing back the original position by translation
-        scatterers->coordinates = scatterers->coordinates + this->location;
-        if (DEBUGMODE) std::cout<<"\t TransmitterClass > reached line 156 \n";
+
+        if (DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass > reached line 156 \n";
 
     }
 

@@ -4,6 +4,12 @@ Aim: Setup sea floor
 #include <torch/torch.h>
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 
+#ifndef DEVICE
+    #define DEVICE          torch::kMPS
+    // #define DEVICE          torch::kCPU
+#endif
+
+
 void SeafloorSetup(ScattererClass* scatterers) {
     
     // sea-floor bounds
@@ -17,10 +23,10 @@ void SeafloorSetup(ScattererClass* scatterers) {
     // setting up coordinates
     auto xpoints = torch::linspace(0, \
                                     bed_width, \
-                                    bed_width * bed_width_density);
+                                    bed_width * bed_width_density).to(DEVICE);
     auto ypoints = torch::linspace(0, \
                                     bed_length,  \
-                                    bed_length * bed_length_density);
+                                    bed_length * bed_length_density).to(DEVICE);
 
     // creating mesh
     auto mesh_grid  = torch::meshgrid({xpoints, ypoints}, "ij");    
@@ -30,11 +36,11 @@ void SeafloorSetup(ScattererClass* scatterers) {
     Y               = torch::reshape(Y, {1, Y.numel()});
     
     // creating heights of scattereres
-    torch::Tensor Z = torch::zeros({1, Y.numel()});
+    torch::Tensor Z = torch::zeros({1, Y.numel()}).to(DEVICE);
 
     // setting up floor coordinates
     torch::Tensor floorScatter_coordinates    = torch::cat({X, Y, Z}, 0);
-    torch::Tensor floorScatter_reflectivity   = torch::ones({3, Y.numel()});
+    torch::Tensor floorScatter_reflectivity   = torch::ones({3, Y.numel()}).to(DEVICE);
 
     // populating the values of the incoming argument. 
     scatterers->coordinates     = floorScatter_coordinates; // assigning coordinates

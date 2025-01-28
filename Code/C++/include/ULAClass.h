@@ -4,9 +4,21 @@
 #pragma once
 
 // hash defines
+#ifndef PRINTSPACE
 #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
+#endif
+#ifndef PRINTSMALLLINE
 #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+#endif
+#ifndef PRINTLINE
 #define PRINTLINE       std::cout<<"================================================"<<std::endl;
+#endif
+
+#ifndef DEVICE
+    #define DEVICE          torch::kMPS
+    // #define DEVICE          torch::kCPU
+#endif
+
 #define PI              3.14159265
 
 
