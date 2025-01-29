@@ -30,6 +30,7 @@ public:
     torch::Tensor coordinates;          // coordinates of each sensor
     float sampling_frequency;           // sampling frequency of the sensors
     float recording_period;             // recording period of the ULA
+    torch::Tensor location;             // location of first coordinate
 
     // derived stuff
     torch::Tensor sensorDirection; 
@@ -85,6 +86,15 @@ public:
 
         // returning
         return *this;
+    }
+
+    /* =========================================================================
+    Aim: Build coordinates on top of location. 
+    ............................................................................
+    Note: 
+        > This function builds the location of the coordinates based on the location and direction member. 
+    --------------------------------------------------------------------------*/ 
+    void buildCoordinatesBasedOnLocation(){
 
     }
 };

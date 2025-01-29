@@ -10,19 +10,21 @@ Aim: Signal Simulation
 #include <thread>
 #include "math.h"
 #include <chrono>
+#include <Python.h>
+#include <cstdlib>
 
 // hash defines
 #ifndef PRINTSPACE
 #define PRINTSPACE      std::cout<<"\n\n\n";
 #endif
 #ifndef PRINTSMALLLINE
-#define PRINTSMALLLINE  std::cout<<"----------------------------------------------------------------"<<std::endl;
+#define PRINTSMALLLINE  std::cout<<"--------------------------------------------------------------------"<<std::endl;
 #endif
 #ifndef PRINTDOTS
-#define PRINTDOTS       std::cout<<"................................................................"<<std::endl;
+#define PRINTDOTS       std::cout<<"...................................................................."<<std::endl;
 #endif
 #ifndef PRINTLINE
-#define PRINTLINE       std::cout<<"================================================================"<<std::endl;
+#define PRINTLINE       std::cout<<"===================================================================="<<std::endl;
 #endif
 #ifndef PI
 #define PI              3.14159265
@@ -35,7 +37,8 @@ Aim: Signal Simulation
 
 // deciding to save tensors or not
 #ifndef SAVETENSORS
-    #define SAVETENSORS       false
+    #define SAVETENSORS       true
+    // #define SAVETENSORS       false
 #endif
 
 // choose device here
@@ -64,6 +67,11 @@ Aim: Signal Simulation
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fColumnNormalize.cpp"
 // // #include ""
 
+// function to plot the thing
+void fPlotTensors(){
+    system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/TestingSaved_tensors.py");
+}
+
 // main-function
 int main() {
 
@@ -76,8 +84,9 @@ int main() {
                                 &SeafloorScatter);
 
     // Building ULA
-    ULAClass ula_port, ula_starboard;
+    ULAClass ula_fls, ula_port, ula_starboard;
     std::thread ulaThread_t(ULASetup, \
+                            &ula_fls, \
                             &ula_port, \
                             &ula_starboard);
     
@@ -107,7 +116,7 @@ int main() {
     ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
 
     // mimicking movement
-    int number_of_stophops = 20;
+    int number_of_stophops = 50;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
@@ -135,7 +144,7 @@ int main() {
                                             &transmitter_port);
         std::thread transmitterStarboardSubset_t(&AUVClass::subsetScatterers, &auv, \
                                                  &SeafloorScatter_seaboard, \
-                                                 &transmitter_starboard);;
+                                                 &transmitter_starboard);
 
         // joining the subset threads back
         transmitterFLSSubset_t.join();
@@ -151,12 +160,17 @@ int main() {
 
         // saving the tensors
         if (SAVETENSORS) {
+
+            // saving tensors
             torch::save(SeafloorScatter_fls.coordinates, \
                     "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates.pt");
             torch::save(SeafloorScatter_port.coordinates, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates.pt");
             torch::save(SeafloorScatter_seaboard.coordinates, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_seaboard.coordinates.pt");
+
+            // plotting tensors
+            fPlotTensors();
         }
         
 
@@ -168,6 +182,17 @@ int main() {
 
         // moving to next position
         auv.step(1);
+
+
+
+
+
+
+
+
+
+        // Printing end-of-step
+        PRINTSMALLLINE; PRINTSPACE
 
     }
 

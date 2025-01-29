@@ -5,13 +5,13 @@ Aim: Setup sea floor
 #include <cmath>
 
 #ifndef DEVICE
-    #define DEVICE          torch::kMPS
-    // #define DEVICE          torch::kCPU
+    // #define DEVICE          torch::kMPS
+    #define DEVICE          torch::kCPU
 #endif
 
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/TransmitterClass.h"
 
+
+// function to calibrate the transmitters
 void TransmitterSetup(TransmitterClass* transmitter_fls,
                       TransmitterClass* transmitter_port,
                       TransmitterClass* transmitter_starboard) {
@@ -25,11 +25,14 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
     float pulselength         = 0.2;                        // time of recording
 
     // building LFM 
-    torch::Tensor timearray = torch::linspace(0, pulselength, floor(pulselength * sampling_frequency)).to(DEVICE);
-    float K                 = (f2 - f1)/pulselength;
-    torch::Tensor Signal    = K * timearray;
-    Signal                  = torch::mul((f1 + Signal), timearray);
-    Signal                  = cos(Signal);
+    torch::Tensor timearray = torch::linspace(0, \
+                                              pulselength, \
+                                              floor(pulselength * sampling_frequency)).to(DEVICE);
+    float K                 = (f2 - f1)/pulselength;                // calculating frequency-slope
+    torch::Tensor Signal    = K * timearray;                        // frequency at each time-step, with f1 = 0
+    Signal                  = torch::mul(2*PI*(f1 + Signal), \
+                                         timearray);                // creating 
+    Signal                  = cos(Signal);                          // calculating signal
 
 
     // Setting up transmitter
@@ -40,8 +43,8 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
     
     float elevation_angle           = -60;                  // initial pointing direction
     
-    float azimuthal_beamwidth       = 10;                   // azimuthal beamwidth of the signal cone
-    float elevation_beamwidth       = 10;                   // elevation beamwidth of the signal cone
+    float azimuthal_beamwidth       = 45;                   // azimuthal beamwidth of the signal cone
+    float elevation_beamwidth       = 30;                   // elevation beamwidth of the signal cone
     
     float azimuthShadowThreshold    = 0.5;                  // azimuth threshold           
     float elevationShadowThreshold  = 0.5;                  // elevation threshold
@@ -52,7 +55,7 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
 
 
 
-    // populating transmitter-fls
+    // transmitter-fls
     transmitter_fls->location             = location;              // Assigning location
     transmitter_fls->Signal               = Signal;                // Assigning signal
     transmitter_fls->azimuthal_angle      = azimuthal_angle_fls;  // assigning azimuth angle
@@ -73,8 +76,7 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
 
 
 
-
-    // populating transmitter-portside
+    // transmitter-portside
     transmitter_port->location             = location;              // Assigning location
     transmitter_port->Signal               = Signal;                // Assigning signal
     transmitter_port->azimuthal_angle      = azimuthal_angle_port;  // assigning azimuth angle
@@ -95,10 +97,10 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
 
 
 
-    // populating transmitter-starboard
-    transmitter_starboard->location             = location;
-    transmitter_starboard->Signal               = Signal;
-    transmitter_starboard->azimuthal_angle      = azimuthal_angle_starboard;
+    // transmitter-starboard
+    transmitter_starboard->location             = location;                     // assigning location
+    transmitter_starboard->Signal               = Signal;                       // assigning signal
+    transmitter_starboard->azimuthal_angle      = azimuthal_angle_starboard;    // assigning azimuthal signal
     transmitter_starboard->elevation_angle      = elevation_angle;
     transmitter_starboard->azimuthal_beamwidth  = azimuthal_beamwidth;
     transmitter_starboard->elevation_beamwidth  = elevation_beamwidth;

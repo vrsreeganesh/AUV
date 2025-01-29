@@ -5,8 +5,8 @@ Aim: Setup sea floor
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 
 #ifndef DEVICE
-    #define DEVICE          torch::kMPS
-    // #define DEVICE          torch::kCPU
+    // #define DEVICE          torch::kMPS
+    #define DEVICE          torch::kCPU
 #endif
 
 

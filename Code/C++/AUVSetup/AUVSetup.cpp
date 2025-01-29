@@ -13,9 +13,9 @@ we'll create our LFM with 50 to 70KHz
 void AUVSetup(AUVClass* auv) {
 
     // building properties for the auv
-    torch::Tensor location              = torch::tensor({0,0,30}).reshape({3,1}).to(torch::kFloat).to(DEVICE);;   // starting location of AUV
-    torch::Tensor velocity              = torch::tensor({1,0, 0}).reshape({3,1}).to(torch::kFloat).to(DEVICE);;   // starting velocity of AUV
-    torch::Tensor pointing_direction    = torch::tensor({1,0, 0}).reshape({3,1}).to(torch::kFloat).to(DEVICE);    // pointing direction of AUV
+    torch::Tensor location           = torch::tensor({0,50,30}).reshape({3,1}).to(torch::kFloat).to(DEVICE); // starting location of AUV
+    torch::Tensor velocity           = torch::tensor({5,0, 0}).reshape({3,1}).to(torch::kFloat).to(DEVICE);   // starting velocity of AUV
+    torch::Tensor pointing_direction = torch::tensor({1,0, 0}).reshape({3,1}).to(torch::kFloat).to(DEVICE);   // pointing direction of AUV
 
     // assigning 
     auv->location           = location;             // assigning location of auv

@@ -80,7 +80,7 @@ public:
         this->location = this->location + this->velocity * timestep;
         
         // updating attributes of members
-        this->updateAttributes();
+        this->updateAttributes(timestep);
     }
 
     /*
@@ -88,18 +88,41 @@ public:
     Aim: updateAttributes
     ----------------------------------------------------------------------------
     */
-    void updateAttributes(){
+    void updateAttributes(float timestep){
         
         // updating coordinates of sensors
-        this->ULA_fls.coordinates          = this->ULA_fls.coordinates          + this->location;
-        this->ULA_port.coordinates         = this->ULA_port.coordinates         + this->location;
-        this->ULA_starboard.coordinates    = this->ULA_starboard.coordinates    + this->location;
+        torch::Tensor delta_position_change = this->velocity*timestep;
+        this->ULA_fls.coordinates          = this->ULA_fls.coordinates          + delta_position_change;
+        this->ULA_port.coordinates         = this->ULA_port.coordinates         + delta_position_change;
+        this->ULA_starboard.coordinates    = this->ULA_starboard.coordinates    + delta_position_change;
 
         // updating transmitter locations
         this->transmitter_fls       = this->location;
         this->transmitter_port      = this->location;
         this->transmitter_starboard = this->location;
     }
+
+
+    /*==========================================================================
+    Aim: Initialize AUV
+    ............................................................................
+    Note: 
+        > Here, we ensure that all the components of the AUV share the same as that of AUVs. 
+        > like same location, update AUV coordinates to that of the AUV and so on. 
+    --------------------------------------------------------------------------*/ 
+    void init(){
+        // updating location of transmitteres
+        this->transmitter_fls.location = this->location;
+        this->transmitter_fls.location = this->location;
+        this->transmitter_fls.location = this->location;
+
+
+        // updating coordinates of ULAs
+
+
+        // 
+    }
+    
 
 
 
