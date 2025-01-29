@@ -78,9 +78,11 @@ public:
         
         // updating location
         this->location = this->location + this->velocity * timestep;
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 81 \n";
         
         // updating attributes of members
-        this->updateAttributes(timestep);
+        this->syncComponentAttributes();
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 85 \n";
     }
 
     /*
@@ -88,18 +90,22 @@ public:
     Aim: updateAttributes
     ----------------------------------------------------------------------------
     */
-    void updateAttributes(float timestep){
+    void syncComponentAttributes(){
         
-        // updating coordinates of sensors
-        torch::Tensor delta_position_change = this->velocity*timestep;
-        this->ULA_fls.coordinates          = this->ULA_fls.coordinates          + delta_position_change;
-        this->ULA_port.coordinates         = this->ULA_port.coordinates         + delta_position_change;
-        this->ULA_starboard.coordinates    = this->ULA_starboard.coordinates    + delta_position_change;
-
+        // updating sensor attributes
+        
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 97 \n";
         // updating transmitter locations
         this->transmitter_fls       = this->location;
         this->transmitter_port      = this->location;
         this->transmitter_starboard = this->location;
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 102 \n";
+
+        // updating transmitter pointing directions
+        this->transmitter_fls.updatePointingAngle(          this->pointing_direction);
+        this->transmitter_port.updatePointingAngle(         this->pointing_direction);
+        this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 108 \n";
     }
 
 
@@ -152,62 +158,14 @@ public:
     ----------------------------------------------------------------------------
     */ 
     void subsetScatterers(ScattererClass* scatterers,\
-                          TransmitterClass* transmitterObj){
+                          TransmitterClass* transmitterObj,\
+                          float tilt_angle){
 
-        // first, translate based on the AUV's current location
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 83"<<std::endl;
-        scatterers->coordinates = scatterers->coordinates - this->location;
-
-        // find the azimuth and elevation of pointing-vector
-        torch::Tensor pointing_direction_spherical = fCart2Sph(this->pointing_direction);
-        pointing_direction_spherical = pointing_direction_spherical.to(DEVICE);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 88"<<std::endl;
-
-        // transforming the matrix accordingly 
-        torch::Tensor yawCorrectionMatrix   = createYawCorrectionMatrix(pointing_direction_spherical, 90);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 144"<<std::endl;
-        torch::Tensor pitchCorrectionMatrix = createPitchCorrectionMatrix(pointing_direction_spherical, 0);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 139"<<std::endl;
-
-        // sending both to the right device
-        yawCorrectionMatrix     = yawCorrectionMatrix.to(DEVICE);
-        pitchCorrectionMatrix   = pitchCorrectionMatrix.to(DEVICE);
-
-
-        // combine the two to minimize MIPS
-        torch::Tensor PitchYawCorrectionMatrix = torch::matmul(yawCorrectionMatrix, \
-                                                               pitchCorrectionMatrix).to(DEVICE);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 145"<<std::endl;
-
-        // multiply the two with the coordinates to change the coordinates. 
-        scatterers->coordinates = torch::matmul(PitchYawCorrectionMatrix, \
-                                                scatterers->coordinates);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 150"<<std::endl;
+        // updating location of the transmitter to that of AUV's current location
+        transmitterObj->location = this->location;
 
         // calling the method associated with the transmitter
-        transmitterObj->subsetScatterers(scatterers);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 154"<<std::endl;
-
-        // de-correcting relative rotation-transformations
-        yawCorrectionMatrix   = createYawCorrectionMatrix(pointing_direction_spherical,     \
-                                                          pointing_direction_spherical[0].item<float>());
-        pitchCorrectionMatrix = createPitchCorrectionMatrix(pointing_direction_spherical,   \
-                                                            pointing_direction_spherical[1].item<float>());
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 161"<<std::endl;
-
-        // combine the two to minimize MIPS
-        PitchYawCorrectionMatrix = torch::matmul(yawCorrectionMatrix, \
-                                                 pitchCorrectionMatrix).to(DEVICE);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 166"<<std::endl;
-
-        // multiply the two with the coordinates to change the coordinates. 
-        scatterers->coordinates = torch::matmul(PitchYawCorrectionMatrix, \
-                                                scatterers->coordinates);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 171"<<std::endl;
-
-        // de-correcting relative translational transformation
-        scatterers->coordinates = scatterers->coordinates + this->location;
-        if(DEBUGMODE_AUV) std::cout<<"\t AUV: line 175"<<std::endl;
+        transmitterObj->subsetScatterers(scatterers, tilt_angle);
 
     }
 

@@ -37,8 +37,8 @@ Aim: Signal Simulation
 
 // deciding to save tensors or not
 #ifndef SAVETENSORS
-    #define SAVETENSORS       true
-    // #define SAVETENSORS       false
+    // #define SAVETENSORS       true
+    #define SAVETENSORS       false
 #endif
 
 // choose device here
@@ -62,6 +62,7 @@ Aim: Signal Simulation
 
 // functions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fSph2Cart.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fAnglesToTensor.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCalculateCosine.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fColumnNormalize.cpp"
@@ -135,32 +136,29 @@ int main() {
         std::cout<<"SeafloorScatter_port.coordinates.shape (before)     = "; fPrintTensorSize(SeafloorScatter_port.coordinates);
         std::cout<<"SeafloorScatter_seaboard.coordinates.shape (before) = "; fPrintTensorSize(SeafloorScatter_seaboard.coordinates);
 
-        // subsetting scatterers
-        std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, &auv, \
-                                           &SeafloorScatter_fls,\
-                                           &transmitter_fls);
-        std::thread transmitterPortSubset_t(&AUVClass::subsetScatterers, &auv, \
-                                            &SeafloorScatter_port,\
-                                            &transmitter_port);
-        std::thread transmitterStarboardSubset_t(&AUVClass::subsetScatterers, &auv, \
-                                                 &SeafloorScatter_seaboard, \
-                                                 &transmitter_starboard);
+        // // subsetting scatterers
+        // std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, &auv, \
+        //                                    &SeafloorScatter_fls,\
+        //                                    &transmitter_fls);
+        // std::thread transmitterPortSubset_t(&AUVClass::subsetScatterers, &auv, \
+        //                                     &SeafloorScatter_port,\
+        //                                     &transmitter_port);
+        // std::thread transmitterStarboardSubset_t(&AUVClass::subsetScatterers, &auv, \
+        //                                          &SeafloorScatter_seaboard, \
+        //                                          &transmitter_starboard);
 
-        // joining the subset threads back
-        transmitterFLSSubset_t.join();
-        transmitterPortSubset_t.join();
-        transmitterStarboardSubset_t.join();
+        // // joining the subset threads back
+        // transmitterFLSSubset_t.join();
+        // transmitterPortSubset_t.join();
+        // transmitterStarboardSubset_t.join();
 
         // measuring time 
         auto end_time   = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> time_duration = end_time - start_time;
-        PRINTDOTS
-        std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; 
-        PRINTDOTS
+        PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS
 
         // saving the tensors
         if (SAVETENSORS) {
-
             // saving tensors
             torch::save(SeafloorScatter_fls.coordinates, \
                     "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates.pt");
@@ -183,6 +181,12 @@ int main() {
         // moving to next position
         auv.step(1);
 
+
+        // printing locations
+        std::cout<<"auv_location = "        <<torch::transpose(auv.location, 0, 1)                      <<std::endl;
+        std::cout<<"transmitter_fls = "     <<torch::transpose(auv.transmitter_fls.location, 0, 1)      <<std::endl;
+        std::cout<<"transmitter_port = "    <<torch::transpose(auv.transmitter_port.location, 0, 1)     <<std::endl;
+        std::cout<<"transmitter_starboard = "<<torch::transpose(auv.transmitter_starboard.location, 0, 1) <<std::endl;
 
 
 
