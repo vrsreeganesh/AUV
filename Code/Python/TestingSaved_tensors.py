@@ -57,7 +57,7 @@ scatter = ax.scatter(scatterfloor[0,:],
 # setting dimensional limitations
 ax.set_xlim(0, 100);
 ax.set_ylim(0, 100);
-ax.set_zlim(0, 10);
+ax.set_zlim(0, 70);
 
 # Add labels
 ax.set_xlabel('X Label')

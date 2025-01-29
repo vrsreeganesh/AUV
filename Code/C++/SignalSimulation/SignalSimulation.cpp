@@ -122,7 +122,7 @@ int main() {
     ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
 
     // mimicking movement
-    int number_of_stophops = 10;
+    int number_of_stophops = 50;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
@@ -190,7 +190,7 @@ int main() {
         std::cout<<"SeafloorScatter_starboard.coordinates.shape (after)  = "; fPrintTensorSize(SeafloorScatter_starboard.coordinates);
 
         // moving to next position
-        auv.step(1);
+        auv.step(0.5);
 
 
         // Printing end-of-step
