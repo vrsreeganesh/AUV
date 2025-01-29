@@ -144,19 +144,24 @@ public:
         torch::Tensor pitch                         = AUV_pointing_vector_spherical[1];
         if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: page 144 \n";
 
+        // std::cout<<"\t TransmitterClass: AUV_pointing_vector = "<<torch::transpose(AUV_pointing_vector, 0, 1)<<std::endl;
+        // std::cout<<"\t TransmitterClass: AUV_pointing_vector_spherical = "<<torch::transpose(AUV_pointing_vector_spherical, 0, 1)<<std::endl;
+
         // calculating azimuth and elevation of transmitter object
-        torch::Tensor absolute_azimuth_of_transmitter   = yaw + torch::tensor({azimuthal_angle}).to(torch::kFloat).to(DEVICE);
-        torch::Tensor absolute_elevation_of_transmitter = pitch + torch::tensor({elevation_angle}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor absolute_azimuth_of_transmitter   = yaw + torch::tensor({this->azimuthal_angle}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor absolute_elevation_of_transmitter = pitch + torch::tensor({this->elevation_angle}).to(torch::kFloat).to(DEVICE);
         if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: page 149 \n";
 
-        if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: absolute_azimuth_of_transmitter = "<<absolute_azimuth_of_transmitter<<std::endl;
-        if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: absolute_elevation_of_transmitter = "<<absolute_elevation_of_transmitter<<std::endl;
+        // std::cout<<"\t TransmitterClass: this->azimuthal_angle = "<<this->azimuthal_angle<<std::endl;
+        // std::cout<<"\t TransmitterClass: this->elevation_angle = "<<this->elevation_angle<<std::endl;
+        // std::cout<<"\t TransmitterClass: absolute_azimuth_of_transmitter = "<<absolute_azimuth_of_transmitter<<std::endl;
+        // std::cout<<"\t TransmitterClass: absolute_elevation_of_transmitter = "<<absolute_elevation_of_transmitter<<std::endl;
 
         // converting back to Cartesian
-        torch::Tensor pointing_direction_spherical = torch::zeros({3,1}).to(torch::kFloat).to(DEVICE);
-        pointing_direction_spherical[0] = absolute_azimuth_of_transmitter;
-        pointing_direction_spherical[1] = absolute_elevation_of_transmitter;
-        pointing_direction_spherical[2] = torch::tensor({1}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor pointing_direction_spherical  = torch::zeros({3,1}).to(torch::kFloat).to(DEVICE);
+        pointing_direction_spherical[0]             = absolute_azimuth_of_transmitter;
+        pointing_direction_spherical[1]             = absolute_elevation_of_transmitter;
+        pointing_direction_spherical[2]             = torch::tensor({1}).to(torch::kFloat).to(DEVICE);
         if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: page 60 \n";
 
         this->pointing_direction = fSph2Cart(pointing_direction_spherical);
@@ -164,16 +169,15 @@ public:
         
     }
 
-    /*
-    ============================================================================
+    /*==========================================================================
+    Aim: Subsetting Scatterers inside the cone
     ............................................................................
     steps:
         1. Find azimuth and range of all points. 
         2. Fint azimuth and range of current pointing vector. 
         3. Subtract azimuth and range of points from that of azimuth and range of current pointing vector
-        4. 
-    ----------------------------------------------------------------------------
-    */
+        4. Use tilted ellipse equation to find points in the ellipse
+    --------------------------------------------------------------------------*/
     void subsetScatterers(ScattererClass* scatterers,
                           float tilt_angle){
 
@@ -194,8 +198,8 @@ public:
         // tensor corresponding to switch. 
         torch::Tensor tilt_angle_Tensor = torch::tensor({tilt_angle}).to(torch::kFloat).to(DEVICE);
 
-        torch::Tensor axis_a    = torch::tensor({this->azimuthal_beamwidth/2}).to(torch::kFloat).to(DEVICE);
-        torch::Tensor axis_b    = torch::tensor({this->elevation_beamwidth/2}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor axis_a    = torch::tensor({this->azimuthal_beamwidth / 2}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor axis_b    = torch::tensor({this->elevation_beamwidth / 2}).to(torch::kFloat).to(DEVICE);
         
         torch::Tensor xcosa     = relative_spherical[0] * torch::cos(tilt_angle_Tensor * PI/180);
         torch::Tensor ysina     = relative_spherical[1] * torch::sin(tilt_angle_Tensor * PI/180);
@@ -203,12 +207,16 @@ public:
         torch::Tensor ycosa     = relative_spherical[1] * torch::cos(tilt_angle_Tensor * PI/180);
 
         // findings points inside the cone
-        torch::Tensor scatter_boolean = torch::square(xcosa + ysina)/torch::square(axis_a) + \
-                                        torch::square(xsina - ycosa)/torch::square(axis_b) <= 1;
+        // torch::Tensor scatter_boolean = torch::square(xcosa + ysina)/torch::square(axis_a) + \
+        //                                 torch::square(xsina - ycosa)/torch::square(axis_b) <= 1;
+        torch::Tensor scatter_boolean = torch::div(torch::square(xcosa + ysina), \
+                                                   torch::square(axis_a)) + \
+                                        torch::div(torch::square(xsina - ycosa), \
+                                                   torch::square(axis_b))       <= 1;
 
         // subsetting points within the elliptical beam
-        auto mask = (scatter_boolean == 1);    // creating a mask 
-        scatterers->coordinates     = scatterers->coordinates.index({torch::indexing::Slice(), mask});
+        auto mask                   = (scatter_boolean == 1);    // creating a mask 
+        scatterers->coordinates     = scatterers->coordinates.index({torch::indexing::Slice(),  mask});
         scatterers->reflectivity    = scatterers->reflectivity.index({torch::indexing::Slice(), mask});
 
         // this is where histogram shadowing comes in (later)

@@ -26,12 +26,6 @@
 // #define DEVICE          torch::kCPU
 #endif
 
-
-
-
-// #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
-// #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
-// #define PRINTLINE       std::cout<<"================================================"<<std::endl;
 #define PI              3.14159265
 #define DEBUGMODE_AUV   false
 
@@ -69,11 +63,9 @@ public:
     torch::Tensor ApertureSensorLocations;    // sensor locations of aperture
 
 
-    /*
-    ============================================================================
+    /*==========================================================================
     Aim: stepping motion
-    ----------------------------------------------------------------------------
-    */ 
+    --------------------------------------------------------------------------*/ 
     void step(float timestep){
         
         // updating location
@@ -85,20 +77,19 @@ public:
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 85 \n";
     }
 
-    /*
-    ============================================================================
+    /*==========================================================================
     Aim: updateAttributes
-    ----------------------------------------------------------------------------
-    */
+    --------------------------------------------------------------------------*/
     void syncComponentAttributes(){
         
-        // updating sensor attributes
-        
+        // updating ULA attributes
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 97 \n";
+        
+        
         // updating transmitter locations
-        this->transmitter_fls       = this->location;
-        this->transmitter_port      = this->location;
-        this->transmitter_starboard = this->location;
+        this->transmitter_fls.location       = this->location;
+        this->transmitter_port.location      = this->location;
+        this->transmitter_starboard.location = this->location;
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 102 \n";
 
         // updating transmitter pointing directions
@@ -107,36 +98,10 @@ public:
         this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 108 \n";
     }
-
-
-    /*==========================================================================
-    Aim: Initialize AUV
-    ............................................................................
-    Note: 
-        > Here, we ensure that all the components of the AUV share the same as that of AUVs. 
-        > like same location, update AUV coordinates to that of the AUV and so on. 
-    --------------------------------------------------------------------------*/ 
-    void init(){
-        // updating location of transmitteres
-        this->transmitter_fls.location = this->location;
-        this->transmitter_fls.location = this->location;
-        this->transmitter_fls.location = this->location;
-
-
-        // updating coordinates of ULAs
-
-
-        // 
-    }
     
-
-
-
-    /*
-    ============================================================================
+    /*==========================================================================
     Aim: operator overriding for printing 
-    ----------------------------------------------------------------------------
-    */ 
+    --------------------------------------------------------------------------*/ 
     friend std::ostream& operator<<(std::ostream& os, AUVClass &auv){
         os<<"\t location = "<<torch::transpose(auv.location, 0, 1)<<std::endl;
         os<<"\t velocity = "<<torch::transpose(auv.velocity, 0, 1)<<std::endl;
@@ -144,29 +109,32 @@ public:
     }
 
 
-    /*
-    ============================================================================
-    Aim: Changing Basis
-    Note:
-        - The subset-function in the transmitter class assumes the subsetting with the current basis. 
-        - However, this is not ideal since we want the subsetting to be with respect to the AUV. 
-        - So this function essentially changes the coordinates of the scatterers to that of the AUV's location and pointing direction. 
-        - For now, we make the assumption that our AUV doesn't roll. That is, its belly is always to the sea-floor. 
-        - we apply to the floor-scatterer coordinates, the very operations we need to apply to the pointing vector to make it point in the y-direction. 
-        - not every operation works though cause the determinant should be one to ensure only rotations and no compressions take place. 
-        - so we're gonna have to combine three transformations: yaw corrections and pitch correction. 
-    ----------------------------------------------------------------------------
-    */ 
+    /*==========================================================================
+    Aim: Subsetting Scatterers
+    --------------------------------------------------------------------------*/ 
     void subsetScatterers(ScattererClass* scatterers,\
                           TransmitterClass* transmitterObj,\
                           float tilt_angle){
 
-        // updating location of the transmitter to that of AUV's current location
-        transmitterObj->location = this->location;
+        // // printing attributes of the members
+        // std::cout<<"\t AUVCLASS: this->transmitter_fls.azimuthal_angle = "<<this->transmitter_fls.azimuthal_angle<<std::endl;
+        // std::cout<<"\t AUVCLASS: this->transmitter_port.azimuthal_angle = "<<this->transmitter_port.azimuthal_angle<<std::endl;
+        // std::cout<<"\t AUVCLASS: this->transmitter_starboard.azimuthal_angle = "<<this->transmitter_starboard.azimuthal_angle<<std::endl;
+
+        // ensuring components are synced
+        this->syncComponentAttributes();
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 120 \n";
+
+        // // printing attributes of the members
+        // std::cout<<"\t AUVCLASS: this->transmitter_fls.azimuthal_angle = "<<this->transmitter_fls.azimuthal_angle<<std::endl;
+        // std::cout<<"\t AUVCLASS: this->transmitter_port.azimuthal_angle = "<<this->transmitter_port.azimuthal_angle<<std::endl;
+        // std::cout<<"\t AUVCLASS: this->transmitter_starboard.azimuthal_angle = "<<this->transmitter_starboard.azimuthal_angle<<std::endl;
 
         // calling the method associated with the transmitter
+        if(DEBUGMODE_AUV) {std::cout<<"\t\t scatterers.shape = "; fPrintTensorSize(scatterers->coordinates);}
+        if(DEBUGMODE_AUV) std::cout<<"\t\t tilt_angle = "<<tilt_angle<<std::endl;
         transmitterObj->subsetScatterers(scatterers, tilt_angle);
-
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 124 \n";
     }
 
 

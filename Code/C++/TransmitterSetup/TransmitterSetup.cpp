@@ -37,14 +37,14 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
 
     // Setting up transmitter
     torch::Tensor location          = torch::zeros({3,1}).to(DEVICE);  // location of transmitter
-    float azimuthal_angle_fls       = 90;                  // initial pointing direction
-    float azimuthal_angle_port      = 180;                  // initial pointing direction
-    float azimuthal_angle_starboard = 0;                    // initial pointing direction
+    float azimuthal_angle_fls       = 0;                  // initial pointing direction
+    float azimuthal_angle_port      = 90;                  // initial pointing direction
+    float azimuthal_angle_starboard = -90;                    // initial pointing direction
     
-    float elevation_angle           = -60;                  // initial pointing direction
+    float elevation_angle           = -70;                  // initial pointing direction
     
-    float azimuthal_beamwidth       = 45;                   // azimuthal beamwidth of the signal cone
-    float elevation_beamwidth       = 30;                   // elevation beamwidth of the signal cone
+    float azimuthal_beamwidth       = 20;                   // azimuthal beamwidth of the signal cone
+    float elevation_beamwidth       = 20;                   // elevation beamwidth of the signal cone
     
     float azimuthShadowThreshold    = 0.5;                  // azimuth threshold           
     float elevationShadowThreshold  = 0.5;                  // elevation threshold

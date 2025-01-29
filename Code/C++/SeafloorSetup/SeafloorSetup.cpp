@@ -17,8 +17,10 @@ void SeafloorSetup(ScattererClass* scatterers) {
     int bed_length  = 100;  // length of the bed (y-dimension)
     
     // scatter-intensity
-    int bed_width_density       = 100;  // density of points along x-dimension
-    int bed_length_density      = 100;  // density of points along y-dimension
+    // int bed_width_density       = 100;  // density of points along x-dimension
+    // int bed_length_density      = 100;  // density of points along y-dimension
+    int bed_width_density       = 10;  // density of points along x-dimension
+    int bed_length_density      = 10;  // density of points along y-dimension
 
     // setting up coordinates
     auto xpoints = torch::linspace(0, \
