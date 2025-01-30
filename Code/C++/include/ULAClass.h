@@ -1,6 +1,8 @@
 #include <iostream>
 #include <torch/torch.h>
 
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
+
 #pragma once
 
 // hash defines
@@ -20,6 +22,8 @@
 #endif
 
 #define PI              3.14159265
+
+#define DEBUG_ULA   true
 
 
 class ULAClass{
@@ -96,5 +100,34 @@ public:
     --------------------------------------------------------------------------*/ 
     void buildCoordinatesBasedOnLocation(){
 
+        // length-normalize the sensor-direction
+        this->sensorDirection = torch::div(this->sensorDirection, torch::linalg_norm(this->sensorDirection, \
+                                                                           2, 0, true, \
+                                                                           torch::kFloat));
+        if(DEBUG_ULA) std::cout<<"\t ULAClass: line 105 \n";
+
+        // multiply with inter-element distance
+        this->sensorDirection = this->sensorDirection * this->inter_element_spacing;
+        this->sensorDirection = this->sensorDirection.reshape({this->sensorDirection.numel(), 1});
+        if(DEBUG_ULA) std::cout<<"\t ULAClass: line 110 \n";
+
+        // create integer-array
+        // torch::Tensor integer_array = torch::linspace(0, \
+        //                                               this->num_sensors-1, \
+        //                                               this->num_sensors).reshape({1, this->num_sensors}).to(torch::kFloat);
+        torch::Tensor integer_array = torch::linspace(0, \
+                                                      this->num_sensors-1, \
+                                                      this->num_sensors).reshape({1, this->num_sensors});
+        std::cout<<"integer_array = "; fPrintTensorSize(integer_array);
+        if(DEBUG_ULA) std::cout<<"\t ULAClass: line 116 \n";    
+
+
+        // this->coordinates = torch::mul(torch::tile(integer_array, {3, 1}).to(torch::kFloat), \
+        //                                torch::tile(this->sensorDirection, {1, this->num_sensors}).to(torch::kFloat));
+        torch::Tensor test = torch::mul(torch::tile(integer_array, {3, 1}).to(torch::kFloat), \
+                                       torch::tile(this->sensorDirection, {1, this->num_sensors}).to(torch::kFloat));
+        this->coordinates = this->location + test; 
+        if(DEBUG_ULA) std::cout<<"\t ULAClass: line 120 \n";
+    
     }
 };

@@ -38,7 +38,7 @@ void fCreateBoxes(float across_track_length, \
     int meshdensity           = 5;      // number of points per meter. 
     float meshreflectivity    = 2;      // average reflectivity of the mesh
     
-    int num_boxes             = 80;     // number of boxes in the sea-floor
+    int num_boxes             = 20;     // number of boxes in the sea-floor
     if(DEBUG_SEAFLOOR) std::cout<<"\t fCreateBoxes: line 41\n";
 
     // finding center point

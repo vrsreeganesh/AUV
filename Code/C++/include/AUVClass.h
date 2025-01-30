@@ -27,6 +27,7 @@
 #endif
 
 #define PI              3.14159265
+// #define DEBUGMODE_AUV   true
 #define DEBUGMODE_AUV   false
 
 
@@ -84,7 +85,30 @@ public:
         
         // updating ULA attributes
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 97 \n";
-        
+
+        // updating locations
+        this->ULA_fls.location          = this->location;
+        this->ULA_port.location         = this->location;
+        this->ULA_starboard.location    = this->location;
+
+        // updating the pointing direction of the ULAs
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 99 \n";
+        torch::Tensor ula_fls_sensor_direction_spherical    = fCart2Sph(this->pointing_direction);              // spherical coords
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 101 \n";
+        ula_fls_sensor_direction_spherical[0]               = ula_fls_sensor_direction_spherical[0] - 90;
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 98 \n";
+        torch::Tensor ula_fls_sensor_direction_cart         = fSph2Cart(ula_fls_sensor_direction_spherical);
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 100 \n";
+
+        this->ULA_fls.sensorDirection           = ula_fls_sensor_direction_cart;    // assigning sensor directionf or ULA-FLS
+        this->ULA_port.sensorDirection          = -this->pointing_direction;        // assigning sensor direction for ULA-Port
+        this->ULA_starboard.sensorDirection     = -this->pointing_direction;        // assigning sensor direction for ULA-Starboard
+        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 105 \n";
+
+        // // calling the function to update the arguments
+        // this->ULA_fls.buildCoordinatesBasedOnLocation();        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 109 \n";
+        // this->ULA_port.buildCoordinatesBasedOnLocation();       if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 111 \n";
+        // this->ULA_starboard.buildCoordinatesBasedOnLocation();  if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 113 \n";
         
         // updating transmitter locations
         this->transmitter_fls.location       = this->location;
@@ -116,19 +140,9 @@ public:
                           TransmitterClass* transmitterObj,\
                           float tilt_angle){
 
-        // // printing attributes of the members
-        // std::cout<<"\t AUVCLASS: this->transmitter_fls.azimuthal_angle = "<<this->transmitter_fls.azimuthal_angle<<std::endl;
-        // std::cout<<"\t AUVCLASS: this->transmitter_port.azimuthal_angle = "<<this->transmitter_port.azimuthal_angle<<std::endl;
-        // std::cout<<"\t AUVCLASS: this->transmitter_starboard.azimuthal_angle = "<<this->transmitter_starboard.azimuthal_angle<<std::endl;
-
         // ensuring components are synced
         this->syncComponentAttributes();
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 120 \n";
-
-        // // printing attributes of the members
-        // std::cout<<"\t AUVCLASS: this->transmitter_fls.azimuthal_angle = "<<this->transmitter_fls.azimuthal_angle<<std::endl;
-        // std::cout<<"\t AUVCLASS: this->transmitter_port.azimuthal_angle = "<<this->transmitter_port.azimuthal_angle<<std::endl;
-        // std::cout<<"\t AUVCLASS: this->transmitter_starboard.azimuthal_angle = "<<this->transmitter_starboard.azimuthal_angle<<std::endl;
 
         // calling the method associated with the transmitter
         if(DEBUGMODE_AUV) {std::cout<<"\t\t scatterers.shape = "; fPrintTensorSize(scatterers->coordinates);}

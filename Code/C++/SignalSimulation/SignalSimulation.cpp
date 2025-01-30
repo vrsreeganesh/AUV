@@ -4,6 +4,7 @@ Aim: Signal Simulation
 ==============================================================================*/ 
 
 // including standard 
+#include <cstdint>
 #include <ostream>
 #include <torch/torch.h>
 #include <iostream>
@@ -135,6 +136,11 @@ int main() {
         ScattererClass SeafloorScatter_fls      = SeafloorScatter_deepcopy; // copy for FLS
         ScattererClass SeafloorScatter_port     = SeafloorScatter_deepcopy; // copy for port SSS
         ScattererClass SeafloorScatter_starboard = SeafloorScatter_deepcopy; // copy for starboard SSS
+
+        PRINTLINE;
+        std::vector<int64_t> shapevector = SeafloorScatter_fls.coordinates.sizes().vec();
+        std::cout<<"SeafloorScatter_fls.coordinates.shape = "<<shapevector<<std::endl;
+        PRINTLINE;
         
         // printing 
         std::cout<<"SeafloorScatter_fls.coordinates.shape (before)      = "; fPrintTensorSize(SeafloorScatter_fls.coordinates);

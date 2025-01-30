@@ -1,6 +1,7 @@
 // header-files
 #include <iostream>
 #include <ostream>
+#include <cmath>
 
 // Including classes
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
@@ -59,9 +60,11 @@ public:
     float rangeQuantSize;               // range-cell size when shadowing
     float azimuthShadowThreshold;       // azimuth thresholding 
     float elevationShadowThreshold;     // elevation thresholding
-    torch::Tensor checkbox;             // box indicating whether a scatter for a range-angle pair has been found
-    torch::Tensor finalScatterBox;      // a 3D tensor where the third dimension represnets the vector length
-    torch::Tensor finalReflectivityBox; // to store the reflectivity
+    
+    // // shadowing related
+    // torch::Tensor checkbox;             // box indicating whether a scatter for a range-angle pair has been found
+    // torch::Tensor finalScatterBox;      // a 3D tensor where the third dimension represnets the vector length
+    // torch::Tensor finalReflectivityBox; // to store the reflectivity
 
 
 
@@ -118,15 +121,15 @@ public:
         this->rangeQuantSize            = other.rangeQuantSize;
         this->azimuthShadowThreshold    = other.azimuthShadowThreshold;
         this->elevationShadowThreshold  = other.elevationShadowThreshold;
-        this->checkbox                  = other.checkbox;
-        this->finalScatterBox           = other.finalScatterBox;
-        this->finalReflectivityBox      = other.finalReflectivityBox;
+        
+        // this->checkbox                  = other.checkbox;
+        // this->finalScatterBox           = other.finalScatterBox;
+        // this->finalReflectivityBox      = other.finalReflectivityBox;
 
         // returning 
         return *this;
 
     };
-
 
     /*==========================================================================
     Aim: Update pointing angle
@@ -194,6 +197,10 @@ public:
 
         // Calculating relative azimuths and radians
         torch::Tensor relative_spherical = scatterers_spherical - pointing_direction_spherical;
+        
+        // clearing some stuff up
+        scatterers_spherical.reset();
+        pointing_direction_spherical.reset();
 
         // tensor corresponding to switch. 
         torch::Tensor tilt_angle_Tensor = torch::tensor({tilt_angle}).to(torch::kFloat).to(DEVICE);
@@ -205,26 +212,198 @@ public:
         torch::Tensor ysina     = relative_spherical[1] * torch::sin(tilt_angle_Tensor * PI/180);
         torch::Tensor xsina     = relative_spherical[0] * torch::sin(tilt_angle_Tensor * PI/180);
         torch::Tensor ycosa     = relative_spherical[1] * torch::cos(tilt_angle_Tensor * PI/180);
+        relative_spherical.reset();
 
         // findings points inside the cone
-        // torch::Tensor scatter_boolean = torch::square(xcosa + ysina)/torch::square(axis_a) + \
-        //                                 torch::square(xsina - ycosa)/torch::square(axis_b) <= 1;
         torch::Tensor scatter_boolean = torch::div(torch::square(xcosa + ysina), \
                                                    torch::square(axis_a)) + \
                                         torch::div(torch::square(xsina - ycosa), \
                                                    torch::square(axis_b))       <= 1;
+
+        // clearing
+        xcosa.reset(); ysina.reset(); xsina.reset(); ycosa.reset();
 
         // subsetting points within the elliptical beam
         auto mask                   = (scatter_boolean == 1);    // creating a mask 
         scatterers->coordinates     = scatterers->coordinates.index({torch::indexing::Slice(),  mask});
         scatterers->reflectivity    = scatterers->reflectivity.index({torch::indexing::Slice(), mask});
 
-        // this is where histogram shadowing comes in (later)
+        // // this is where histogram shadowing comes in (later)
+        // rangeHistogramShadowing(scatterers);
 
 
         // translating back to the points
         scatterers->coordinates = scatterers->coordinates + this->location;
 
     }
+
+    /*==========================================================================
+    Aim: Shadowing method (range-histogram shadowing)
+    ............................................................................
+    Note:
+        > cut down the number of threads into range-cells
+        > for each range cell, calculate histogram
+        > 
+    --------------------------------------------------------------------------*/ 
+    void rangeHistogramShadowing(ScattererClass* scatterers){
+        
+        // converting points to spherical coordinates
+        torch::Tensor spherical_coordinates = fCart2Sph(scatterers->coordinates);
+
+        // finding maximum range
+        torch::Tensor maxdistanceofpoints = torch::max(spherical_coordinates[2]);
+
+        // finding range-cell boundaries
+        torch::Tensor rangeBoundaries = torch::linspace(this->rangeQuantSize, \
+                                                        maxdistanceofpoints + this->rangeQuantSize,\
+                                                        (int)(maxdistanceofpoints.item<int>()/this->rangeQuantSize) + 1);
+
+        // creating the checkbox
+        int numazimuthcells     = std::ceil(this->azimuthal_beamwidth * this->azimuthQuantDensity);
+        int numelevationcells   = std::ceil(this->elevation_beamwidth * this->elevationQuantDensity);
+
+        // finding the deltas
+        float delta_azimuth    = this->azimuthal_beamwidth / numazimuthcells;
+        float delta_elevation  = this->elevation_beamwidth / numazimuthcells;
+
+        // finding the centers
+        torch::Tensor azimuth_centers   = torch::linspace(delta_azimuth/2, \
+                                                          numazimuthcells * delta_azimuth - delta_azimuth/2, \
+                                                          numazimuthcells);
+        torch::Tensor elevation_centers = torch::linspace(delta_elevation/2, \
+                                                          numelevationcells * delta_elevation - delta_elevation/2, \
+                                                          numelevationcells);
+
+        // building checkboxes
+        torch::Tensor checkbox              = torch::zeros({numazimuthcells, numelevationcells}, torch::kBool);
+        torch::Tensor finalScatterBox       = torch::zeros({numazimuthcells, numelevationcells, 3}).to(torch::kFloat);
+        torch::Tensor finalReflectivityBox  = torch::zeros({numazimuthcells, numelevationcells}).to(torch::kFloat);
+
+        // going through each-range-cell
+        for(int i = 0; i<(int)rangeBoundaries.numel(); ++i){
+            this->internal_subsetCurrentRangeCell(rangeBoundaries[i], \
+                                                  scatterers, \
+                                                  checkbox, \
+                                                  finalScatterBox, \
+                                                  finalReflectivityBox, \
+                                                  azimuth_centers, \
+                                                  elevation_centers);
+        }
+
+        // converting from box structure to [3, num-points] structure
+        torch::Tensor final_coords_spherical = torch::permute(finalScatterBox, \
+                                                              {3, 1, 2}).reshape({3, (int)(finalScatterBox.numel()/3)});
+        torch::Tensor final_coords_cart = fSph2Cart(final_coords_spherical);
+        torch::Tensor final_reflectivity = torch::permute(finalReflectivityBox, \
+                                                          {3,1,2}).reshape({finalReflectivityBox.numel()});
+        torch::Tensor test_checkbox = torch::permute(checkbox, {3, 1, 2}).reshape({checkbox.numel()});
+
+        // just taking the points corresponding to the filled. Else, there's gonna be a lot of zero zero zero tensors
+        auto mask = (test_checkbox == 1);
+        final_coords_cart = final_coords_cart.index({torch::indexing::Slice(), mask});
+        final_reflectivity = final_reflectivity.index({torch::indexing::Slice(), mask});
+
+        // overwriting the scatterers
+        scatterers->coordinates = final_coords_cart;
+        scatterers->reflectivity = final_reflectivity;
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    void internal_subsetCurrentRangeCell(torch::Tensor rangeupperlimit,         \
+                                         ScattererClass* scatterers,            \
+                                         torch::Tensor& checkbox,               \
+                                         torch::Tensor& finalScatterBox,        \
+                                         torch::Tensor& finalReflectivityBox,   \
+                                         torch::Tensor& azimuth_centers,        \
+                                         torch::Tensor& elevation_centers){
+
+        // converting points to their spherical coordinates
+        torch::Tensor spherical_coordinates = fCart2Sph(scatterers->coordinates);
+
+        // finding points in the current range cell
+        torch::Tensor pointsincurrentrangecell = \
+            torch::mul((spherical_coordinates[2] < rangeupperlimit) , \
+                       (spherical_coordinates[2] >= rangeupperlimit - this->rangeQuantSize));
+
+        // testing number of points 
+        int num311 = torch::sum(pointsincurrentrangecell).item<int>();
+        if(num311 == 0) return;
+
+        // calculating delta values
+        float delta_azimuth    = azimuth_centers[1].item<float>() - azimuth_centers[0].item<float>();
+        float delta_elevation  = elevation_centers[1].item<float>() - elevation_centers[0].item<float>();
+
+        // subsetting points in the current range-cell
+        auto mask                                       = (pointsincurrentrangecell == 1);    // creating a mask 
+        torch::Tensor reflectivityincurrentrangecell    = scatterers->reflectivity.index({torch::indexing::Slice(), mask});
+        pointsincurrentrangecell                        = scatterers->coordinates.index({torch::indexing::Slice(),  mask});
+        
+        // histogramming
+        int numazimuthcells     = azimuth_centers.numel();
+        int numelevationcells   = elevation_centers.numel();
+
+        // go through all the combinations
+        for(int azi_index = 0; azi_index < numazimuthcells; ++azi_index){
+            for(int ele_index = 0; ele_index < numelevationcells; ++ele_index){
+
+                // check if already filled
+                // if (checkbox.index({azi_index, ele_index}) == torch::tensor({true})) break;
+                if (checkbox[azi_index][ele_index].item<bool>()) break;
+
+                // init
+                torch::Tensor current_azimuth   = azimuth_centers[azi_index];
+                torch::Tensor current_elevation = elevation_centers[ele_index];
+
+                // finding azimuth boolean 
+                torch::Tensor azi_neighbours    = torch::abs(pointsincurrentrangecell[0] - current_azimuth);
+                azi_neighbours                  = azi_neighbours <= delta_azimuth;
+
+                // finding elevation boolean 
+                torch::Tensor ele_neighbours    = torch::abs(pointsincurrentrangecell[1] - current_elevation);
+                ele_neighbours                  = ele_neighbours <= delta_elevation;
+
+                // combining booleans
+                torch::Tensor neighbours_boolean = torch::mul(azi_neighbours, ele_neighbours);
+
+                // checking if there are any points along this direction
+                int num347 = torch::sum(neighbours_boolean).item<int>();
+                if (num347 == 0) break;
+
+                // findings point along this direction
+                mask = (neighbours_boolean == 1);
+                torch::Tensor coords_along_aziele_spherical = pointsincurrentrangecell.index({torch::indexing::Slice(),         mask});
+                torch::Tensor reflectivity_along_aziele     = reflectivityincurrentrangecell.index({torch::indexing::Slice(),   mask});
+
+                // finding the index where the points are at the maximum distance 
+                int index_where_min_range_is = torch::argmin(coords_along_aziele_spherical[2]).item<int>();
+                torch::Tensor closest_coord = coords_along_aziele_spherical.index({torch::indexing::Slice(), \
+                                                                                   index_where_min_range_is});
+                torch::Tensor closest_reflectivity = reflectivity_along_aziele.index({torch::indexing::Slice(), \
+                                                                                      index_where_min_range_is});
+
+                // filling the matrices up
+                finalScatterBox.index_put_({azi_index, ele_index, torch::indexing::Slice()}, closest_coord.reshape({1,1,3}));
+                finalReflectivityBox[ele_index][azi_index] = closest_reflectivity;
+                checkbox[ele_index][azi_index] = true;
+                
+            }
+        }
+    }
+
+
+
 
 };
