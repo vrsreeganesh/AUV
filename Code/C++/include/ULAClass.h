@@ -23,7 +23,8 @@
 
 #define PI              3.14159265
 
-#define DEBUG_ULA   true
+// #define DEBUG_ULA   true
+#define DEBUG_ULA   false
 
 
 class ULAClass{

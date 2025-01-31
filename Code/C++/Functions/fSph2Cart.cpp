@@ -23,7 +23,7 @@ torch::Tensor fSph2Cart(torch::Tensor spherical_vector){
     spherical_vector = spherical_vector.to(DEVICE);
 
     // creating cartesian vector
-    torch::Tensor cartesian_vector = torch::zeros({3,1}).to(torch::kFloat).to(DEVICE);
+    torch::Tensor cartesian_vector = torch::zeros({3,(int)(spherical_vector.numel()/3)}).to(torch::kFloat).to(DEVICE);
 
     // populating it
     cartesian_vector[0] = spherical_vector[2] * \

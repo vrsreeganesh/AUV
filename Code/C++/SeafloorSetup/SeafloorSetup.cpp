@@ -27,18 +27,18 @@ void fCreateBoxes(float across_track_length, \
 
     // setting up parameters
     float min_width           = 2;      // minimum across-track dimension of the boxes in the sea-floor
-    float max_width           = 10;     // maximum across-track dimension of the boxes in the sea-floor
+    float max_width           = 5;     // maximum across-track dimension of the boxes in the sea-floor
     
     float min_length          = 2;      // minimum along-track dimension of the boxes in the sea-floor
-    float max_length          = 20;     // maximum along-track dimension of the boxes in the sea-floor
+    float max_length          = 5;     // maximum along-track dimension of the boxes in the sea-floor
     
     float min_height          = 3;     // minimum height of the boxes in the sea-floor
-    float max_height          = 10;     // maximum height of the boxes in the sea-floor
+    float max_height          = 20;     // maximum height of the boxes in the sea-floor
     
-    int meshdensity           = 5;      // number of points per meter. 
+    int meshdensity           = 10;      // number of points per meter. 
     float meshreflectivity    = 2;      // average reflectivity of the mesh
     
-    int num_boxes             = 20;     // number of boxes in the sea-floor
+    int num_boxes             = 10;     // number of boxes in the sea-floor
     if(DEBUG_SEAFLOOR) std::cout<<"\t fCreateBoxes: line 41\n";
 
     // finding center point
