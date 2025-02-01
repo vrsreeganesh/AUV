@@ -45,9 +45,9 @@ tensor_starboard_reflectivity   = load_tensors(tensor_starboard_reflectivity);
 tensor_gt_reflectivity = load_tensors(tensor_gt_reflectivity);
 
 
-print(tensor_fls_reflectivity.shape)
-print(tensor_portside_reflectivity.shape)
-print(tensor_starboard_reflectivity.shape)
+# print(tensor_fls_reflectivity.shape)
+# print(tensor_portside_reflectivity.shape)
+# print(tensor_starboard_reflectivity.shape)
 
 # putting it all together
 scatterfloor = torch.cat((tensor_fls, tensor_portside, tensor_starboard), 1);

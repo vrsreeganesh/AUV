@@ -79,9 +79,6 @@ Aim: Signal Simulation
 // main-function
 int main() {
 
-    // printing few lines
-    PRINTLINE; PRINTLINE; PRINTLINE
-
     // Builing Sea-floor
     ScattererClass SeafloorScatter;
     std::thread scatterThread_t(SeafloorSetup, \
@@ -124,7 +121,7 @@ int main() {
 
 
     // mimicking movement
-    int number_of_stophops = 20;
+    int number_of_stophops = 1;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
@@ -144,14 +141,13 @@ int main() {
         std::chrono::duration<double> time_duration = end_time - start_time;
         PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS        
 
-        PRINTSMALLLINE
 
         // moving to next position
         auv.step(0.5);
 
 
         // Printing end-of-step
-        PRINTSMALLLINE; PRINTSPACE
+        PRINTSPACE
 
     }
 

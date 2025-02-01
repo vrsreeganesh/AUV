@@ -1,7 +1,10 @@
+#include <cstdint>
 #include <iostream>
 #include <torch/torch.h>
 
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
+#include "ScattererClass.h"
+#include "TransmitterClass.h"
 
 #pragma once
 
@@ -130,5 +133,121 @@ public:
         this->coordinates = this->location + test; 
         if(DEBUG_ULA) std::cout<<"\t ULAClass: line 120 \n";
     
+    }
+
+    // Signal Simulation
+    void nfdc_simulateSignal(ScattererClass* scatterers,
+                             TransmitterClass* transmitterObj){
+
+        // creating signal matrix
+        int numsamples      = std::ceil((this->sampling_frequency * this->recording_period));
+        this->signalMatrix  = torch::zeros({numsamples, this->num_sensors}).to(torch::kFloat);
+
+        // getting shape of coordinates
+        std::vector<int64_t> scatterers_coordinates_shape = scatterers->coordinates.sizes().vec();
+        
+        // making a slot out of the coordinates
+        torch::Tensor slottedCoordinates = \
+            torch::permute(scatterers->coordinates.reshape({scatterers_coordinates_shape[0],    \
+                                                            scatterers_coordinates_shape[1],    \
+                                                            1                                   }), \
+                           {2, 1, 0}).reshape({1, (int)(scatterers->coordinates.numel()/3), 3});
+        
+        // repeating along the y-direction number of sensor times. 
+        slottedCoordinates = torch::tile(slottedCoordinates, {this->num_sensors, 1, 1});
+        std::vector<int64_t> slottedCoordinates_shape = slottedCoordinates.sizes().vec();
+        
+        // finding the shape of the sensor-coordinates
+        std::vector<int64_t> sensor_coordinates_shape = this->coordinates.sizes().vec();
+
+        // creating a slot tensor out of the sensor-coordinates
+        torch::Tensor slottedSensors = \
+            torch::permute(this->coordinates.reshape({sensor_coordinates_shape[0], \
+                                                      sensor_coordinates_shape[1], \
+                                                      1}), {2, 1, 0}).reshape({(int)(this->coordinates.numel()/3), \
+                                                                               1, \
+                                                                               3});
+        
+        // repeating slices along the y-coordinates
+        slottedSensors  = torch::tile(slottedSensors, {1, slottedCoordinates_shape[1], 1});
+
+        // slotting the coordinate of the transmitter
+        torch::Tensor slotted_location = torch::permute(this->location.reshape({3, 1, 1}), \
+                                                        {2, 1, 0}).reshape({1,1,3});
+        slotted_location = torch::tile(slotted_location, \
+                                       {slottedCoordinates_shape[0], slottedCoordinates_shape[1], 1});
+
+        // subtracting to find the relative distances
+        torch::Tensor distBetweenScatterersAndSensors = \
+            torch::linalg_norm(slottedCoordinates - slottedSensors,     2, 2, true, torch::kFloat);
+
+        // substracting distance between relative fields
+        torch::Tensor distBetweenScatterersAndTransmitter = \
+            torch::linalg_norm(slottedCoordinates - slotted_location,   2, 2, true, torch::kFloat);
+
+        // adding up the distances
+        torch::Tensor distOfFlight      = distBetweenScatterersAndSensors + distBetweenScatterersAndTransmitter;
+        torch::Tensor timeOfFlight      = distOfFlight/1500;
+        torch::Tensor samplesOfFlight   = torch::floor(timeOfFlight.squeeze() * this->sampling_frequency);
+
+        
+
+        // // Adding impulses to the signal matrix
+        // for(int sensor_index = 0; sensor_index<this->num_sensors; ++sensor_index){
+        //     for(int scatter_index = 0; scatter_index < scatterers->coordinates[0].numel(); ++scatter_index){
+
+        //         // sample to be added at 
+        //         int where_to_place = samplesOfFlight.index({sensor_index, scatter_index}).item<int>();
+        //         // std::cout<<"\t\t\t > where_to_place = "<<where_to_place<<std::endl;
+
+        //         // in case the points are out of bounds
+        //         if (where_to_place >= numsamples) continue;
+
+        //         // assigning impulses
+        //         // this->signalMatrix.index_put_({where_to_place, sensor_index}, \
+        //         //                               this->signalMatrix.index({where_to_place, sensor_index}) + \
+        //         //                                 torch::tensor({1}).to(torch::kFloat));
+
+        //         // // assigning impulses
+        //         // this->signalMatrix.index_put_({where_to_place, sensor_index}, \
+        //         //                               torch::tensor({sensor_index}).to(torch::kFloat));
+
+        //         torch::Tensor bruh = torch::tensor({sensor_index}).to(torch::kFloat);
+        //         this->signalMatrix.index_put_({where_to_place, sensor_index}, bruh);
+        //         // std::cout<<"\t\t\t\t bruh = "<<bruh.item<float>()<<std::endl;
+
+        //     }
+        // }
+
+        // // testing something
+        // std::vector<int64_t> shape1 = samplesOfFlight.sizes().vec();
+        // std::vector<int64_t> shape2 = scatterers->reflectivity.sizes().vec();
+        // PRINTSMALLLINE; std::cout<<"samplesOfFlight.shape = "<<shape1<<std::endl;
+        // std::cout<<"scatters->reflectivity.shape = "<<shape2<<std::e1ndl; PRINTSMALLLINE
+
+        // second writing
+        for(int sensor_index = 0; sensor_index < this->num_sensors; ++sensor_index){
+            for(int scatter_index = 0; scatter_index < samplesOfFlight[0].numel(); ++scatter_index){
+                
+                // getting the sample where the current scatter's contribution must be placed. 
+                int where_to_place = samplesOfFlight.index({sensor_index, scatter_index}).item<int>();
+
+                // checking whether that point is out of bounds
+                if(where_to_place >= numsamples) continue;
+
+                // placing a point in there
+                this->signalMatrix.index_put_({where_to_place, sensor_index}, \
+                                              this->signalMatrix.index({where_to_place, sensor_index}) + \
+                                              torch::tensor({1}).to(torch::kFloat));
+
+                this->signalMatrix.index_put_({where_to_place, sensor_index}, \
+                                              this->signalMatrix.index({where_to_place, sensor_index}) + \
+                                                scatterers->reflectivity.index({0, scatter_index}) );
+            }
+        }
+        
+        std::cout<<"\t\t\t> this->signalMatrix.shape (after signal sim) = "; fPrintTensorSize(this->signalMatrix);
+
+        return;
     }
 };
