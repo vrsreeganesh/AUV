@@ -65,21 +65,19 @@ Aim: Signal Simulation
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fSph2Cart.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
+// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fAnglesToTensor.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCalculateCosine.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fColumnNormalize.cpp"
 // // #include ""
 
 // function to plot the thing
-void fPlotTensors(){
-    system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/TestingSaved_tensors.py");
-}
+// void fPlotTensors(){
+//     system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/TestingSaved_tensors.py");
+// }
 
 // main-function
 int main() {
-
-    // printing few lines
-    PRINTLINE; PRINTLINE; PRINTLINE
 
     // Builing Sea-floor
     ScattererClass SeafloorScatter;
@@ -123,7 +121,7 @@ int main() {
 
 
     // mimicking movement
-    int number_of_stophops = 20;
+    int number_of_stophops = 1;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
@@ -131,88 +129,25 @@ int main() {
         
         // printing some spaces
         PRINTSPACE; PRINTLINE; std::cout<<"i = "<<i<<std::endl; PRINTLINE
-
-        // making the deep copy
-        ScattererClass SeafloorScatter_fls      = SeafloorScatter_deepcopy; // copy for FLS
-        ScattererClass SeafloorScatter_port     = SeafloorScatter_deepcopy; // copy for port SSS
-        ScattererClass SeafloorScatter_starboard = SeafloorScatter_deepcopy; // copy for starboard SSS
         
-        // printing 
-        std::cout<<"SeafloorScatter_fls.coordinates.shape (before)      = "; fPrintTensorSize(SeafloorScatter_fls.coordinates);
-        std::cout<<"SeafloorScatter_port.coordinates.shape (before)     = "; fPrintTensorSize(SeafloorScatter_port.coordinates);
-        std::cout<<"SeafloorScatter_starboard.coordinates.shape (before) = "; fPrintTensorSize(SeafloorScatter_starboard.coordinates);
-
-        // calculating pitch-angle
-        torch::Tensor auv_pointing_direction_spherical = fCart2Sph(auv.pointing_direction);
-
-        // subsetting scatterers
-        std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, &auv, \
-                                           &SeafloorScatter_fls,\
-                                           &auv.transmitter_fls, \
-                                           (float)0);
-        std::thread transmitterPortSubset_t(&AUVClass::subsetScatterers, &auv, \
-                                            &SeafloorScatter_port,\
-                                            &auv.transmitter_port, \
-                                            - auv_pointing_direction_spherical[1].item<float>());
-        std::thread transmitterStarboardSubset_t(&AUVClass::subsetScatterers, &auv, \
-                                                 &SeafloorScatter_starboard, \
-                                                 &auv.transmitter_starboard, \
-                                                 auv_pointing_direction_spherical[1].item<float>());
-
-        // joining the subset threads back
-        transmitterFLSSubset_t.join();
-        transmitterPortSubset_t.join();
-        transmitterStarboardSubset_t.join();
+        // making the deep copy
+        ScattererClass SeafloorScatter      = SeafloorScatter_deepcopy; // copy for FLS
+        
+        // subsetting the scatterers
+        auv.simulateSignal(SeafloorScatter);
 
         // measuring time 
         auto end_time   = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> time_duration = end_time - start_time;
-        PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS
+        PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS        
 
-        // saving the tensors
-        if (SAVETENSORS) {
-
-            // saving the ground-truth
-            ScattererClass SeafloorScatter_gt = SeafloorScatter_deepcopy;
-            torch::save(SeafloorScatter_gt.coordinates, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_gt.pt");
-            torch::save(SeafloorScatter_gt.reflectivity, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_gt_reflectivity.pt");
-            
-
-            // saving coordinates
-            torch::save(SeafloorScatter_fls.coordinates, \
-                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates.pt");
-            torch::save(SeafloorScatter_port.coordinates, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates.pt");
-            torch::save(SeafloorScatter_starboard.coordinates, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_starboard.coordinates.pt");
-
-            // saving reflectivities
-            torch::save(SeafloorScatter_fls.reflectivity, \
-                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates_reflectivity.pt");
-            torch::save(SeafloorScatter_port.reflectivity, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates_reflectivity.pt");
-            torch::save(SeafloorScatter_starboard.reflectivity, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_starboard.coordinates_reflectivity.pt");
-
-            // plotting tensors
-            fPlotTensors();
-        }
-        
-
-        // printing tensor size
-        PRINTSMALLLINE
-        std::cout<<"SeafloorScatter_fls.coordinates.shape (before)      = "; fPrintTensorSize(SeafloorScatter_fls.coordinates);
-        std::cout<<"SeafloorScatter_port.coordinates.shape (after)      = "; fPrintTensorSize(SeafloorScatter_port.coordinates);
-        std::cout<<"SeafloorScatter_starboard.coordinates.shape (after)  = "; fPrintTensorSize(SeafloorScatter_starboard.coordinates);
 
         // moving to next position
         auv.step(0.5);
 
 
         // Printing end-of-step
-        PRINTSMALLLINE; PRINTSPACE
+        PRINTSPACE
 
     }
 

@@ -1,3 +1,4 @@
+#include "ScattererClass.h"
 #include "TransmitterClass.h"
 #include "ULAClass.h"
 #include <iostream>
@@ -5,7 +6,61 @@
 #include <torch/torch.h>
 #include <cmath>
 
+
+// // including functions
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
+
 #pragma once
+
+// function to plot the thing
+void fPlotTensors(){
+    system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/TestingSaved_tensors.py");
+}
+
+
+void fSaveSeafloorScatteres(ScattererClass scatterer, \
+                            ScattererClass scatterer_fls, \
+                            ScattererClass scatterer_port, \
+                            ScattererClass scatterer_starboard){
+    // saving the tensors
+    if (true) {
+
+        // getting time ID
+        auto timeID = fGetCurrentTimeFormatted();
+        
+        std::cout<<"\t\t\t\t\t\t\t Saving Tensors (timeID: "<<timeID<<")"<<std::endl;
+
+        // saving the ground-truth
+        ScattererClass SeafloorScatter_gt = scatterer;
+        torch::save(SeafloorScatter_gt.coordinates, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_gt.pt");
+        torch::save(SeafloorScatter_gt.reflectivity, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_gt_reflectivity.pt");
+        
+
+        // saving coordinates 
+        torch::save(scatterer_fls.coordinates, \
+                "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates.pt");
+        torch::save(scatterer_port.coordinates, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates.pt");
+        torch::save(scatterer_starboard.coordinates, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_starboard.coordinates.pt");
+
+        // saving reflectivities
+        torch::save(scatterer_fls.reflectivity, \
+                "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates_reflectivity.pt");
+        torch::save(scatterer_port.reflectivity, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates_reflectivity.pt");
+        torch::save(scatterer_starboard.reflectivity, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_starboard.coordinates_reflectivity.pt");
+
+        // plotting tensors
+        fPlotTensors();
+
+        // indicating end of thread 
+        std::cout<<"\t\t\t\t\t\t\t Ended (timeID: "<<timeID<<")"<<std::endl;
+    }
+}
 
 // including class-definitions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
@@ -199,6 +254,105 @@ public:
 
         // returning the matrix
         return pitchCorrectionMatrix;
+    }
+
+    // Signal Simulation
+    void simulateSignal(ScattererClass& scatterer){
+
+        // making three copies
+        ScattererClass scatterer_fls        = scatterer;
+        ScattererClass scatterer_port       = scatterer;
+        ScattererClass scatterer_starboard  = scatterer;
+
+        // printing the size of these points before subsetting
+        std::cout<< "> AUVClass: Beginning Scatterer Subsetting"<<std::endl;
+        std::cout<<"\t AUVClass: scatterer_fls.coordinates.shape (before)        = "; fPrintTensorSize(scatterer_fls.coordinates);
+        std::cout<<"\t AUVClass: scatterer_port.coordinates.shape (before)       = "; fPrintTensorSize(scatterer_port.coordinates);
+        std::cout<<"\t AUVClass: scatterer_starboard.coordinates.shape (before)  = "; fPrintTensorSize(scatterer_starboard.coordinates);
+
+        // finding the pointing direction in spherical
+        torch::Tensor auv_pointing_direction_spherical = fCart2Sph(this->pointing_direction);
+
+        // asking the transmitters to subset the scatterers by multithreading
+        std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, this, \
+                                           &scatterer_fls,\
+                                           &this->transmitter_fls, \
+                                           (float)0);
+        std::thread transmitterPortSubset_t(&AUVClass::subsetScatterers, this, \
+                                            &scatterer_port,\
+                                            &this->transmitter_port, \
+                                            - auv_pointing_direction_spherical[1].item<float>());
+        std::thread transmitterStarboardSubset_t(&AUVClass::subsetScatterers, this, \
+                                                 &scatterer_starboard, \
+                                                 &this->transmitter_starboard, \
+                                                 auv_pointing_direction_spherical[1].item<float>());
+
+        // joining the subset threads back
+        transmitterFLSSubset_t.join(); transmitterPortSubset_t.join(); transmitterStarboardSubset_t.join();
+
+        // printing the size of these points before subsetting
+        PRINTDOTS
+        std::cout<<"\t AUVClass: scatterer_fls.coordinates.shape (after)        = "; fPrintTensorSize(scatterer_fls.coordinates);
+        std::cout<<"\t AUVClass: scatterer_port.coordinates.shape (after)       = "; fPrintTensorSize(scatterer_port.coordinates);
+        std::cout<<"\t AUVClass: scatterer_starboard.coordinates.shape (after)  = "; fPrintTensorSize(scatterer_starboard.coordinates);
+
+        // // multithreading the saving tensors part. 
+        // std::thread savetensor_t(fSaveSeafloorScatteres,    \
+        //                          scatterer,                 \
+        //                          scatterer_fls,             \
+        //                          scatterer_port,            \
+        //                          scatterer_starboard);
+        // savetensor_t.detach();
+
+        // saving the tensors
+        if (true) {
+            // saving the ground-truth
+            ScattererClass SeafloorScatter_gt = scatterer;
+            torch::save(SeafloorScatter_gt.coordinates, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_gt.pt");
+            torch::save(SeafloorScatter_gt.reflectivity, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_gt_reflectivity.pt");
+            
+            // saving coordinates 
+            torch::save(scatterer_fls.coordinates, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates.pt");
+            torch::save(scatterer_port.coordinates, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates.pt");
+            torch::save(scatterer_starboard.coordinates, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_starboard.coordinates.pt");
+
+            // saving reflectivities
+            torch::save(scatterer_fls.reflectivity, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_fls_coordinates_reflectivity.pt");
+            torch::save(scatterer_port.reflectivity, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_port_coordinates_reflectivity.pt");
+            torch::save(scatterer_starboard.reflectivity, "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/SeafloorScatter_starboard.coordinates_reflectivity.pt");
+
+            // plotting tensors
+            fPlotTensors();
+        }
+
+        // asking ULAs to simulate signal through multithreading
+        std::thread ulafls_signalsim_t(&ULAClass::nfdc_simulateSignal,          \
+                                       &this->ULA_fls,                          \
+                                       &scatterer_fls,                          \
+                                       &this->transmitter_fls);
+        std::thread ulaport_signalsim_t(&ULAClass::nfdc_simulateSignal,         \
+                                        &this->ULA_port,                        \
+                                        &scatterer_port,                        \
+                                        &this->transmitter_port);
+        std::thread ulastarboard_signalsim_t(&ULAClass::nfdc_simulateSignal,    \
+                                             &this->ULA_starboard,              \
+                                             &scatterer_starboard,              \
+                                             &this->transmitter_starboard);
+
+        // joining them back
+        ulafls_signalsim_t.join(); 
+        ulaport_signalsim_t.join(); 
+        ulastarboard_signalsim_t.join();
+
+        // saving the tensors
+        if (true) {
+            // saving the ground-truth
+            torch::save(this->ULA_fls.signalMatrix,         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_fls.pt");
+            torch::save(this->ULA_port.signalMatrix,        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_port.pt");
+            torch::save(this->ULA_starboard.signalMatrix,   "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_starboard.pt");
+        }
+
+
     }
 
 
