@@ -43,13 +43,13 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
     
     float elevation_angle                   = -60;                  // initial pointing direction
     
-    float azimuthal_beamwidth_fls           = 90;                   // azimuthal beamwidth of the signal cone
+    float azimuthal_beamwidth_fls           = 20;                   // azimuthal beamwidth of the signal cone
     float azimuthal_beamwidth_port          = 20;                   // azimuthal beamwidth of the signal cone
     float azimuthal_beamwidth_starboard     = 20;                   // azimuthal beamwidth of the signal cone
     
-    float elevation_beamwidth_fls           = 40;                   // elevation beamwidth of the signal cone
-    float elevation_beamwidth_port          = 40;                   // elevation beamwidth of the signal cone
-    float elevation_beamwidth_starboard     = 40;                   // elevation beamwidth of the signal cone
+    float elevation_beamwidth_fls           = 20;                   // elevation beamwidth of the signal cone
+    float elevation_beamwidth_port          = 20;                   // elevation beamwidth of the signal cone
+    float elevation_beamwidth_starboard     = 20;                   // elevation beamwidth of the signal cone
     
     int azimuthQuantDensity         = 10;   // number of points, a degree is split into quantization density along azimuth (used for shadowing)
     int elevationQuantDensity       = 10;   // number of points, a degree is split into quantization density along elevation (used for shadowing)

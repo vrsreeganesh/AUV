@@ -14,6 +14,7 @@ Aim: Signal Simulation
 #include <Python.h>
 #include <cstdlib>
 
+
 // hash defines
 #ifndef PRINTSPACE
 #define PRINTSPACE      std::cout<<"\n\n\n";
@@ -134,8 +135,11 @@ int main() {
         // making the deep copy
         ScattererClass SeafloorScatter      = SeafloorScatter_deepcopy; // copy for FLS
         
-        // subsetting the scatterers
+        // simulating the signals received in this time step
         auv.simulateSignal(SeafloorScatter);
+
+        // decimating the signal received in this time step
+        auv.image();
 
         // measuring time 
         auto end_time   = std::chrono::high_resolution_clock::now();

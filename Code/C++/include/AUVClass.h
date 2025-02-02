@@ -353,5 +353,32 @@ public:
 
     }
 
+    // Imaging Function
+    void image(){
+        
+        // asking ULAs to decimate the signals obtained at each time step
+        std::thread ULA_fls_image_t(&ULAClass::nfdc_decimateSignal,         &this->ULA_fls, \
+                                    &this->transmitter_fls);
+        // std::thread ULA_port_image_t(&ULAClass::nfdc_decimateSignal,        &this->ULA_port, \
+        //                              &this->transmitter_port);
+        // std::thread ULA_starboard_image_t(&ULAClass::nfdc_decimateSignal,   &this->ULA_starboard, \
+        //                                   &this->transmitter_starboard);
+
+        // joining the threads back
+        ULA_fls_image_t.join();
+        // ULA_port_image_t.join();
+        // ULA_starboard_image_t.join();
+
+
+        // this->ULA_fls.nfdc_decimateSignal(this->transmitter_fls);
+
+    }
+
+
+    // // decimating the signal
+    // void nfdc_decimate(){
+    //     ;
+    // }
+
 
 };

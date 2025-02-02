@@ -240,7 +240,7 @@ public:
         scatterers->reflectivity    = scatterers->reflectivity.index({torch::indexing::Slice(), mask}); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 229 "<<std::endl;
 
         // this is where histogram shadowing comes in (later)
-        if (ENABLE_RAYTRACING) rangeHistogramShadowing(scatterers); std::cout<<"\t\t TransmitterClass: line 232 "<<std::endl;
+        if (ENABLE_RAYTRACING) {rangeHistogramShadowing(scatterers); std::cout<<"\t\t TransmitterClass: line 232 "<<std::endl;}
 
         // translating back to the points
         scatterers->coordinates = scatterers->coordinates + this->location;

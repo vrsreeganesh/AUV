@@ -11,13 +11,13 @@
 
 // hash defines
 #ifndef PRINTSPACE
-#define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
+    #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
 #endif
 #ifndef PRINTSMALLLINE
-#define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+    #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
 #endif
 #ifndef PRINTLINE
-#define PRINTLINE       std::cout<<"================================================"<<std::endl;
+    #define PRINTLINE       std::cout<<"================================================"<<std::endl;
 #endif
 
 #ifndef DEVICE
@@ -29,6 +29,7 @@
 
 // #define DEBUG_ULA   true
 #define DEBUG_ULA   false
+
 
 
 class ULAClass{
@@ -44,18 +45,27 @@ public:
     // derived stuff
     torch::Tensor sensorDirection; 
     torch::Tensor signalMatrix;
+
+    // decimation-related
+    torch::Tensor lowpassFilterCoefficientsForDecimation;   // 
     
     // constructor
     ULAClass(int numsensors              = 32,
              float inter_element_spacing = 1e-3,
              torch::Tensor coordinates   = torch::zeros({3, 2}),
              float sampling_frequency    = 48e3,
-             float recording_period      = 1):
+             float recording_period      = 1,
+             torch::Tensor location         = torch::zeros({3,1}),
+             torch::Tensor signalMatrix     = torch::zeros({1, 32}), 
+             torch::Tensor lowpassFilterCoefficientsForDecimation = torch::zeros({1,10})):
              num_sensors(numsensors),
              inter_element_spacing(inter_element_spacing),
              coordinates(coordinates),
              sampling_frequency(sampling_frequency),
-             recording_period(recording_period) {
+             recording_period(recording_period),
+             location(location),
+             signalMatrix(signalMatrix),
+             lowpassFilterCoefficientsForDecimation(lowpassFilterCoefficientsForDecimation){
                 // calculating ULA direction
                 torch::Tensor sensorDirection = coordinates.slice(1, 0, 1) - coordinates.slice(1, 1, 2);
 
@@ -92,6 +102,13 @@ public:
         this->sampling_frequency    = other.sampling_frequency;
         this->recording_period      = other.recording_period;
         this->sensorDirection       = other.sensorDirection.clone(); 
+        
+        // new additions
+        // this->location              = other.location;
+        this->lowpassFilterCoefficientsForDecimation = other.lowpassFilterCoefficientsForDecimation;
+        // this->sensorDirection       = other.sensorDirection.clone();
+        // this->signalMatrix          = other.signalMatrix.clone();
+
 
         // returning
         return *this;
@@ -230,5 +247,53 @@ public:
         std::cout<<"\t\t\t> this->signalMatrix.shape (after signal sim) = "; fPrintTensorSize(this->signalMatrix);
 
         return;
+    }
+
+    // decimating the obtained signal
+    void nfdc_decimateSignal(TransmitterClass* transmitterObj){
+        
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: entered "<<std::endl;
+
+        // basebanding the signal
+        torch::Tensor integerArray  = torch::linspace(0, \
+                                                      this->signalMatrix.size(0)-1, \
+                                                      this->signalMatrix.size(0)).reshape({this->signalMatrix.size(0), 1}); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 247"<<std::endl;
+        if(DEBUG_ULA) std::cout<<"integerArray.shape = "<<integerArray.sizes().vec()<<std::endl;
+        integerArray                = torch::tile(integerArray, \
+                                                  {1, this->num_sensors}); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 249"<<std::endl;
+        if(DEBUG_ULA) std::cout<<"integerArray.shape = "<<integerArray.sizes().vec()<<std::endl;
+        integerArray                = torch::exp(torch::complex(torch::zeros({1}), torch::ones({1})) * \
+                                                 transmitterObj->fc * \
+                                                 integerArray); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 250"<<std::endl;
+
+        if(DEBUG_ULA) std::cout<<"this->signalMatrix.shape = "<<this->signalMatrix.sizes().vec()<<std::endl;
+        if(DEBUG_ULA) std::cout<<"integerArray.shape = "<<integerArray.sizes().vec()<<std::endl;
+        this->signalMatrix = torch::mul(this->signalMatrix, \
+                                        integerArray); std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 254"<<std::endl;
+
+        // low-pass filter
+        torch::Tensor lowpassfilter_impulseresponse = \
+            this->lowpassFilterCoefficientsForDecimation.reshape({this->lowpassFilterCoefficientsForDecimation.numel(), 1}); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 263"<<std::endl;
+        lowpassfilter_impulseresponse = torch::tile(lowpassfilter_impulseresponse, \
+                                      {1, this->signalMatrix.size(1)}); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 260"<<std::endl;
+
+        // Convolving
+        fConvolveColumns(this->signalMatrix, lowpassfilter_impulseresponse); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 263"<<std::endl;
+
+        // downsampling
+        int decimation_factor = std::floor(this->sampling_frequency/transmitterObj->bandwidth); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 284"<<std::endl;
+        if(DEBUG_ULA) std::cout<<"\t\t\t\t\t\t decimation_factor = "<<decimation_factor<<std::endl;
+        int numsamples_after_decimation = std::floor(this->signalMatrix.size(0)/decimation_factor); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 285"<<std::endl;
+        torch::Tensor samplingIndices = \
+            torch::linspace(0, \
+                            numsamples_after_decimation * decimation_factor, \
+                            numsamples_after_decimation).to(torch::kInt); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 289"<<std::endl;
+        
+        
+        this->signalMatrix = \
+            this->signalMatrix.index({samplingIndices, torch::indexing::Slice()}); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 273"<<std::endl;
+
+        if(DEBUG_ULA) std::cout<<"this->signalMatrix.shape = "<<this->signalMatrix.sizes().vec()<<std::endl;
+
     }
 };
