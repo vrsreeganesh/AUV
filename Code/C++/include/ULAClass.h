@@ -3,6 +3,7 @@
 #include <torch/torch.h>
 
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
 #include "ScattererClass.h"
 #include "TransmitterClass.h"
 
@@ -190,42 +191,7 @@ public:
         torch::Tensor timeOfFlight      = distOfFlight/1500;
         torch::Tensor samplesOfFlight   = torch::floor(timeOfFlight.squeeze() * this->sampling_frequency);
 
-        
-
-        // // Adding impulses to the signal matrix
-        // for(int sensor_index = 0; sensor_index<this->num_sensors; ++sensor_index){
-        //     for(int scatter_index = 0; scatter_index < scatterers->coordinates[0].numel(); ++scatter_index){
-
-        //         // sample to be added at 
-        //         int where_to_place = samplesOfFlight.index({sensor_index, scatter_index}).item<int>();
-        //         // std::cout<<"\t\t\t > where_to_place = "<<where_to_place<<std::endl;
-
-        //         // in case the points are out of bounds
-        //         if (where_to_place >= numsamples) continue;
-
-        //         // assigning impulses
-        //         // this->signalMatrix.index_put_({where_to_place, sensor_index}, \
-        //         //                               this->signalMatrix.index({where_to_place, sensor_index}) + \
-        //         //                                 torch::tensor({1}).to(torch::kFloat));
-
-        //         // // assigning impulses
-        //         // this->signalMatrix.index_put_({where_to_place, sensor_index}, \
-        //         //                               torch::tensor({sensor_index}).to(torch::kFloat));
-
-        //         torch::Tensor bruh = torch::tensor({sensor_index}).to(torch::kFloat);
-        //         this->signalMatrix.index_put_({where_to_place, sensor_index}, bruh);
-        //         // std::cout<<"\t\t\t\t bruh = "<<bruh.item<float>()<<std::endl;
-
-        //     }
-        // }
-
-        // // testing something
-        // std::vector<int64_t> shape1 = samplesOfFlight.sizes().vec();
-        // std::vector<int64_t> shape2 = scatterers->reflectivity.sizes().vec();
-        // PRINTSMALLLINE; std::cout<<"samplesOfFlight.shape = "<<shape1<<std::endl;
-        // std::cout<<"scatters->reflectivity.shape = "<<shape2<<std::e1ndl; PRINTSMALLLINE
-
-        // second writing
+        // Adding pulses 
         for(int sensor_index = 0; sensor_index < this->num_sensors; ++sensor_index){
             for(int scatter_index = 0; scatter_index < samplesOfFlight[0].numel(); ++scatter_index){
                 
@@ -245,7 +211,22 @@ public:
                                                 scatterers->reflectivity.index({0, scatter_index}) );
             }
         }
-        
+
+        // Convolving signals with transmitted signal
+        torch::Tensor signalTensorAsArgument = \
+            transmitterObj->Signal.reshape({transmitterObj->Signal.numel(),1});
+        signalTensorAsArgument = torch::tile(signalTensorAsArgument, \
+                                             {1, this->signalMatrix.size(1)});
+
+        // convolving the pulse-matrix with the signal matrix
+        fConvolveColumns(this->signalMatrix,        \
+                         signalTensorAsArgument);
+
+        // trimming the convolved signal since the signal matrix length remains the same
+        this->signalMatrix = this->signalMatrix.index({torch::indexing::Slice(0, numsamples), \
+                                                       torch::indexing::Slice()});
+
+        // printing the shape
         std::cout<<"\t\t\t> this->signalMatrix.shape (after signal sim) = "; fPrintTensorSize(this->signalMatrix);
 
         return;
