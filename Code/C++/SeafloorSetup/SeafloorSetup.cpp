@@ -11,9 +11,9 @@ Aim: Setup sea floor
 
 
 // adding terrrain features
-#define BOXES       true
-#define TERRAIN     false
-#define DEBUG_SEAFLOOR false
+#define BOXES           false
+#define TERRAIN         false
+#define DEBUG_SEAFLOOR  false
 
 
 

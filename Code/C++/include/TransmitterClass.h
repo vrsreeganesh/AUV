@@ -33,6 +33,17 @@
 #endif
 
 
+
+// control panel
+#define ENABLE_RAYTRACING                false
+
+
+
+
+
+
+
+
 class TransmitterClass{
 public:
 
@@ -187,34 +198,38 @@ public:
         // translationally change origin 
         scatterers->coordinates = scatterers->coordinates - this->location; if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 188 "<<std::endl;
 
+        /*
+        Note: I think something we can do is see if we can subset the matrices by checking coordinate values right away. If one of the coordinate values is x (relative coordiantes), we know for sure that the distance is greater than x, for sure. So, maybe that's something that we can work with 
+        */
+
         // Finding spherical coordinates of scatterers and pointing direction
-        torch::Tensor scatterers_spherical          = fCart2Sph(scatterers->coordinates); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 191 "<<std::endl;
-        torch::Tensor pointing_direction_spherical  = fCart2Sph(this->pointing_direction); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 192 "<<std::endl;
+        torch::Tensor scatterers_spherical          = fCart2Sph(scatterers->coordinates);   if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 191 "<<std::endl;
+        torch::Tensor pointing_direction_spherical  = fCart2Sph(this->pointing_direction);  if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 192 "<<std::endl;
 
         // Calculating relative azimuths and radians
         torch::Tensor relative_spherical = scatterers_spherical - pointing_direction_spherical; if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 199 "<<std::endl;
         
         // clearing some stuff up
-        scatterers_spherical.reset(); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 202 "<<std::endl;
-        pointing_direction_spherical.reset(); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 203 "<<std::endl;
+        scatterers_spherical.reset();           if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 202 "<<std::endl;
+        pointing_direction_spherical.reset();   if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 203 "<<std::endl;
 
         // tensor corresponding to switch. 
         torch::Tensor tilt_angle_Tensor = torch::tensor({tilt_angle}).to(torch::kFloat).to(DEVICE); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 206 "<<std::endl;
 
+        // calculating length of axes
         torch::Tensor axis_a    = torch::tensor({this->azimuthal_beamwidth / 2}).to(torch::kFloat).to(DEVICE); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 208 "<<std::endl;
         torch::Tensor axis_b    = torch::tensor({this->elevation_beamwidth / 2}).to(torch::kFloat).to(DEVICE); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 209 "<<std::endl;
         
+        // part of calculating the tilted ellipse
         torch::Tensor xcosa     = relative_spherical[0] * torch::cos(tilt_angle_Tensor * PI/180);
         torch::Tensor ysina     = relative_spherical[1] * torch::sin(tilt_angle_Tensor * PI/180);
         torch::Tensor xsina     = relative_spherical[0] * torch::sin(tilt_angle_Tensor * PI/180);
         torch::Tensor ycosa     = relative_spherical[1] * torch::cos(tilt_angle_Tensor * PI/180);
         relative_spherical.reset(); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 215 "<<std::endl;
 
-        // findings points inside the cone
-        torch::Tensor scatter_boolean = torch::div(torch::square(xcosa + ysina), \
-                                                   torch::square(axis_a)) + \
-                                        torch::div(torch::square(xsina - ycosa), \
-                                                   torch::square(axis_b))       <= 1; if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 221 "<<std::endl;
+        // finding points inside the tilted ellipse
+        torch::Tensor scatter_boolean = torch::div(torch::square(xcosa + ysina), torch::square(axis_a)) + \
+                                        torch::div(torch::square(xsina - ycosa), torch::square(axis_b)) <= 1; if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 221 "<<std::endl;
 
         // clearing
         xcosa.reset(); ysina.reset(); xsina.reset(); ycosa.reset(); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 224 "<<std::endl;
@@ -224,9 +239,8 @@ public:
         scatterers->coordinates     = scatterers->coordinates.index({torch::indexing::Slice(),  mask});
         scatterers->reflectivity    = scatterers->reflectivity.index({torch::indexing::Slice(), mask}); if(DEBUGMODE_TRANSMITTER) std::cout<<"\t\t TransmitterClass: line 229 "<<std::endl;
 
-        // // this is where histogram shadowing comes in (later)
-        // rangeHistogramShadowing(scatterers); std::cout<<"\t\t TransmitterClass: line 232 "<<std::endl;
-
+        // this is where histogram shadowing comes in (later)
+        if (ENABLE_RAYTRACING) rangeHistogramShadowing(scatterers); std::cout<<"\t\t TransmitterClass: line 232 "<<std::endl;
 
         // translating back to the points
         scatterers->coordinates = scatterers->coordinates + this->location;
