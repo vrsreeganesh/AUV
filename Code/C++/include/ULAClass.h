@@ -1,11 +1,16 @@
+// bringing in the header files
 #include <cstdint>
 #include <iostream>
+#include <stdexcept>
 #include <torch/torch.h>
 
+
+// bringing in the functions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
 #include "ScattererClass.h"
 #include "TransmitterClass.h"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fBuffer2D.cpp"
 
 #pragma once
 
@@ -21,8 +26,8 @@
 #endif
 
 #ifndef DEVICE
-    #define DEVICE          torch::kMPS
-    // #define DEVICE          torch::kCPU
+    // #define DEVICE          torch::kMPS
+    #define DEVICE          torch::kCPU
 #endif
 
 #define PI              3.14159265
@@ -47,7 +52,15 @@ public:
     torch::Tensor signalMatrix;
 
     // decimation-related
+    int decimation_factor;
     torch::Tensor lowpassFilterCoefficientsForDecimation;   // 
+
+    // imaging related 
+    float range_resolution;              // theoretical range-resolution = $\frac{c}{2B}$
+    float azimuthal_resolution;         // theoretical azimuth-resolution = $\frac{\lambda}{(N-1)*inter-element-distance}$
+    
+    float range_cell_size;              // the range-cell quanta we're choosing for efficiency trade-off
+    float azimuth_cell_size;            // the azimuth quanta we're choosing
     
     // constructor
     ULAClass(int numsensors              = 32,
@@ -88,6 +101,13 @@ public:
         return os;
     }
 
+    /* =========================================================================
+    Aim: Init 
+    ------------------------------------------------------------------------- */ 
+    void init(){
+        ;
+    }
+
     // overloading the "=" operator
     ULAClass& operator=(const ULAClass& other){
         // checking if copying to the same object
@@ -114,12 +134,7 @@ public:
         return *this;
     }
 
-    /* =========================================================================
-    Aim: Build coordinates on top of location. 
-    ............................................................................
-    Note: 
-        > This function builds the location of the coordinates based on the location and direction member. 
-    --------------------------------------------------------------------------*/ 
+    // build sensor-coordinates based on location
     void buildCoordinatesBasedOnLocation(){
 
         // length-normalize the sensor-direction
@@ -153,7 +168,7 @@ public:
     
     }
 
-    // Signal Simulation
+    // signal simulation for the current sensor-array
     void nfdc_simulateSignal(ScattererClass* scatterers,
                              TransmitterClass* transmitterObj){
 
@@ -244,7 +259,7 @@ public:
                                                        torch::indexing::Slice()});
 
         // printing the shape
-        std::cout<<"\t\t\t> this->signalMatrix.shape (after signal sim) = "; fPrintTensorSize(this->signalMatrix);
+        if(DEBUG_ULA) {std::cout<<"\t\t\t> this->signalMatrix.shape (after signal sim) = "; fPrintTensorSize(this->signalMatrix);}
 
         return;
     }
@@ -269,7 +284,7 @@ public:
         if(DEBUG_ULA) std::cout<<"this->signalMatrix.shape = "<<this->signalMatrix.sizes().vec()<<std::endl;
         if(DEBUG_ULA) std::cout<<"integerArray.shape = "<<integerArray.sizes().vec()<<std::endl;
         this->signalMatrix = torch::mul(this->signalMatrix, \
-                                        integerArray); std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 254"<<std::endl;
+                                        integerArray); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 254"<<std::endl;
 
         // low-pass filter
         torch::Tensor lowpassfilter_impulseresponse = \
@@ -282,6 +297,7 @@ public:
 
         // downsampling
         int decimation_factor = std::floor(this->sampling_frequency/transmitterObj->bandwidth); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 284"<<std::endl;
+        this->decimation_factor = decimation_factor;
         if(DEBUG_ULA) std::cout<<"\t\t\t\t\t\t decimation_factor = "<<decimation_factor<<std::endl;
         int numsamples_after_decimation = std::floor(this->signalMatrix.size(0)/decimation_factor); if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_decimateSignal: 285"<<std::endl;
         torch::Tensor samplingIndices = \
@@ -296,4 +312,108 @@ public:
         if(DEBUG_ULA) std::cout<<"this->signalMatrix.shape = "<<this->signalMatrix.sizes().vec()<<std::endl;
 
     }
+
+    /* =========================================================================
+    Aim: precompute delay-matrices
+    ------------------------------------------------------------------------- */ 
+    void nfdc_precomputeDelayMatrices(TransmitterClass* transmitterObj){
+        
+        // calculating range-related parameters
+        this->range_resolution      = 1500/(2 * transmitterObj->fc); 
+        this->range_cell_size       = 40 * this->range_resolution; 
+        int number_of_range_cells   = ((this->recording_period * 1500)/2)/this->range_cell_size; 
+
+        // status printing
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: this->range_resolution = " <<  this->range_resolution  <<  std::endl;
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: this->range_cell_size = "  <<  this->range_cell_size   <<  std::endl;
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: number_of_range_cells = "  <<  number_of_range_cells   <<  std::endl;
+
+        // calculating azimuth-related parameters
+        this->azimuthal_resolution      = (transmitterObj->fc)/((this->num_sensors-1)*this->inter_element_spacing); 
+        this->azimuth_cell_size         = 2 * this->azimuthal_resolution; 
+        int number_of_azimuths_to_image = std::ceil(transmitterObj->azimuthal_beamwidth / this->azimuth_cell_size); 
+
+        // printing
+        if(DEBUG_ULA) std::cout   << "\t\t\t ULAClass: this->azimuthal_resolution  = "    <<  this->azimuthal_resolution  <<  std::endl;
+        if(DEBUG_ULA) std::cout   << "\t\t\t ULAClass: this->azimuth_cell_size     = "    <<  this->azimuth_cell_size     <<  std::endl;
+        if(DEBUG_ULA) std::cout   << "\t\t\t ULAClass: number_of_azimuths_to_image = "    <<  number_of_azimuths_to_image <<  std::endl;
+
+        // find the centers of the range-cells. 
+        torch::Tensor range_centers = \
+            torch::linspace(this->azimuth_cell_size/2, \
+                            (number_of_range_cells - 0.5)*this->azimuth_cell_size, \
+                            number_of_range_cells);
+
+        // finding the centers of azimuth-cells
+        torch::Tensor azimuth_centers = \
+            torch::linspace(this->range_cell_size/2, \
+                            (number_of_azimuths_to_image - 0.5) * this->range_cell_size, \
+                            number_of_azimuths_to_image);
+    }
+
+    // beamforming the signal
+    void nfdc_beamforming(TransmitterClass* transmitterObj){        
+        
+        // buffering the 2D signal
+        if(this->signalMatrix.size(1) != this->num_sensors) 
+            throw std::runtime_error("The second dimension doesn't correspond to the number of sensors \n");
+
+        // calculating the frame-size 
+        int frame_size = std::ceil((2 * this->range_cell_size/1500) * \
+                                   (this->sampling_frequency / this->decimation_factor)); 
+
+        // printing
+        if(DEBUG_ULA) std::cout<<"\t\t\t this->range_cell_size = "    << this->range_cell_size    << std::endl;
+        if(DEBUG_ULA) std::cout<<"\t\t\t this->sampling_frequency = " << this->sampling_frequency << std::endl;
+        if(DEBUG_ULA) std::cout<<"\t\t\t this->decimation_factor = "  << this->decimation_factor  << std::endl;
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: frame_size = "     << frame_size               << std::endl;
+
+        // adding the batch-dimension
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: this->signalMatrix.sizes().vec() (before) = "<<this->signalMatrix.sizes().vec()<<std::endl;
+        this->signalMatrix = \
+            this->signalMatrix.reshape({1, \
+                                        this->signalMatrix.size(0), \
+                                        this->signalMatrix.size(1)}); 
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: this->signalMatrix.sizes().vec() (before) = "<<this->signalMatrix.sizes().vec()<<std::endl;
+        
+
+        // breaking apart the signal
+        fBuffer2D(this->signalMatrix, frame_size);
+        if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass: this->signalMatrix.sizes().vec() (after)= "<<this->signalMatrix.sizes().vec()<<std::endl;
+
+        
+        
+
+
+        // creating a range-angle mesh for this
+
+        // find the different angles for which we're beamforming. 
+
+        // find the delays for the different range-angle combinations
+
+        // splitting the signals into the different range-cells
+
+        // loop for beamforming all of em 
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 };

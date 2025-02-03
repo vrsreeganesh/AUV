@@ -49,13 +49,6 @@ void ULASetup(ULAClass* ula_fls,
     ula_fls->sensorDirection        = ULA_direction;            // ULA direction 
     ula_fls->lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients; 
 
-    // ula_fls->num_sensors            = num_sensors;              // assigning number of sensors
-    // ula_fls->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
-    // ula_fls->coordinates            = ULA_coordinates;          // assigning ULA coordinates
-    // ula_fls->sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
-    // ula_fls->recording_period       = recording_period;         // assigning recording period
-    // ula_fls->sensorDirection        = ULA_direction;            // ULA direction 
-
     // assigning values 
     ula_port->num_sensors            = num_sensors;              // assigning number of sensors
     ula_port->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
@@ -64,13 +57,6 @@ void ULASetup(ULAClass* ula_fls,
     ula_port->recording_period       = recording_period;         // assigning recording period
     ula_port->sensorDirection        = ULA_direction;            // ULA direction
     ula_port->lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients;  
-
-    // ula_port->num_sensors            = num_sensors;              // assigning number of sensors
-    // ula_port->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
-    // ula_port->coordinates            = ULA_coordinates;          // assigning ULA coordinates
-    // ula_port->sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
-    // ula_port->recording_period       = recording_period;         // assigning recording period
-    // ula_port->sensorDirection        = ULA_direction;            // ULA direction 
 
 
     // assigning values 
@@ -82,11 +68,5 @@ void ULASetup(ULAClass* ula_fls,
     ula_starboard->sensorDirection        = ULA_direction;            // ULA direction 
     ula_starboard->lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients; 
 
-    // ula_starboard->num_sensors            = num_sensors;              // assigning number of sensors
-    // ula_starboard->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
-    // ula_starboard->coordinates            = ULA_coordinates;          // assigning ULA coordinates
-    // ula_starboard->sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
-    // ula_starboard->recording_period       = recording_period;         // assigning recording period
-    // ula_starboard->sensorDirection        = ULA_direction;            // ULA direction 
     
 }

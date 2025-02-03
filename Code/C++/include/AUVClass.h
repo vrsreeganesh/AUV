@@ -225,7 +225,6 @@ public:
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 124 \n";
     }
 
-
     // pitch-correction matrix
     torch::Tensor createYawCorrectionMatrix(torch::Tensor pointing_direction_spherical, \
                                             float target_azimuth_deg){
@@ -357,28 +356,63 @@ public:
     void image(){
         
         // asking ULAs to decimate the signals obtained at each time step
-        std::thread ULA_fls_image_t(&ULAClass::nfdc_decimateSignal,         &this->ULA_fls, \
+        std::thread ULA_fls_image_t(&ULAClass::nfdc_decimateSignal,             \
+                                    &this->ULA_fls,                             \
                                     &this->transmitter_fls);
-        // std::thread ULA_port_image_t(&ULAClass::nfdc_decimateSignal,        &this->ULA_port, \
-        //                              &this->transmitter_port);
-        // std::thread ULA_starboard_image_t(&ULAClass::nfdc_decimateSignal,   &this->ULA_starboard, \
-        //                                   &this->transmitter_starboard);
+        std::thread ULA_port_image_t(&ULAClass::nfdc_decimateSignal,            \
+                                     &this->ULA_port,                           \
+                                     &this->transmitter_port);
+        std::thread ULA_starboard_image_t(&ULAClass::nfdc_decimateSignal,       \
+                                          &this->ULA_starboard,                 \
+                                          &this->transmitter_starboard);
 
         // joining the threads back
-        ULA_fls_image_t.join();
-        // ULA_port_image_t.join();
-        // ULA_starboard_image_t.join();
+        ULA_fls_image_t.join(); ULA_port_image_t.join(); ULA_starboard_image_t.join();
 
 
-        // this->ULA_fls.nfdc_decimateSignal(this->transmitter_fls);
+
+        // performing the beamforming
+        std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
+                                          &this->ULA_fls,                       \
+                                          &this->transmitter_fls);
+        std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
+                                           &this->ULA_port,                     \
+                                           &this->transmitter_port);
+        std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
+                                                &this->ULA_starboard,           \
+                                                &this->transmitter_starboard);
+
+        // joining the filters back
+        ULA_fls_beamforming_t.join(); ULA_port_beamforming_t.join(); ULA_starboard_beamforming_t.join();
 
     }
 
 
-    // // decimating the signal
-    // void nfdc_decimate(){
-    //     ;
-    // }
+    /* =========================================================================
+    Aim: Init
+    --------------------------------------------------------------------------*/ 
+    void init(){
+        
+        // call sync-component attributes
+        this->syncComponentAttributes();
+
+        // precomputing delay-matrices for the ULA-class
+        std::thread ULA_fls_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,       \
+                                                 &this->ULA_fls,                                \
+                                                 &this->transmitter_fls);
+        std::thread ULA_port_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,      \
+                                                  &this->ULA_port,                              \
+                                                  &this->transmitter_port);
+        std::thread ULA_starboard_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices, \
+                                                       &this->ULA_starboard,                    \
+                                                       &this->transmitter_starboard);
+
+        // joining the threads back
+        ULA_fls_precompute_weights_t.join();
+        ULA_port_precompute_weights_t.join();
+        ULA_starboard_precompute_weights_t.join();
+
+    }
 
 
 };

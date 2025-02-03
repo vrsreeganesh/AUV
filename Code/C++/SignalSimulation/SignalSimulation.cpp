@@ -67,6 +67,7 @@ Aim: Signal Simulation
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fSph2Cart.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
+// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fBuffer2D.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fAnglesToTensor.cpp"
 // #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCalculateCosine.cpp"
@@ -109,18 +110,19 @@ int main() {
     AUVClass auv;               // instantiating class object
     AUVSetup(&auv);        // populating 
     
-    // attaching
-    auv.ULA_fls                 = ula_fls;
-    auv.ULA_port                = ula_port;
-    auv.ULA_starboard           = ula_starboard;
-    
-    auv.transmitter_fls         = transmitter_fls;
-    auv.transmitter_port        = transmitter_port;
-    auv.transmitter_starboard   = transmitter_starboard;
+    // attaching components to the AUV
+    auv.ULA_fls                 = ula_fls;                  // attaching ULA-FLS to AUV
+    auv.ULA_port                = ula_port;                 // attaching ULA-Port to AUV
+    auv.ULA_starboard           = ula_starboard;            // attaching ULA-Starboard to AUV
+    auv.transmitter_fls         = transmitter_fls;          // attaching Transmitter-FLS to AUV
+    auv.transmitter_port        = transmitter_port;         // attaching Transmitter-Port to AUV
+    auv.transmitter_starboard   = transmitter_starboard;    // attaching Transmitter-Starboard to AUV
 
     // storing 
     ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
 
+    // pre-computing the imaging matrices
+    auv.init();
 
     // mimicking movement
     int number_of_stophops = 1;
@@ -130,7 +132,7 @@ int main() {
         auto start_time = std::chrono::high_resolution_clock::now();
         
         // printing some spaces
-        PRINTSPACE; PRINTLINE; std::cout<<"i = "<<i<<std::endl; PRINTLINE
+        PRINTSPACE; PRINTSPACE; PRINTLINE; std::cout<<"i = "<<i<<std::endl; PRINTLINE
         
         // making the deep copy
         ScattererClass SeafloorScatter      = SeafloorScatter_deepcopy; // copy for FLS
@@ -146,13 +148,8 @@ int main() {
         std::chrono::duration<double> time_duration = end_time - start_time;
         PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS        
 
-
         // moving to next position
         auv.step(0.5);
-
-
-        // Printing end-of-step
-        PRINTSPACE
 
     }
 

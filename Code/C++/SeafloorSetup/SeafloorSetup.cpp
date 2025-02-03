@@ -171,10 +171,9 @@ void SeafloorSetup(ScattererClass* scatterers) {
     if(DEBUG_SEAFLOOR) {std::cout<<"\t box_reflectivity = "; fPrintTensorSize(box_reflectivity);}
 
 
+    // assigning values to the coordinates
     scatterers->coordinates     = torch::cat({scatterers->coordinates,  box_coordinates},   1);
-    PRINTLINE
     scatterers->reflectivity    = torch::cat({scatterers->reflectivity, box_reflectivity},  1);
-    PRINTSMALLLINE
 
 
 }
