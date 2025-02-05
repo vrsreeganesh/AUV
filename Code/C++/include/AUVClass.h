@@ -152,6 +152,8 @@ public:
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 85 \n";
     }
 
+
+
     /*==========================================================================
     Aim: updateAttributes
     --------------------------------------------------------------------------*/
@@ -196,7 +198,9 @@ public:
         this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 108 \n";
     }
-    
+
+
+
     /*==========================================================================
     Aim: operator overriding for printing 
     --------------------------------------------------------------------------*/ 
@@ -225,7 +229,7 @@ public:
         if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 124 \n";
     }
 
-    // pitch-correction matrix
+    // yaw-correction matrix
     torch::Tensor createYawCorrectionMatrix(torch::Tensor pointing_direction_spherical, \
                                             float target_azimuth_deg){
 
@@ -367,23 +371,36 @@ public:
                                           &this->transmitter_starboard);
 
         // joining the threads back
-        ULA_fls_image_t.join(); ULA_port_image_t.join(); ULA_starboard_image_t.join();
+        ULA_fls_image_t.join(); 
+        ULA_port_image_t.join(); 
+        ULA_starboard_image_t.join();
+
+        // asking ULAs to match-filter the signals
+        std::thread ULA_fls_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal,       &this->ULA_fls);
+        std::thread ULA_port_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal,      &this->ULA_port);
+        std::thread ULA_starboard_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal, &this->ULA_starboard);
+
+        // joining the threads back
+        ULA_fls_matchfilter_t.join();
+        ULA_port_matchfilter_t.join();
+        ULA_starboard_matchfilter_t.join();
 
 
+        // // performing the beamforming
+        // std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
+        //                                   &this->ULA_fls,                       \
+        //                                   &this->transmitter_fls);
+        // std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
+        //                                    &this->ULA_port,                     \
+        //                                    &this->transmitter_port);
+        // std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
+        //                                         &this->ULA_starboard,           \
+        //                                         &this->transmitter_starboard);
 
-        // performing the beamforming
-        std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
-                                          &this->ULA_fls,                       \
-                                          &this->transmitter_fls);
-        std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
-                                           &this->ULA_port,                     \
-                                           &this->transmitter_port);
-        std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
-                                                &this->ULA_starboard,           \
-                                                &this->transmitter_starboard);
-
-        // joining the filters back
-        ULA_fls_beamforming_t.join(); ULA_port_beamforming_t.join(); ULA_starboard_beamforming_t.join();
+        // // joining the filters back
+        // ULA_fls_beamforming_t.join(); 
+        // ULA_port_beamforming_t.join(); 
+        // ULA_starboard_beamforming_t.join();
 
     }
 
@@ -395,6 +412,11 @@ public:
         
         // call sync-component attributes
         this->syncComponentAttributes();
+
+        // initializing all the ULAs 
+        this->ULA_fls.init(         &this->transmitter_fls); 
+        this->ULA_port.init(        &this->transmitter_port); 
+        this->ULA_starboard.init(   &this->transmitter_starboard);
 
         // precomputing delay-matrices for the ULA-class
         std::thread ULA_fls_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,       \

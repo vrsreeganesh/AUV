@@ -46,7 +46,8 @@ void fBuffer2D(torch::Tensor&  inputMatrix,
     }
 
     // calculating some parameters
-    int num_frames = inputMatrix.size(1)/frame_size;
+    // int num_frames = inputMatrix.size(1)/frame_size;
+    int num_frames = std::ceil(inputMatrix.size(1)/frame_size);
     if(DEBUG_Buffer2D) std::cout << "\t\t\t fBuffer2D: inputMatrix.sizes = "<< inputMatrix.sizes().vec()<< std::endl;
     if(DEBUG_Buffer2D) std::cout << "\t\t\t fBuffer2D: framesize = "        << frame_size               << std::endl;
     if(DEBUG_Buffer2D) std::cout << "\t\t\t fBuffer2D: num_frames = "       << num_frames               << std::endl;
@@ -58,6 +59,7 @@ void fBuffer2D(torch::Tensor&  inputMatrix,
     std::vector<int64_t> target_strides = {frame_size * inputMatrix.size(2),    \
                                            inputMatrix.size(2),                 \
                                            1};
+    if(DEBUG_Buffer2D) std::cout << "\t\t\t fBuffer2D: STATUS: created shape and strides"<< std::endl;
 
     // creating the transformation
     inputMatrix = inputMatrix.as_strided(target_shape, target_strides);
