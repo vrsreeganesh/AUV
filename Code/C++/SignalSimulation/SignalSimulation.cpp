@@ -20,13 +20,13 @@ Aim: Signal Simulation
 #define PRINTSPACE      std::cout<<"\n\n\n";
 #endif
 #ifndef PRINTSMALLLINE
-#define PRINTSMALLLINE  std::cout<<"--------------------------------------------------------------------"<<std::endl;
+#define PRINTSMALLLINE  std::cout<<"------------------------------------------------------------------------------------"<<std::endl;
 #endif
 #ifndef PRINTDOTS
-#define PRINTDOTS       std::cout<<"...................................................................."<<std::endl;
+#define PRINTDOTS       std::cout<<"...................................................................................."<<std::endl;
 #endif
 #ifndef PRINTLINE
-#define PRINTLINE       std::cout<<"===================================================================="<<std::endl;
+#define PRINTLINE       std::cout<<"===================================================================================="<<std::endl;
 #endif
 #ifndef PI
 #define PI              3.14159265
@@ -67,17 +67,7 @@ Aim: Signal Simulation
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fSph2Cart.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fBuffer2D.cpp"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fAnglesToTensor.cpp"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCalculateCosine.cpp"
-// #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fColumnNormalize.cpp"
-// // #include ""
 
-// function to plot the thing
-// void fPlotTensors(){
-//     system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/TestingSaved_tensors.py");
-// }
 
 // main-function
 int main() {
@@ -139,7 +129,8 @@ int main() {
         ScattererClass SeafloorScatter      = SeafloorScatter_deepcopy; // copy for FLS
         
         // simulating the signals received in this time step
-        auv.simulateSignal(SeafloorScatter);
+        // auv.simulateSignal(SeafloorScatter);
+        auv.createAcousticImage(SeafloorScatter);
 
         // decimating the signal received in this time step
         auv.image();

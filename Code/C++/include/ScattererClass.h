@@ -63,10 +63,16 @@ public:
         os<<"\t> scatterer.reflectivity.shape   = ";
         print_tensor_size(scatterer.reflectivity);
 
-        PRINTSMALLLINE
-
         // returning os
         return os;
+    }
+
+    // copy constructor from a pointer
+    ScattererClass(ScattererClass* scatterers){
+
+        // copying the values 
+        this->coordinates = scatterers->coordinates;
+        this->reflectivity = scatterers->reflectivity;
     }
     
 };

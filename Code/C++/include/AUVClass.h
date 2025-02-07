@@ -7,8 +7,9 @@
 #include <cmath>
 
 
-// // including functions
+// including functions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
 
 #pragma once
 
@@ -386,7 +387,7 @@ public:
         ULA_starboard_matchfilter_t.join();
 
 
-        // // performing the beamforming
+        // performing the beamforming
         // std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
         //                                   &this->ULA_fls,                       \
         //                                   &this->transmitter_fls);
@@ -397,7 +398,7 @@ public:
         //                                         &this->ULA_starboard,           \
         //                                         &this->transmitter_starboard);
 
-        // // joining the filters back
+        // joining the filters back
         // ULA_fls_beamforming_t.join(); 
         // ULA_port_beamforming_t.join(); 
         // ULA_starboard_beamforming_t.join();
@@ -434,6 +435,61 @@ public:
         ULA_port_precompute_weights_t.join();
         ULA_starboard_precompute_weights_t.join();
 
+    }
+
+    /* =========================================================================
+    Aim: directly create acoustic image
+    ------------------------------------------------------------------------- */ 
+    void createAcousticImage(ScattererClass* scatterers){
+        
+        // making three copies
+        ScattererClass scatterer_fls        = scatterers;
+        ScattererClass scatterer_port       = scatterers;
+        ScattererClass scatterer_starboard  = scatterers;
+
+        // printing size of scatterers before subsetting
+        PRINTSMALLLINE
+        std::cout<< "\t > AUVClass::createAcousticImage: Beginning Scatterer Subsetting"<<std::endl;
+        std::cout<<"\t AUVClass::createAcousticImage: scatterer_fls.coordinates.shape (before)        = "; fPrintTensorSize(scatterer_fls.coordinates);
+        std::cout<<"\t AUVClass::createAcousticImage: scatterer_port.coordinates.shape (before)       = "; fPrintTensorSize(scatterer_port.coordinates);
+        std::cout<<"\t AUVClass::createAcousticImage: scatterer_starboard.coordinates.shape (before)  = "; fPrintTensorSize(scatterer_starboard.coordinates);
+
+        // finding the pointing direction in spherical
+        torch::Tensor auv_pointing_direction_spherical = fCart2Sph(this->pointing_direction);
+
+        // asking the transmitters to subset the scatterers by multithreading
+        std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, this, \
+                                           &scatterer_fls,\
+                                           &this->transmitter_fls, \
+                                           (float)0);
+        std::thread transmitterPortSubset_t(&AUVClass::subsetScatterers, this, \
+                                            &scatterer_port,\
+                                            &this->transmitter_port, \
+                                            auv_pointing_direction_spherical[1].item<float>());
+        std::thread transmitterStarboardSubset_t(&AUVClass::subsetScatterers, this, \
+                                                 &scatterer_starboard, \
+                                                 &this->transmitter_starboard, \
+                                                 - auv_pointing_direction_spherical[1].item<float>());
+
+        // joining the subset threads back
+        transmitterFLSSubset_t.join(        ); 
+        transmitterPortSubset_t.join(       ); 
+        transmitterStarboardSubset_t.join(  );
+
+
+        // asking the ULAs to directly create acoustic images
+        std::thread ULA_fls_acoustic_image_t(&ULAClass::nfdc_createAcousticImage, this->ULA_fls, \
+                                             &scatterer_fls, &this->transmitter_fls);
+        std::thread ULA_port_acoustic_image_t(&ULAClass::nfdc_createAcousticImage, &this->ULA_port, \
+                                             &scatterer_port, &this->transmitter_port);
+        std::thread ULA_starboard_acoustic_image_t(&ULAClass::nfdc_createAcousticImage, &this->ULA_starboard, \
+                                                   &scatterer_starboard, &this->transmitter_starboard);
+
+        // joining the threads back
+        ULA_fls_acoustic_image_t.join(      );
+        ULA_port_acoustic_image_t.join(     );
+        ULA_starboard_acoustic_image_t.join();
+        
     }
 
 
