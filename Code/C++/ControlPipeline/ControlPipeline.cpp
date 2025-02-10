@@ -17,19 +17,19 @@ Aim: Signal Simulation
 
 // hash defines
 #ifndef PRINTSPACE
-#define PRINTSPACE      std::cout<<"\n\n\n";
+    #define PRINTSPACE      std::cout<<"\n\n\n";
 #endif
 #ifndef PRINTSMALLLINE
-#define PRINTSMALLLINE  std::cout<<"------------------------------------------------------------------------------------"<<std::endl;
+    #define PRINTSMALLLINE  std::cout<<"------------------------------------------------------------------------------------"<<std::endl;
 #endif
 #ifndef PRINTDOTS
-#define PRINTDOTS       std::cout<<"...................................................................................."<<std::endl;
+    #define PRINTDOTS       std::cout<<"...................................................................................."<<std::endl;
 #endif
 #ifndef PRINTLINE
-#define PRINTLINE       std::cout<<"===================================================================================="<<std::endl;
+    #define PRINTLINE       std::cout<<"===================================================================================="<<std::endl;
 #endif
 #ifndef PI
-#define PI              3.14159265
+    #define PI              3.14159265
 #endif
 
 // debugging hashdefine
@@ -68,7 +68,6 @@ Aim: Signal Simulation
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
 
-
 // main-function
 int main() {
 
@@ -76,6 +75,7 @@ int main() {
     ScattererClass SeafloorScatter;
     std::thread scatterThread_t(SeafloorSetup, \
                                 &SeafloorScatter);
+    
 
     // Building ULA
     ULAClass ula_fls, ula_port, ula_starboard;
@@ -92,9 +92,16 @@ int main() {
                                     &transmitter_starboard);
 
     // Joining threads
-    ulaThread_t.join();         // making the ULA population thread join back
-    transmitterThread_t.join(); // making the transmitter population thread join back
     scatterThread_t.join();     // making the scattetr population thread join back
+    PRINTSPACE std::cout << "Main:: Finished Seafloor Setup"       << std::endl;
+    ulaThread_t.join();         // making the ULA population thread join back
+    std::cout << "Main:: Finished ULA Setup"            << std::endl;
+    transmitterThread_t.join(); // making the transmitter population thread join back
+    std::cout << "Main:: Finished Transmitter Setup"    << std::endl;
+    
+
+
+
 
     // building AUV 
     AUVClass auv;               // instantiating class object
@@ -115,8 +122,8 @@ int main() {
     auv.init();
 
     // mimicking movement
-    int number_of_stophops = 1;
-    if (true) return 0;
+    int number_of_stophops = 10;
+    // if (true) return 0;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
@@ -128,11 +135,8 @@ int main() {
         // making the deep copy
         ScattererClass SeafloorScatter      = SeafloorScatter_deepcopy; // copy for FLS
         
-        // simulating the signals received in this time step
-        auv.simulateSignal(SeafloorScatter);
-
-        // decimating the signal received in this time step
-        auv.image();
+        // creating acoustic images as seen by each ULA
+        auv.createAcousticImage(&SeafloorScatter);
 
         // measuring time 
         auto end_time   = std::chrono::high_resolution_clock::now();
