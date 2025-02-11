@@ -18,11 +18,10 @@ Aim: Setup sea floor
 
 // adding terrrain features
 #define BOXES                   false
-#define TERRAIN                 false
 #define HILLS                   true
 #define DEBUG_SEAFLOOR          false
-#define SAVETENSORS_Seafloor    true
-#define PLOT_SEAFLOOR           true
+#define SAVETENSORS_Seafloor    false
+#define PLOT_SEAFLOOR           false
 
 // functin that setups the sea-floor
 void SeafloorSetup(ScattererClass* scatterers) {

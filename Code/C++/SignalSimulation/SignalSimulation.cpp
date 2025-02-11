@@ -13,6 +13,7 @@ Aim: Signal Simulation
 #include <chrono>
 #include <Python.h>
 #include <cstdlib>
+#include <Eigen/Dense>
 
 
 // hash defines
@@ -116,7 +117,7 @@ int main() {
 
     // mimicking movement
     int number_of_stophops = 1;
-    if (true) return 0;
+    // if (true) return 0;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
