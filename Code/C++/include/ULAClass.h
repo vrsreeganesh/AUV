@@ -23,11 +23,15 @@
     #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
 #endif
 #ifndef PRINTSMALLLINE
-    #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+    #define PRINTSMALLLINE  std::cout<<"------------------------------------------------------------------------------------"<<std::endl;
 #endif
 #ifndef PRINTLINE
-    #define PRINTLINE       std::cout<<"================================================"<<std::endl;
+    #define PRINTLINE       std::cout<<"===================================================================================="<<std::endl;
 #endif
+#ifndef PRINTDOTS
+    #define PRINTDOTS       std::cout<<"...................................................................................."<<std::endl;
+#endif
+
 
 #ifndef DEVICE
     // #define DEVICE          torch::kMPS
@@ -71,6 +75,7 @@ public:
     int frame_size;                     // the frame-size corresponding to a range cell in a decimated signal matrix
     torch::Tensor matchFilter;          // torch tensor containing the match-filter
     int num_buffer_zeros_per_frame;     // number of zeros we're adding per frame to ensure no-rotation
+    torch::Tensor beamformedImage;      // the beamformed image
 
     // artificial acoustic-image related
     torch::Tensor currentArtificalAcousticImage; // the acoustic image directly produced
@@ -139,29 +144,33 @@ public:
     void nfdc_CreateMatchFilter(TransmitterClass* transmitterObj){
 
         // creating matrix for basebanding the signal
-        torch::Tensor basebanding_vector = \
-            torch::linspace(0, \
-                            transmitterObj->Signal.numel() - 1, \
-                            transmitterObj->Signal.numel()).reshape(transmitterObj->Signal.sizes());
+        torch::Tensor basebanding_vector =                  \
+            torch::linspace(                                \
+                0,                                          \
+                transmitterObj->Signal.numel()-1,           \
+                transmitterObj->Signal.numel()   ).reshape(transmitterObj->Signal.sizes());
         basebanding_vector = \
             torch::exp(COMPLEX_1j * 2 * PI * transmitterObj->fc * basebanding_vector);
 
         // multiplying the signal with the basebanding vector
-        torch::Tensor match_filter = \
-            torch::mul(transmitterObj->Signal, basebanding_vector);
+        torch::Tensor match_filter =                        \
+            torch::mul(transmitterObj->Signal,              \
+                       basebanding_vector);
 
-        // low-pass filtering
+        // low-pass filtering to get the baseband signal
         fConvolve1D(match_filter, this->lowpassFilterCoefficientsForDecimation);
 
         // creating sampling-indices
-        int decimation_factor = std::floor((static_cast<float>(this->sampling_frequency)/2) /        \
-                                            (static_cast<float>(transmitterObj->bandwidth)/2));
-        int final_num_samples = std::ceil(static_cast<float>(match_filter.numel())/static_cast<float>(decimation_factor));
+        int decimation_factor = \
+            std::floor((static_cast<float>(this->sampling_frequency)/2)       \
+                        /(static_cast<float>(transmitterObj->bandwidth)/2));
+        int final_num_samples = \
+            std::ceil(static_cast<float>(match_filter.numel())/static_cast<float>(decimation_factor));
         torch::Tensor sampling_indices = \
             torch::linspace(1, \
                             (final_num_samples-1) * decimation_factor, 
                             final_num_samples).to(torch::kInt) - torch::tensor({1}).to(torch::kInt);
-        
+
         // sampling the signal
         match_filter = match_filter.index({sampling_indices});
         
@@ -265,10 +274,10 @@ public:
                                                                                1, \
                                                                                3});
         
-        // repeating slices along the y-coordinates
+        // repeating slices along the x-coordinates
         slottedSensors  = torch::tile(slottedSensors, {1, slottedCoordinates_shape[1], 1});
 
-        // slotting the coordinate of the transmitter
+        // slotting the coordinate of the transmitter and duplicating along dimensions [0] and [1]
         torch::Tensor slotted_location = torch::permute(this->location.reshape({3, 1, 1}), \
                                                         {2, 1, 0}).reshape({1,1,3});
         slotted_location = torch::tile(slotted_location, \
@@ -297,16 +306,35 @@ public:
                 // checking whether that point is out of bounds
                 if(where_to_place >= numsamples) continue;
 
-                // placing a point in there
-                this->signalMatrix.index_put_({where_to_place, sensor_index}, \
-                                              this->signalMatrix.index({where_to_place, sensor_index}) + \
-                                              torch::tensor({1}).to(torch::kFloat));
-
+                // placing a reflectivity-scaled impulse in there
                 this->signalMatrix.index_put_({where_to_place, sensor_index}, \
                                               this->signalMatrix.index({where_to_place, sensor_index}) + \
                                                 scatterers->reflectivity.index({0, scatter_index}) );
             }
         }
+
+
+        // // Adding pulses 
+        // for(int sensor_index = 0; sensor_index < this->num_sensors; ++sensor_index){
+
+        //     // indices associated with current index
+        //     torch::Tensor tensor_containing_placing_indices = \
+        //         samplesOfFlight[sensor_index].to(torch::kInt);
+
+        //     // calculating histogram
+        //     auto uniqueOutputs = at::_unique(tensor_containing_placing_indices, false, true);
+        //     torch::Tensor bruh = std::get<1>(uniqueOutputs);
+        //     torch::Tensor uniqueValues = std::get<0>(uniqueOutputs).to(torch::kInt);
+        //     torch::Tensor uniqueCounts = torch::bincount(bruh).to(torch::kInt);
+
+        //     // placing values according to histogram
+        //     this->signalMatrix.index_put_({uniqueValues.to(torch::kLong), sensor_index}, \
+        //                                   uniqueCounts.to(torch::kFloat));
+
+        // }
+
+
+
 
         // Convolving signals with transmitted signal
         torch::Tensor signalTensorAsArgument = \
@@ -331,7 +359,9 @@ public:
         return;
     }
 
-    // decimating the obtained signal
+    /* =========================================================================
+    Aim: Decimating basebanded-received signal
+    ------------------------------------------------------------------------- */ 
     void nfdc_decimateSignal(TransmitterClass* transmitterObj){
         
         // creating the matrix for frequency-shifting
@@ -343,10 +373,6 @@ public:
 
         // storing original number of samples
         int original_signalMatrix_numsamples = this->signalMatrix.size(0);
-
-        // // printing
-        // std::cout << "this->signalMatrix.shape    = "<< this->signalMatrix.sizes().vec()   << std::endl;
-        // std::cout << "integerArray.shape          = "<< integerArray.sizes().vec()         << std::endl;
 
         // producing frequency-shifting
         this->signalMatrix          = torch::mul(this->signalMatrix, integerArray);
@@ -382,7 +408,8 @@ public:
             this->signalMatrix.index({samplingIndices, \
                                       torch::indexing::Slice()});
 
-
+        // returning
+        return;
     }
 
     /* =========================================================================
@@ -396,8 +423,16 @@ public:
                                           {1, this->num_sensors});
 
         // 2D convolving to produce the match-filtering
-        fConvolveColumns(this->signalMatrix, \
+        fConvolveColumns(this->signalMatrix,    \
                         matchFilter2DMatrix);
+
+        // Trimming the signal to contain just the signals that make sense to us
+        int startingpoint   = matchFilter2DMatrix.size(0) - 1;
+        this->signalMatrix  =                                   \
+            this->signalMatrix.index({                          \
+                torch::indexing::Slice(startingpoint,           \
+                                       torch::indexing::None),  \
+                torch::indexing::Slice()});
 
     }
 
@@ -491,11 +526,17 @@ public:
                         static_cast<float>(this->sampling_frequency)/decimation_factor));
         this->frame_size = frame_size;
 
-        // calculating the buffer-zeros to add 
-        int num_buffer_zeros_per_frame = \
-            static_cast<float>(this->num_sensors - 1) * \
-            static_cast<float>(this->inter_element_spacing) * \
-            this->sampling_frequency /1500;
+        // // calculating the buffer-zeros to add 
+        // int num_buffer_zeros_per_frame = \
+        //     static_cast<float>(this->num_sensors - 1) * \
+        //     static_cast<float>(this->inter_element_spacing) * \
+        //     this->sampling_frequency /1500;
+
+        int num_buffer_zeros_per_frame =                    \
+            std::ceil((this->num_sensors - 1) *             \
+                       this->inter_element_spacing *        \
+                       this->sampling_frequency             \
+                       / (1500 * this->decimation_factor));
 
         // storing to class member
         this->num_buffer_zeros_per_frame = \
@@ -567,52 +608,54 @@ public:
             throw std::runtime_error("The second dimension doesn't correspond to the number of sensors \n");
         
         // adding the batch-dimension
-        /* This is to accomodate a particular property of torch library.
-        In torch, the first dimension is always the batch-related dimension.
-        So in order to use the function torch::bmm(), we need to ensure that the first dimension is that of shape. */
         this->signalMatrix = \
-            this->signalMatrix.reshape({1, \
-                                        this->signalMatrix.size(0), \
-                                        this->signalMatrix.size(1)}); 
+            this->signalMatrix.reshape({                    \
+                1,                                          \
+                this->signalMatrix.size(0),                 \
+                this->signalMatrix.size(1)}); 
         
         // zero-padding to ensure correctness
-        int ideal_length                              = std::ceil(this->range_centers.numel() * this->frame_size);
-        int num_zeros_to_pad_signal_along_dimension_0 = ideal_length - this->signalMatrix.size(1);
+        int ideal_length = \
+            std::ceil(this->range_centers.numel() * this->frame_size);
+        int num_zeros_to_pad_signal_along_dimension_0 = \
+            ideal_length - this->signalMatrix.size(1);
 
         // printing 
-        PRINTSMALLLINE
-        std::cout<<"\t\t ULAClass::nfdc_beamforming | this->range_centers.numel()               = "<<this->range_centers.numel()     <<std::endl;
-        std::cout<<"\t\t ULAClass::nfdc_beamforming | this->frame_size                          = "<<this->frame_size                 <<std::endl;
-        std::cout<<"\t\t ULAClass::nfdc_beamforming | ideal_length                              = "<<ideal_length                     <<std::endl;
-        std::cout<<"\t\t ULAClass::nfdc_beamforming | this->signalMatrix.size(1)                = "<<this->signalMatrix.size(1)       <<std::endl;
-        std::cout<<"\t\t ULAClass::nfdc_beamforming | num_zeros_to_pad_signal_along_dimension_0 = "<<num_zeros_to_pad_signal_along_dimension_0       <<std::endl;
+        if (DEBUG_ULA) PRINTSMALLLINE
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | this->range_centers.numel()               = "<<this->range_centers.numel()     <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | this->frame_size                          = "<<this->frame_size                 <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | ideal_length                              = "<<ideal_length                     <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | this->signalMatrix.size(1)                = "<<this->signalMatrix.size(1)       <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | num_zeros_to_pad_signal_along_dimension_0 = "<<num_zeros_to_pad_signal_along_dimension_0       <<std::endl; 
+        if (DEBUG_ULA) PRINTSPACE
 
         // appending or slicing based on the requirements 
         if (num_zeros_to_pad_signal_along_dimension_0 <= 0) {
             
             // sending out a warning that slicing is going on
-            std::cerr <<"\t\t ULAClass::nfdc_beamforming | Please note that the signal matrix has been sliced. This could lead to loss of information"<<std::endl;
+            if (DEBUG_ULA) std::cerr <<"\t\t ULAClass::nfdc_beamforming | Please note that the signal matrix has been sliced. This could lead to loss of information"<<std::endl;
 
             // slicing the signal matrix
-            PRINTSPACE
-            std::cout<<"\t\t ULAClass::nfdc_beamforming | this->signalMatrix.shape (before slicing) = "<< this->signalMatrix.sizes().vec() <<std::endl;
+            if (DEBUG_ULA) PRINTSPACE
+            if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | this->signalMatrix.shape (before slicing) = "<< this->signalMatrix.sizes().vec() <<std::endl;
             this->signalMatrix = \
                 this->signalMatrix.index({torch::indexing::Slice(), \
                                           torch::indexing::Slice(0, ideal_length), \
                                           torch::indexing::Slice()});
-            std::cout<<"\t\t ULAClass::nfdc_beamforming | this->signalMatrix.shape (after slicing) = "<< this->signalMatrix.sizes().vec() <<std::endl;
-            PRINTSPACE
+            if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming | this->signalMatrix.shape (after slicing) = "<< this->signalMatrix.sizes().vec() <<std::endl;
+            if (DEBUG_ULA) PRINTSPACE
 
         }
         else {
             // creating a zero-filled tensor to append to signal matrix
-            torch::Tensor zero_tensor   = torch::zeros({this->signalMatrix.size(0),                 \
-                                                        num_zeros_to_pad_signal_along_dimension_0,  \
-                                                        this->num_sensors}).to(torch::kFloat);
+            torch::Tensor zero_tensor   =                                   \
+                torch::zeros({this->signalMatrix.size(0),                   \
+                              num_zeros_to_pad_signal_along_dimension_0,    \
+                              this->num_sensors}).to(torch::kFloat);
 
             // appending to signal matrix
-            this->signalMatrix          = torch::cat({this->signalMatrix,                           \
-                                                      zero_tensor}, 1);
+            this->signalMatrix          =                                   \
+                torch::cat({this->signalMatrix, zero_tensor}, 1);
         }
 
         // breaking the signal into frames
@@ -638,16 +681,54 @@ public:
                                         this->mulFFTMatrix);
 
         // summing up the signals
+        // this->signalMatrix = torch::sum(this->signalMatrix, \
+        //                                 2,                  \
+        //                                 true);
         this->signalMatrix = torch::sum(this->signalMatrix, \
                                         2,                  \
-                                        true);
-        // this->signalMatrix = torch::sum(this->signalMatrix, 2, false);
+                                        false);
         
         // printing some stuff
-        std::cout<<"\t\t ULAClass::nfdc_beamforming: this->azimuth_centers.numel()  = "<<this->azimuth_centers.numel()  <<std::endl; 
-        std::cout<<"\t\t ULAClass::nfdc_beamforming: this->range_centers.numel()    = "<<this->range_centers.numel()    <<std::endl;
-        std::cout<<"\t\t ULAClass::nfdc_beamforming: total number    = "<<this->range_centers.numel() * this->azimuth_centers.numel()   <<std::endl;
-        std::cout<<"\t\t ULAClass::nfdc_beamforming: this->signalMatrix.sizes().vec()     = "<<this->signalMatrix.sizes().vec()    <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming: this->azimuth_centers.numel()      = "<<this->azimuth_centers.numel()  <<std::endl; 
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming: this->range_centers.numel()        = "<<this->range_centers.numel()    <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming: total number                       = "<<this->range_centers.numel() * this->azimuth_centers.numel()   <<std::endl;
+        if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming: this->signalMatrix.sizes().vec()   = "<<this->signalMatrix.sizes().vec()    <<std::endl;
+
+        // creating a tensor to store the final image
+        torch::Tensor finalImage = \
+            torch::zeros({this->frame_size * this->range_centers.numel(), \
+                          this->azimuth_centers.numel()}).to(torch::kComplexFloat);
+
+        // creating a loop to assign values
+        for(int range_index = 0; range_index < this->range_centers.numel(); ++range_index){
+            for(int angle_index = 0; angle_index < this->azimuth_centers.numel(); ++angle_index){
+
+                // getting row index
+                int rowindex = \
+                    angle_index * this->range_centers.numel() \
+                    + range_index;
+
+                // getting the strip to store
+                torch::Tensor strip = \
+                    this->signalMatrix.index({rowindex, \
+                                              torch::indexing::Slice()});
+
+                // taking just the first few values
+                strip = strip.index({torch::indexing::Slice(0, this->frame_size)});
+
+                // placing the strips on the image
+                finalImage.index_put_({\
+                    torch::indexing::Slice((range_index)*this->frame_size, \
+                                            (range_index+1)*this->frame_size), \
+                                           angle_index}, \
+                                           strip);
+
+            }
+        }
+
+        // saving the image
+        this->beamformedImage = finalImage;
+
     }
 
     /* =========================================================================
@@ -792,6 +873,53 @@ public:
         // // bringing it back to the original coordinates
         // scatterers->coordinates = scatterers->coordinates + this->location;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

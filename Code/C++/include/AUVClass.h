@@ -104,6 +104,7 @@ void fSaveSeafloorScatteres(ScattererClass scatterer, \
 #define PI              3.14159265
 // #define DEBUGMODE_AUV   true
 #define DEBUGMODE_AUV   false
+#define SAVE_SIGNAL_MATRIX false
 
 
 class AUVClass{
@@ -319,12 +320,16 @@ public:
         std::cout<<"\t AUVClass: scatterer_port.coordinates.shape (after)       = "; fPrintTensorSize(scatterer_port.coordinates);
         std::cout<<"\t AUVClass: scatterer_starboard.coordinates.shape (after)  = "; fPrintTensorSize(scatterer_starboard.coordinates);
 
+
+
         // multithreading the saving tensors part. 
         std::thread savetensor_t(fSaveSeafloorScatteres,    \
                                  scatterer,                 \
                                  scatterer_fls,             \
                                  scatterer_port,            \
                                  scatterer_starboard);
+
+
 
         // asking ULAs to simulate signal through multithreading
         std::thread ulafls_signalsim_t(&ULAClass::nfdc_simulateSignal,          \
@@ -346,8 +351,10 @@ public:
         ulastarboard_signalsim_t.join();    // joining back the signal-sim thread for ULA-Starboard
         savetensor_t.join();                // joining back the signal-sim thread for tensor-saving
 
+
+
         // saving the tensors
-        if (true) {
+        if (SAVE_SIGNAL_MATRIX) {
             // saving the ground-truth
             torch::save(this->ULA_fls.signalMatrix,         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_fls.pt");
             torch::save(this->ULA_port.signalMatrix,        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_port.pt");
@@ -376,6 +383,8 @@ public:
         ULA_port_image_t.join(); 
         ULA_starboard_image_t.join();
 
+        
+        
         // asking ULAs to match-filter the signals
         std::thread ULA_fls_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal,       &this->ULA_fls);
         std::thread ULA_port_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal,      &this->ULA_port);
@@ -387,21 +396,22 @@ public:
         ULA_starboard_matchfilter_t.join();
 
 
+        
         // performing the beamforming
-        // std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
-        //                                   &this->ULA_fls,                       \
-        //                                   &this->transmitter_fls);
-        // std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
-        //                                    &this->ULA_port,                     \
-        //                                    &this->transmitter_port);
-        // std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
-        //                                         &this->ULA_starboard,           \
-        //                                         &this->transmitter_starboard);
+        std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
+                                          &this->ULA_fls,                       \
+                                          &this->transmitter_fls);
+        std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
+                                           &this->ULA_port,                     \
+                                           &this->transmitter_port);
+        std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
+                                                &this->ULA_starboard,           \
+                                                &this->transmitter_starboard);
 
         // joining the filters back
-        // ULA_fls_beamforming_t.join(); 
-        // ULA_port_beamforming_t.join(); 
-        // ULA_starboard_beamforming_t.join();
+        ULA_fls_beamforming_t.join(); 
+        ULA_port_beamforming_t.join(); 
+        ULA_starboard_beamforming_t.join();
 
     }
 
