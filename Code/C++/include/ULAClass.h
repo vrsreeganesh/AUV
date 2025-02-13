@@ -600,7 +600,11 @@ public:
         this->mulFFTMatrix  = mulFFTMatrix;
     }
 
-    // beamforming the signal
+    
+
+    /* =========================================================================
+    Aim: Beamforming the signal
+    ------------------------------------------------------------------------- */ 
     void nfdc_beamforming(TransmitterClass* transmitterObj){        
         
         // ensuring the signal matrix is in the shape we want
@@ -728,6 +732,111 @@ public:
 
         // saving the image
         this->beamformedImage = finalImage;
+
+
+        // converting image from polar to cartesian
+        nfdc_PolarToCartesian();
+        std::cout<<"called nfdc_PolarToCartesian"<<std::endl;
+
+    }
+
+    /* =========================================================================
+    Aim: Converting Polar Image to Cartesian
+    ............................................................................
+    Note:
+        > For now, we're assuming that the r value is one. 
+    ------------------------------------------------------------------------- */ 
+    void nfdc_PolarToCartesian(){
+        
+        // deciding image dimensions
+        int num_pixels_width    = 512;
+        int num_pixels_height   = 512;
+
+        // creating query points
+        torch::Tensor max_right   =                                             \
+            torch::cos(                                                         \
+                torch::max(                                                     \
+                    this->azimuth_centers                                       \
+                    - torch::mean(this->azimuth_centers)                        \
+                    + torch::tensor({90}).to(torch::kFloat))                                      \
+                * PI/180);
+        torch::Tensor max_left    =                                             \
+            torch::cos(                                                         \
+                torch::min(this->azimuth_centers                                \
+                           - torch::mean(this->azimuth_centers)                 \
+                           + torch::tensor({90}).to(torch::kFloat))                               \
+                * PI/180);
+        torch::Tensor max_top     = torch::tensor({1});
+        torch::Tensor max_bottom  = torch::min(this->range_centers);
+
+        
+
+        // creating query points along the x-dimension
+        torch::Tensor query_x =                             \
+            torch::linspace(                                \
+                max_left,                                   \
+                max_right,                                  \
+                num_pixels_width                            \
+                ).to(torch::kFloat);
+        
+        torch::Tensor query_y =                             \
+            torch::linspace(                                \
+                max_bottom.item<float>(),                   \
+                max_top.item<float>(),                      \
+                num_pixels_height                           \
+                ).to(torch::kFloat);
+
+
+        // converting original coordinates to their corresponding cartesian
+        float delta_r = 1/static_cast<float>(this->beamformedImage.size(0));
+        float delta_azimuth =                               \
+            torch::abs(                                     \
+                this->azimuth_centers.index({1})            \
+                - this->azimuth_centers.index({0})          \
+                ).item<float>();
+        
+
+
+        // getting query points
+        torch::Tensor range_values = \
+            torch::linspace(                                \
+                delta_r,                                    \
+                this->beamformedImage.size(0) * delta_r,    \
+                this->beamformedImage.size(0)               \
+                ).to(torch::kFloat);
+        range_values = \
+            range_values.reshape({range_values.numel(), 1});
+        range_values = \
+            torch::tile(range_values, \
+                        {1, this->azimuth_centers.numel()});
+
+        // getting angle-values
+        torch::Tensor angle_values =                        \
+            this->azimuth_centers                           \
+            - torch::mean(this->azimuth_centers)            \
+            + torch::tensor({90});
+        angle_values =                                      \
+            torch::tile(                                    \
+                angle_values,                               \
+                {this->beamformedImage.size(0), 1});
+
+
+        // converting to cartesian original points
+        torch::Tensor query_original_x = \
+            range_values * torch::cos(angle_values * PI/180);
+        torch::Tensor query_original_y = \
+            range_values * torch::sin(angle_values * PI/180);
+
+        // converting points to vector 2D format
+        torch::Tensor query_source =                                          \
+            torch::cat({query_original_x.reshape({1, query_original_x.numel()}), query_original_y.reshape({1, query_original_y.numel()})},       \
+                0);
+
+        /*
+        Next Aim: start interpolating the points on the uniform grid. 
+        */ 
+                
+
 
     }
 

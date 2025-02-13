@@ -12,7 +12,7 @@ Aim: Signal Simulation
 #include <chrono>
 #include <Python.h>
 #include <Eigen/Dense>
-
+#include <cstdlib>          // For terminal access
 
 // hash defines
 #ifndef PRINTSPACE
@@ -38,8 +38,8 @@ Aim: Signal Simulation
 
 // deciding to save tensors or not
 #ifndef SAVETENSORS
-    #define SAVETENSORS       true
-    // #define SAVETENSORS       false
+    // #define SAVETENSORS       true
+    #define SAVETENSORS       false
 #endif
 
 // choose device here
@@ -143,16 +143,21 @@ int main() {
 
         // saving the tensors
         if(SAVETENSORS){
+
+            // saving the beamformed images
             torch::save(auv.ULA_fls.beamformedImage, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_image.pt");
             torch::save(auv.ULA_port.beamformedImage, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_port_image.pt");
             torch::save(auv.ULA_starboard.beamformedImage, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_starboard_image.pt");
+
+            // running python file
+            system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_BeamformedImage.py");
         }
 
 
-        // measuring time 
+        // measuring and printing time taken
         auto end_time   = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> time_duration = end_time - start_time;
         PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS        

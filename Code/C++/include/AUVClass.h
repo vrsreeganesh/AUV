@@ -401,17 +401,17 @@ public:
         std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
                                           &this->ULA_fls,                       \
                                           &this->transmitter_fls);
-        std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
-                                           &this->ULA_port,                     \
-                                           &this->transmitter_port);
-        std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
-                                                &this->ULA_starboard,           \
-                                                &this->transmitter_starboard);
+        // std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
+        //                                    &this->ULA_port,                     \
+        //                                    &this->transmitter_port);
+        // std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
+        //                                         &this->ULA_starboard,           \
+        //                                         &this->transmitter_starboard);
 
         // joining the filters back
         ULA_fls_beamforming_t.join(); 
-        ULA_port_beamforming_t.join(); 
-        ULA_starboard_beamforming_t.join();
+        // ULA_port_beamforming_t.join(); 
+        // ULA_starboard_beamforming_t.join();
 
     }
 

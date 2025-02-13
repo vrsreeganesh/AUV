@@ -16,37 +16,22 @@ def get_current_time():
 # setting paths
 tensor_fls          = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_image.pt"
 tensor_fls          = load_tensors(tensor_fls)
-
 tensor_port         = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_port_image.pt"
 tensor_port         = load_tensors(tensor_port)
-
 tensor_starboard    = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_starboard_image.pt"
 tensor_starboard    = load_tensors(tensor_starboard)
-
 
 # printing the dimensions
 print(f"tensor_fls.shape = {tensor_fls.shape}")
 print(f"tensor_port.shape = {tensor_port.shape}")
 print(f"tensor_starboard.shape = {tensor_starboard.shape}")
 
-
-
-
-
-
-# plt.imshow(tensor_fls[:, 0:tensor_fls.shape[0]], 
-#            cmap='viridis', 
-#            interpolation='nearest')
+# plotting
 plt.imshow(torch.abs(tensor_fls), 
            cmap='viridis', 
            interpolation='nearest')
 plt.title('Random Data')
 # plt.colorbar()
-
-# # saving the figure
-# plt.savefig(os.path.join("/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Figures",
-#                          "BeamformedImage_fls_timeID"+get_current_time()));
-
 
 
 # printing
