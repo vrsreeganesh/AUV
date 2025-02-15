@@ -13,6 +13,7 @@ Aim: Signal Simulation
 #include <Python.h>
 #include <Eigen/Dense>
 #include <cstdlib>          // For terminal access
+#include <omp.h>            // the openMP
 
 // hash defines
 #ifndef PRINTSPACE
@@ -38,8 +39,8 @@ Aim: Signal Simulation
 
 // deciding to save tensors or not
 #ifndef SAVETENSORS
-    // #define SAVETENSORS       true
-    #define SAVETENSORS       false
+    #define SAVETENSORS       true
+    // #define SAVETENSORS       false
 #endif
 
 // choose device here
@@ -48,6 +49,10 @@ Aim: Signal Simulation
     // #define DEVICE          torch::kMPS
     // #define DEVICE          torch::kCUDA
 #endif
+
+// Enable Imaging
+#define IMAGING_TOGGLE                  true
+
 
 // class definitions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
@@ -66,6 +71,7 @@ Aim: Signal Simulation
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fSph2Cart.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fRunSystemScriptInSeperateThread.cpp"
 
 
 // main-function
@@ -99,8 +105,8 @@ int main() {
     scatterThread_t.join();     // making the scattetr population thread join back
 
     // building AUV 
-    AUVClass auv;               // instantiating class object
-    AUVSetup(&auv);        // populating 
+    AUVClass auv;                   // instantiating class object
+    AUVSetup(&auv);             // populating 
     
     // attaching components to the AUV
     auv.ULA_fls                 = ula_fls;                  // attaching ULA-FLS to AUV
@@ -113,8 +119,12 @@ int main() {
     // storing 
     ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
 
-    // pre-computing the imaging matrices
+    // pre-computing the data-structures required for processing
     auv.init();
+
+    // printing sampling frequency and bandwidth
+    std::cout << "main:: auv.transmitter_fls.bandwidth = " << auv.transmitter_fls.bandwidth<< std::endl;
+    std::cout << "main:: auv.ULA_fls.sampling_frequency = " << auv.ULA_fls.sampling_frequency << std::endl;
 
     // mimicking movement
     int number_of_stophops = 1;
@@ -133,28 +143,52 @@ int main() {
         // signal simulation
         auv.simulateSignal(SeafloorScatter);
 
-        // creating image from signals
-        auv.image();
 
-        // saving the imaged tensors
-        if (DEBUGMODE) std::cout << "auv.ULA_fls.beamformedImage.sizes().vec()         = " << auv.ULA_fls.beamformedImage.sizes().vec()        << std::endl;
-        if (DEBUGMODE) std::cout << "auv.ULA_port.beamformedImage.sizes().vec()        = " << auv.ULA_port.beamformedImage.sizes().vec()       << std::endl;
-        if (DEBUGMODE) std::cout << "auv.ULA_starboard.beamformedImage.sizes().vec()   = " << auv.ULA_starboard.beamformedImage.sizes().vec()  << std::endl;
 
-        // saving the tensors
-        if(SAVETENSORS){
+        // saving simulated signal
+        if (SAVETENSORS) {
 
-            // saving the beamformed images
-            torch::save(auv.ULA_fls.beamformedImage, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_image.pt");
-            torch::save(auv.ULA_port.beamformedImage, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_port_image.pt");
-            torch::save(auv.ULA_starboard.beamformedImage, \
-                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_starboard_image.pt");
+            // saving the signal matrix tensors
+            torch::save(auv.ULA_fls.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_fls.pt");
+            torch::save(auv.ULA_port.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_port.pt");
+            torch::save(auv.ULA_starboard.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_starboard.pt");
 
-            // running python file
-            system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_BeamformedImage.py");
+            // running python script
+            std::string script_to_run = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_SignalMatrix.py";
+            std::thread plotSignalMatrix_t(fRunSystemScriptInSeperateThread, \
+                                           script_to_run);
+            plotSignalMatrix_t.detach();
+        
         }
+
+
+        if (IMAGING_TOGGLE) {
+            // creating image from signals
+            auv.image();
+
+            // saving the tensors
+            if(SAVETENSORS){
+                // saving the beamformed images
+                torch::save(auv.ULA_fls.beamformedImage, \
+                            "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_image.pt");
+                // torch::save(auv.ULA_port.beamformedImage, \
+                //             "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_port_image.pt");
+                // torch::save(auv.ULA_starboard.beamformedImage, \
+                //             "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_starboard_image.pt");
+
+                // saving cartesian image
+                torch::save(auv.ULA_fls.cartesianImage, \
+                            "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_cartesianImage.pt");
+
+                // // running python file
+                // system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_BeamformedImage.py");
+                system("python /Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_cartesianImage.py");
+            }
+        }
+        
 
 
         // measuring and printing time taken
@@ -166,38 +200,6 @@ int main() {
         auv.step(0.5);
 
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

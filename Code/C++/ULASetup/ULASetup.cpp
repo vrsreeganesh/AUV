@@ -26,7 +26,7 @@ void ULASetup(ULAClass* ula_fls,
     int num_sensors             = 64;                           // number of sensors
     float sampling_frequency    = 160e3;                        // sampling frequency
     float inter_element_spacing = 1500/(2*sampling_frequency);  // space between samples
-    float recording_period      = 0.25;                            // sampling-period
+    float recording_period      = 10e-2;                            // sampling-period
 
     // building the direction for the sensors
     torch::Tensor ULA_direction = torch::tensor({-1,0,0}).reshape({3,1}).to(torch::kFloat).to(DEVICE);

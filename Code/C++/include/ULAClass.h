@@ -1,6 +1,7 @@
 // bringing in the header files
 #include <cstdint>
 #include <iostream>
+#include <ostream>
 #include <stdexcept>
 #include <torch/torch.h>
 
@@ -76,6 +77,7 @@ public:
     torch::Tensor matchFilter;          // torch tensor containing the match-filter
     int num_buffer_zeros_per_frame;     // number of zeros we're adding per frame to ensure no-rotation
     torch::Tensor beamformedImage;      // the beamformed image
+    torch::Tensor cartesianImage; 
 
     // artificial acoustic-image related
     torch::Tensor currentArtificalAcousticImage; // the acoustic image directly produced
@@ -129,11 +131,19 @@ public:
         this->range_cell_size       = 40 * this->range_resolution;
 
         // status printing
-        if(DEBUG_ULA) std::cout<<"\t\t ULAClass::init():: this->range_resolution = "  <<  this->range_resolution  <<  std::endl;
-        if(DEBUG_ULA) std::cout<<"\t\t ULAClass::init():: this->range_cell_size  = "  <<  this->range_cell_size   <<  std::endl;
+        if (DEBUG_ULA) {
+            std::cout << "\t\t ULAClass::init():: this->range_resolution = "    \
+                      <<  this->range_resolution                                \
+                      <<  std::endl;
+            std::cout << "\t\t ULAClass::init():: this->range_cell_size  = "    \
+                      <<  this->range_cell_size                                 \
+                      <<  std::endl;
+        }
 
         // calculating azimuth-related parameters
-        this->azimuthal_resolution      = (1500/transmitterObj->fc)/((this->num_sensors-1)*this->inter_element_spacing); 
+        this->azimuthal_resolution =                                            \
+            (1500/transmitterObj->fc)                                           \
+            /((this->num_sensors-1)*this->inter_element_spacing); 
         this->azimuth_cell_size         = 2 * this->azimuthal_resolution;
 
         // creating and storing the match-filter
@@ -148,9 +158,13 @@ public:
             torch::linspace(                                \
                 0,                                          \
                 transmitterObj->Signal.numel()-1,           \
-                transmitterObj->Signal.numel()   ).reshape(transmitterObj->Signal.sizes());
-        basebanding_vector = \
-            torch::exp(COMPLEX_1j * 2 * PI * transmitterObj->fc * basebanding_vector);
+                transmitterObj->Signal.numel()              \
+                ).reshape(transmitterObj->Signal.sizes());
+        basebanding_vector =                                    \
+            torch::exp(                                         \
+                COMPLEX_1j * 2 * PI                             \
+                * (transmitterObj->fc/this->sampling_frequency) \
+                * basebanding_vector);
 
         // multiplying the signal with the basebanding vector
         torch::Tensor match_filter =                        \
@@ -301,15 +315,20 @@ public:
             for(int scatter_index = 0; scatter_index < samplesOfFlight[0].numel(); ++scatter_index){
                 
                 // getting the sample where the current scatter's contribution must be placed. 
-                int where_to_place = samplesOfFlight.index({sensor_index, scatter_index}).item<int>();
+                int where_to_place =                        \
+                    samplesOfFlight.index({sensor_index,    \
+                                           scatter_index    \
+                                           }).item<int>();
 
                 // checking whether that point is out of bounds
                 if(where_to_place >= numsamples) continue;
 
                 // placing a reflectivity-scaled impulse in there
-                this->signalMatrix.index_put_({where_to_place, sensor_index}, \
-                                              this->signalMatrix.index({where_to_place, sensor_index}) + \
-                                                scatterers->reflectivity.index({0, scatter_index}) );
+                this->signalMatrix.index_put_({where_to_place, sensor_index},                       \
+                                              this->signalMatrix.index({where_to_place,             \
+                                                                        sensor_index}) +            \
+                                                scatterers->reflectivity.index({0, \
+                                                                                scatter_index}));
             }
         }
 
@@ -333,10 +352,7 @@ public:
 
         // }
 
-
-
-
-        // Convolving signals with transmitted signal
+        // Creating matrix out of transmitted signal
         torch::Tensor signalTensorAsArgument = \
             transmitterObj->Signal.reshape({transmitterObj->Signal.numel(),1});
         signalTensorAsArgument = torch::tile(signalTensorAsArgument, \
@@ -347,14 +363,9 @@ public:
                          signalTensorAsArgument);
 
         // trimming the convolved signal since the signal matrix length remains the same
-        this->signalMatrix = this->signalMatrix.index({torch::indexing::Slice(0, numsamples), \
-                                                       torch::indexing::Slice()});
-
-        // printing the shape
-        if(DEBUG_ULA) {
-            std::cout<<"\t\t\t> this->signalMatrix.shape (after signal sim) = "; 
-            fPrintTensorSize(this->signalMatrix);
-        }
+        this->signalMatrix = \
+            this->signalMatrix.index({torch::indexing::Slice(0, numsamples), \
+                                      torch::indexing::Slice()});
 
         return;
     }
@@ -378,19 +389,31 @@ public:
         this->signalMatrix          = torch::mul(this->signalMatrix, integerArray);
 
         // low-pass filter
-        torch::Tensor lowpassfilter_impulseresponse = \
-            this->lowpassFilterCoefficientsForDecimation.reshape(\
-                {this->lowpassFilterCoefficientsForDecimation.numel(), 1});
-        lowpassfilter_impulseresponse = torch::tile(lowpassfilter_impulseresponse, \
-                                      {1, this->signalMatrix.size(1)}); 
+        torch::Tensor lowpassfilter_impulseresponse =                           \
+            this->lowpassFilterCoefficientsForDecimation.reshape(               \
+                {this->lowpassFilterCoefficientsForDecimation.numel(),          \
+                1});
+        lowpassfilter_impulseresponse =                                         \
+            torch::tile(lowpassfilter_impulseresponse,                          \
+                        {1, this->signalMatrix.size(1)}); 
 
-        // Convolving
-        fConvolveColumns(this->signalMatrix, lowpassfilter_impulseresponse); 
+        // low-pass filtering the signal
+        fConvolveColumns(this->signalMatrix, 
+                        lowpassfilter_impulseresponse); 
 
         // Cutting down the extra-samples from convolution
         this->signalMatrix = \
             this->signalMatrix.index({torch::indexing::Slice(0, original_signalMatrix_numsamples), \
                                       torch::indexing::Slice()});
+
+        // // Cutting off samples in the front. 
+        // int cutoffpoint = lowpassfilter_impulseresponse.size(0) - 1;
+        // this->signalMatrix =                                                    \
+        //     this->signalMatrix.index({                                          \
+        //         torch::indexing::Slice(cutoffpoint,                             \
+        //                                torch::indexing::None),                  \
+        //         torch::indexing::Slice()                                        \
+        //     });
 
         // building parameters for downsampling
         int decimation_factor           = std::floor(this->sampling_frequency/transmitterObj->bandwidth);
@@ -416,16 +439,20 @@ public:
     Aim: Match-filtering
     ------------------------------------------------------------------------- */
     void nfdc_matchFilterDecimatedSignal(){
-        // Creating a 2D marix out of the signal
+        
+        // Creating a 2D matrix out of the signal
         torch::Tensor matchFilter2DMatrix = \
             this->matchFilter.reshape({this->matchFilter.numel(), 1});
-        matchFilter2DMatrix = torch::tile(matchFilter2DMatrix, \
-                                          {1, this->num_sensors});
+        matchFilter2DMatrix = \
+            torch::tile(matchFilter2DMatrix, \
+                        {1, this->num_sensors});
 
+        
         // 2D convolving to produce the match-filtering
         fConvolveColumns(this->signalMatrix,    \
                         matchFilter2DMatrix);
 
+        
         // Trimming the signal to contain just the signals that make sense to us
         int startingpoint   = matchFilter2DMatrix.size(0) - 1;
         this->signalMatrix  =                                   \
@@ -433,6 +460,18 @@ public:
                 torch::indexing::Slice(startingpoint,           \
                                        torch::indexing::None),  \
                 torch::indexing::Slice()});
+
+        // // trimming the two ends of the signal
+        // int startingpoint   = matchFilter2DMatrix.size(0) - 1;
+        // int endingpoint     = this->signalMatrix.size(0)    \
+        //                       - matchFilter2DMatrix.size(0) \
+        //                       + 1;
+        // this->signalMatrix  =                                   \
+        //     this->signalMatrix.index({                          \
+        //         torch::indexing::Slice(startingpoint,           \
+        //                                endingpoint),  \
+        //         torch::indexing::Slice()});
+        
 
     }
 
@@ -600,8 +639,6 @@ public:
         this->mulFFTMatrix  = mulFFTMatrix;
     }
 
-    
-
     /* =========================================================================
     Aim: Beamforming the signal
     ------------------------------------------------------------------------- */ 
@@ -736,7 +773,7 @@ public:
 
         // converting image from polar to cartesian
         nfdc_PolarToCartesian();
-        std::cout<<"called nfdc_PolarToCartesian"<<std::endl;
+        std::cout<<"\t\t ULAClass::nfdc_beamforming: finished nfdc_PolarToCartesian"<<std::endl;
 
     }
 
@@ -758,13 +795,13 @@ public:
                 torch::max(                                                     \
                     this->azimuth_centers                                       \
                     - torch::mean(this->azimuth_centers)                        \
-                    + torch::tensor({90}).to(torch::kFloat))                                      \
+                    + torch::tensor({90}).to(torch::kFloat))                    \
                 * PI/180);
         torch::Tensor max_left    =                                             \
             torch::cos(                                                         \
                 torch::min(this->azimuth_centers                                \
                            - torch::mean(this->azimuth_centers)                 \
-                           + torch::tensor({90}).to(torch::kFloat))                               \
+                           + torch::tensor({90}).to(torch::kFloat))             \
                 * PI/180);
         torch::Tensor max_top     = torch::tensor({1});
         torch::Tensor max_bottom  = torch::min(this->range_centers);
@@ -828,15 +865,91 @@ public:
             range_values * torch::sin(angle_values * PI/180);
 
         // converting points to vector 2D format
-        torch::Tensor query_source =                                          \
-            torch::cat({query_original_x.reshape({1, query_original_x.numel()}), query_original_y.reshape({1, query_original_y.numel()})},       \
+        torch::Tensor query_source =                                            \
+            torch::cat({                                                        \
+                query_original_x.reshape({1, query_original_x.numel()}),        \
+                query_original_y.reshape({1, query_original_y.numel()})},       \
                 0);
+
+        // converting reflectivity to corresponding 2D format
+        torch::Tensor reflectivity_vectors = \
+            this->beamformedImage.reshape({1, this->beamformedImage.numel()});
+
+        // creating image
+        int num_pixels_x = 512;
+        int num_pixels_y = 512;
+        torch::Tensor cartesianImageLocal = \
+            torch::zeros({num_pixels_x, num_pixels_y}).to(torch::kComplexFloat);
+
 
         /*
         Next Aim: start interpolating the points on the uniform grid. 
         */ 
+
+        for(int x_index = 0; x_index < query_x.numel(); ++x_index){
+            std::cout<<"\t\t\t x_index = "<<x_index<<std::endl;
+            for(int y_index = 0; y_index < query_y.numel(); ++y_index){
+
+                // getting current values
+                torch::Tensor current_x = query_x.index({x_index}).reshape({1, 1});
+                torch::Tensor current_y = query_y.index({y_index}).reshape({1, 1});
+
+                // getting the query value
+                torch::Tensor query_vector = torch::cat({current_x, current_y}, 0);
+
+                // copying the query source
+                torch::Tensor query_source_relative = query_source;
+                query_source_relative = query_source_relative - query_vector;
+
+                // subsetting using absolute values and masks 
+                float threshold = delta_r * 10;
+                // PRINTDOTS
+                auto mask_row = \
+                    torch::abs(query_source_relative[0]) <= threshold;
+                auto mask_col = \
+                    torch::abs(query_source_relative[1]) <= threshold;
+                auto mask_together = torch::mul(mask_row, mask_col);
                 
 
+                // calculating number of points in threshold neighbourhood
+                int num_points_in_threshold_neighbourhood = \
+                    torch::sum(mask_together).item<int>();
+                if (num_points_in_threshold_neighbourhood == 0){
+                    continue;
+                }
+
+                // subsetting points in neighbourhood
+                torch::Tensor PointsInNeighbourhood =       \
+                    query_source_relative.index({
+                        torch::indexing::Slice(),           \
+                        mask_together});
+                torch::Tensor ReflectivitiesInNeighbourhood = \
+                    reflectivity_vectors.index({torch::indexing::Slice(), mask_together});
+
+                // finding the distance between the points
+                torch::Tensor relativeDistances = \
+                    torch::linalg_norm(PointsInNeighbourhood, 2, 0, true, torch::kFloat);
+
+                // calculating weighing factor
+                torch::Tensor weighingFactor =                                  \
+                    torch::nn::functional::softmax(                             \
+                        torch::max(relativeDistances)- relativeDistances,       \
+                        torch::nn::functional::SoftmaxFuncOptions(1));
+
+                // combining intensities using distances
+                torch::Tensor finalIntensity = \
+                    torch::sum(
+                        torch::mul(weighingFactor, \
+                                   ReflectivitiesInNeighbourhood));
+
+                // assigning values
+                cartesianImageLocal.index_put_({x_index, y_index}, finalIntensity);
+
+            }
+        }
+
+        // saving to member function
+        this->cartesianImage = cartesianImageLocal;
 
     }
 
@@ -966,43 +1079,9 @@ public:
 
         
 
-        
-
-        
-        
-        
-        
-
-
-
-
-
-
-
         // // bringing it back to the original coordinates
         // scatterers->coordinates = scatterers->coordinates + this->location;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

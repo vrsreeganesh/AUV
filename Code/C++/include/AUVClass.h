@@ -1,3 +1,4 @@
+// including header-files
 #include "ScattererClass.h"
 #include "TransmitterClass.h"
 #include "ULAClass.h"
@@ -5,7 +6,6 @@
 #include <ostream>
 #include <torch/torch.h>
 #include <cmath>
-
 
 // including functions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
@@ -85,16 +85,16 @@ void fSaveSeafloorScatteres(ScattererClass scatterer, \
 // including class-definitions
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 
-// hash defines
-#ifndef PRINTSPACE
-#define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
-#endif
-#ifndef PRINTSMALLLINE
-#define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
-#endif
-#ifndef PRINTLINE
-#define PRINTLINE       std::cout<<"================================================"<<std::endl;
-#endif
+// // hash defines
+// #ifndef PRINTSPACE
+// #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
+// #endif
+// #ifndef PRINTSMALLLINE
+// #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
+// #endif
+// #ifndef PRINTLINE
+// #define PRINTLINE       std::cout<<"================================================"<<std::endl;
+// #endif
 
 #ifndef DEVICE
 #define DEVICE          torch::kMPS
@@ -102,10 +102,10 @@ void fSaveSeafloorScatteres(ScattererClass scatterer, \
 #endif
 
 #define PI              3.14159265
-// #define DEBUGMODE_AUV   true
-#define DEBUGMODE_AUV   false
-#define SAVE_SIGNAL_MATRIX false
-
+#define DEBUGMODE_AUV                       false
+#define SAVE_SIGNAL_MATRIX                  false
+#define SAVE_DECIMATED_SIGNAL_MATRIX        true
+#define SAVE_MATCHFILTERED_SIGNAL_MATRIX    true
 
 class AUVClass{
 public:
@@ -140,6 +140,45 @@ public:
     torch::Tensor ApertureSensorLocations;    // sensor locations of aperture
 
 
+
+
+
+
+
+
+    /* =========================================================================
+    Aim: Init
+    --------------------------------------------------------------------------*/ 
+    void init(){
+        
+        // call sync-component attributes
+        this->syncComponentAttributes();
+
+        // initializing all the ULAs 
+        this->ULA_fls.init(         &this->transmitter_fls); 
+        this->ULA_port.init(        &this->transmitter_port); 
+        this->ULA_starboard.init(   &this->transmitter_starboard);
+
+        // precomputing delay-matrices for the ULA-class
+        std::thread ULA_fls_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,       \
+                                                 &this->ULA_fls,                                \
+                                                 &this->transmitter_fls);
+        std::thread ULA_port_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,      \
+                                                  &this->ULA_port,                              \
+                                                  &this->transmitter_port);
+        std::thread ULA_starboard_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices, \
+                                                       &this->ULA_starboard,                    \
+                                                       &this->transmitter_starboard);
+
+        // joining the threads back
+        ULA_fls_precompute_weights_t.join();
+        ULA_port_precompute_weights_t.join();
+        ULA_starboard_precompute_weights_t.join();
+
+    }
+
+
+    
     /*==========================================================================
     Aim: stepping motion
     --------------------------------------------------------------------------*/ 
@@ -283,19 +322,18 @@ public:
     // Signal Simulation
     void simulateSignal(ScattererClass& scatterer){
 
+        // printing status
+        std::cout << "\t AUVClass::simulateSignal: Began Signal Simulation" << std::endl;
+
         // making three copies
         ScattererClass scatterer_fls        = scatterer;
         ScattererClass scatterer_port       = scatterer;
         ScattererClass scatterer_starboard  = scatterer;
 
-        // printing size of scatterers before subsetting
-        std::cout<< "> AUVClass: Beginning Scatterer Subsetting"<<std::endl;
-        std::cout<<"\t AUVClass: scatterer_fls.coordinates.shape (before)        = "; fPrintTensorSize(scatterer_fls.coordinates);
-        std::cout<<"\t AUVClass: scatterer_port.coordinates.shape (before)       = "; fPrintTensorSize(scatterer_port.coordinates);
-        std::cout<<"\t AUVClass: scatterer_starboard.coordinates.shape (before)  = "; fPrintTensorSize(scatterer_starboard.coordinates);
 
         // finding the pointing direction in spherical
         torch::Tensor auv_pointing_direction_spherical = fCart2Sph(this->pointing_direction);
+
 
         // asking the transmitters to subset the scatterers by multithreading
         std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, this, \
@@ -312,14 +350,9 @@ public:
                                                  - auv_pointing_direction_spherical[1].item<float>());
 
         // joining the subset threads back
-        transmitterFLSSubset_t.join(); transmitterPortSubset_t.join(); transmitterStarboardSubset_t.join();
-
-        // printing the size of these points before subsetting
-        PRINTDOTS
-        std::cout<<"\t AUVClass: scatterer_fls.coordinates.shape (after)        = "; fPrintTensorSize(scatterer_fls.coordinates);
-        std::cout<<"\t AUVClass: scatterer_port.coordinates.shape (after)       = "; fPrintTensorSize(scatterer_port.coordinates);
-        std::cout<<"\t AUVClass: scatterer_starboard.coordinates.shape (after)  = "; fPrintTensorSize(scatterer_starboard.coordinates);
-
+        transmitterFLSSubset_t.join(); 
+        transmitterPortSubset_t.join(); 
+        transmitterStarboardSubset_t.join();
 
 
         // multithreading the saving tensors part. 
@@ -351,17 +384,6 @@ public:
         ulastarboard_signalsim_t.join();    // joining back the signal-sim thread for ULA-Starboard
         savetensor_t.join();                // joining back the signal-sim thread for tensor-saving
 
-
-
-        // saving the tensors
-        if (SAVE_SIGNAL_MATRIX) {
-            // saving the ground-truth
-            torch::save(this->ULA_fls.signalMatrix,         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_fls.pt");
-            torch::save(this->ULA_port.signalMatrix,        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_port.pt");
-            torch::save(this->ULA_starboard.signalMatrix,   "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_starboard.pt");
-        }
-
-
     }
 
     // Imaging Function
@@ -383,17 +405,51 @@ public:
         ULA_port_image_t.join(); 
         ULA_starboard_image_t.join();
 
-        
+        // saving the decimated signal
+        if (SAVE_DECIMATED_SIGNAL_MATRIX) {
+            std::cout << "\t AUVClass::image: saving decimated signal matrix" \
+                      << std::endl;
+            torch::save(this->ULA_fls.signalMatrix, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/decimated_signalMatrix_fls.pt");
+            torch::save(this->ULA_port.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/decimated_signalMatrix_port.pt");
+            torch::save(this->ULA_starboard.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/decimated_signalMatrix_starboard.pt");
+        }
         
         // asking ULAs to match-filter the signals
-        std::thread ULA_fls_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal,       &this->ULA_fls);
-        std::thread ULA_port_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal,      &this->ULA_port);
-        std::thread ULA_starboard_matchfilter_t(&ULAClass::nfdc_matchFilterDecimatedSignal, &this->ULA_starboard);
+        std::thread ULA_fls_matchfilter_t(                  \
+            &ULAClass::nfdc_matchFilterDecimatedSignal,     \
+            &this->ULA_fls);
+        std::thread ULA_port_matchfilter_t(                 \
+            &ULAClass::nfdc_matchFilterDecimatedSignal,     \
+            &this->ULA_port);
+        std::thread ULA_starboard_matchfilter_t(            \
+            &ULAClass::nfdc_matchFilterDecimatedSignal,     \
+            &this->ULA_starboard);
 
         // joining the threads back
         ULA_fls_matchfilter_t.join();
         ULA_port_matchfilter_t.join();
         ULA_starboard_matchfilter_t.join();
+
+
+        // saving the decimated signal
+        if (SAVE_MATCHFILTERED_SIGNAL_MATRIX) {
+
+            // saving the tensors
+            std::cout << "\t AUVClass::image: saving match-filtered signal matrix" \
+                      << std::endl;
+            torch::save(this->ULA_fls.signalMatrix, \
+                    "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/matchfiltered_signalMatrix_fls.pt");
+            torch::save(this->ULA_port.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/matchfiltered_signalMatrix_port.pt");
+            torch::save(this->ULA_starboard.signalMatrix, \
+                        "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/matchfiltered_signalMatrix_starboard.pt");
+
+            // running python-script
+            
+        }
 
 
         
@@ -416,36 +472,7 @@ public:
     }
 
 
-    /* =========================================================================
-    Aim: Init
-    --------------------------------------------------------------------------*/ 
-    void init(){
-        
-        // call sync-component attributes
-        this->syncComponentAttributes();
-
-        // initializing all the ULAs 
-        this->ULA_fls.init(         &this->transmitter_fls); 
-        this->ULA_port.init(        &this->transmitter_port); 
-        this->ULA_starboard.init(   &this->transmitter_starboard);
-
-        // precomputing delay-matrices for the ULA-class
-        std::thread ULA_fls_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,       \
-                                                 &this->ULA_fls,                                \
-                                                 &this->transmitter_fls);
-        std::thread ULA_port_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,      \
-                                                  &this->ULA_port,                              \
-                                                  &this->transmitter_port);
-        std::thread ULA_starboard_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices, \
-                                                       &this->ULA_starboard,                    \
-                                                       &this->transmitter_starboard);
-
-        // joining the threads back
-        ULA_fls_precompute_weights_t.join();
-        ULA_port_precompute_weights_t.join();
-        ULA_starboard_precompute_weights_t.join();
-
-    }
+    
 
     /* =========================================================================
     Aim: directly create acoustic image
@@ -504,3 +531,64 @@ public:
 
 
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0000, 
+// 0.0001, 
+// 0.0001, 
+// 0.0002, 
+// 0.0003, 
+// 0.0006, 
+// 0.0009, 
+// 0.0014, 
+// 0.0022, 0.0032, 0.0047, 0.0066, 0.0092, 0.0126, 0.0168, 0.0219, 0.0281, 0.0352, 0.0432, 0.0518, 0.0609, 0.0700, 0.0786, 0.0861, 0.0921, 0.0958, 0.0969, 0.0950, 0.0903, 0.0833, 0.0755, 0.0694, 0.0693, 0.0825, 0.1206

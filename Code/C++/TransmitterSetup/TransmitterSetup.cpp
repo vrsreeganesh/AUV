@@ -22,7 +22,7 @@ void TransmitterSetup(TransmitterClass* transmitter_fls,
     float f2                  = 70e3;                       // second frequency of LFM
     float fc                  = (f1 + f2)/2;                // finding center-frequency
     float bandwidth           = std::abs(f2 - f1);  // bandwidth 
-    float pulselength         = 0.2;                        // time of recording
+    float pulselength         = 5e-2;                        // time of recording
 
     // building LFM 
     torch::Tensor timearray = torch::linspace(0, \

@@ -17,9 +17,10 @@ def get_current_time():
     return now.strftime("%H_%M_%S")
 
 # setting paths
-tensor_fls          = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_fls.pt";
-tensor_port         = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_port.pt";
-tensor_starboard    = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_starboard.pt";
+asset_folder        = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets"
+tensor_fls          = os.path.join(asset_folder, "matchfiltered_signalMatrix_fls.pt"        )
+tensor_port         = os.path.join(asset_folder, "matchfiltered_signalMatrix_port.pt"       )
+tensor_starboard    = os.path.join(asset_folder, "matchfiltered_signalMatrix_starboard.pt"  )
 
 # loading tensors
 tensor_fls          = load_tensors(tensor_fls)
@@ -32,26 +33,23 @@ tensors_together = torch.cat((tensor_fls,
                               tensor_starboard), 1);
 
 # subsetting
-tensors_together = tensors_together[0:-1:100, :];
+tensors_together = tensors_together[0:-1:10, :];
 print(f"torch.mean(tensors_together[:]) = {torch.mean(tensors_together[:])}")
 
-
-
-
-
-# printing sizes
-print(f"\t tensor_fls.shape = {tensor_fls.shape}")
-print(f"\t tensor_port.shape = {tensor_port.shape}")
-print(f"\t tensor_starboard.shape = {tensor_starboard.shape}")
-
-
+# scaling the image
+tensors_together_abs = torch.abs(tensors_together)
+tensors_together_abs = tensors_together_abs - torch.min(torch.abs(tensors_together_abs));
+tensors_together_abs = tensors_together_abs/torch.max(tensors_together_abs);
 
 # plotting
 plt.figure(figsize=(10, 10))
-plt.imshow(torch.real(tensors_together), 
+# plt.imshow(torch.real(tensors_together), 
+#            cmap='viridis', 
+#            interpolation='nearest')
+plt.imshow(tensors_together_abs, 
            cmap='viridis', 
            interpolation='nearest')
-plt.title('Signal Matrix - Port')
+plt.title('match-filtered Signal Matrix')
 plt.draw(); plt.pause(5);
 
 # plt.tight_layout()
