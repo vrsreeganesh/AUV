@@ -122,10 +122,6 @@ int main() {
     // pre-computing the data-structures required for processing
     auv.init();
 
-    // printing sampling frequency and bandwidth
-    std::cout << "main:: auv.transmitter_fls.bandwidth = " << auv.transmitter_fls.bandwidth<< std::endl;
-    std::cout << "main:: auv.ULA_fls.sampling_frequency = " << auv.ULA_fls.sampling_frequency << std::endl;
-
     // mimicking movement
     int number_of_stophops = 1;
     // if (true) return 0;

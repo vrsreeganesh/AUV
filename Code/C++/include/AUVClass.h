@@ -1,15 +1,4 @@
-// including header-files
-#include "ScattererClass.h"
-#include "TransmitterClass.h"
-#include "ULAClass.h"
-#include <iostream>
-#include <ostream>
-#include <torch/torch.h>
-#include <cmath>
 
-// including functions
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fGetCurrentTimeFormatted.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
 
 #pragma once
 
@@ -82,53 +71,36 @@ void fSaveSeafloorScatteres(ScattererClass scatterer, \
     // }
 }
 
-// including class-definitions
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
 
-// // hash defines
-// #ifndef PRINTSPACE
-// #define PRINTSPACE      std::cout<<"\n\n\n\n\n\n\n\n"<<std::endl;
-// #endif
-// #ifndef PRINTSMALLLINE
-// #define PRINTSMALLLINE  std::cout<<"------------------------------------------------"<<std::endl;
-// #endif
-// #ifndef PRINTLINE
-// #define PRINTLINE       std::cout<<"================================================"<<std::endl;
-// #endif
-
-#ifndef DEVICE
-#define DEVICE          torch::kMPS
-// #define DEVICE          torch::kCPU
-#endif
-
-#define PI              3.14159265
+// hash-defines
+#define PI                                  3.14159265
 #define DEBUGMODE_AUV                       false
-#define SAVE_SIGNAL_MATRIX                  false
+#define SAVE_SIGNAL_MATRIX                  true
 #define SAVE_DECIMATED_SIGNAL_MATRIX        true
 #define SAVE_MATCHFILTERED_SIGNAL_MATRIX    true
 
 class AUVClass{
 public:
     // Intrinsic attributes
-    torch::Tensor location;             // location of vessel
-    torch::Tensor velocity;             // current speed of the vessel [a vector]
-    torch::Tensor acceleration;         // current acceleration of vessel [a vector]
-    torch::Tensor pointing_direction;   // direction to which the AUV is pointed
+    torch::Tensor location;                     // location of vessel
+    torch::Tensor velocity;                     // current speed of the vessel [a vector]
+    torch::Tensor acceleration;                 // current acceleration of vessel [a vector]
+    torch::Tensor pointing_direction;           // direction to which the AUV is pointed
     
     // uniform linear-arrays
-    ULAClass ULA_fls;                   // front-looking SONAR ULA
-    ULAClass ULA_port;                  // mounted ULA [object of class, ULAClass]        
-    ULAClass ULA_starboard;             // mounted ULA [object of class, ULAClass]        
+    ULAClass ULA_fls;                           // front-looking SONAR ULA
+    ULAClass ULA_port;                          // mounted ULA [object of class, ULAClass]        
+    ULAClass ULA_starboard;                     // mounted ULA [object of class, ULAClass]        
     
     // transmitters
-    TransmitterClass transmitter_fls;       // transmitter for front-looking SONAR
-    TransmitterClass transmitter_port;      // mounted transmitter [obj of class, TransmitterClass]
-    TransmitterClass transmitter_starboard; // mounted transmitter [obj of class, TransmitterClass]
+    TransmitterClass transmitter_fls;           // transmitter for front-looking SONAR
+    TransmitterClass transmitter_port;          // mounted transmitter [obj of class, TransmitterClass]
+    TransmitterClass transmitter_starboard;     // mounted transmitter [obj of class, TransmitterClass]
 
     // derived or dependent attributes
-    torch::Tensor signalMatrix_1;             // matrix containing the signals obtained from ULA_1
-    torch::Tensor largeSignalMatrix_1;        // matrix holding signal of synthetic aperture
-    torch::Tensor beamformedLargeSignalMatrix;// each column is the beamformed signal at each stop-hop
+    torch::Tensor signalMatrix_1;               // matrix containing the signals obtained from ULA_1
+    torch::Tensor largeSignalMatrix_1;          // matrix holding signal of synthetic aperture
+    torch::Tensor beamformedLargeSignalMatrix;  // each column is the beamformed signal at each stop-hop
 
     // plotting mode
     bool plottingmode;    // to suppress plotting associated with classes
@@ -209,18 +181,16 @@ public:
         this->ULA_starboard.location    = this->location;
 
         // updating the pointing direction of the ULAs
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 99 \n";
-        torch::Tensor ula_fls_sensor_direction_spherical    = fCart2Sph(this->pointing_direction);              // spherical coords
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 101 \n";
-        ula_fls_sensor_direction_spherical[0]               = ula_fls_sensor_direction_spherical[0] - 90;
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 98 \n";
-        torch::Tensor ula_fls_sensor_direction_cart         = fSph2Cart(ula_fls_sensor_direction_spherical);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 100 \n";
+        torch::Tensor ula_fls_sensor_direction_spherical    = \
+            fCart2Sph(this->pointing_direction);              // spherical coords
+        ula_fls_sensor_direction_spherical[0]               = \
+            ula_fls_sensor_direction_spherical[0] - 90;
+        torch::Tensor ula_fls_sensor_direction_cart         = \
+            fSph2Cart(ula_fls_sensor_direction_spherical);
 
         this->ULA_fls.sensorDirection           = ula_fls_sensor_direction_cart;    // assigning sensor directionf or ULA-FLS
         this->ULA_port.sensorDirection          = -this->pointing_direction;        // assigning sensor direction for ULA-Port
         this->ULA_starboard.sensorDirection     = -this->pointing_direction;        // assigning sensor direction for ULA-Starboard
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 105 \n";
 
         // // calling the function to update the arguments
         // this->ULA_fls.buildCoordinatesBasedOnLocation();        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: line 109 \n";
@@ -231,13 +201,11 @@ public:
         this->transmitter_fls.location       = this->location;
         this->transmitter_port.location      = this->location;
         this->transmitter_starboard.location = this->location;
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 102 \n";
 
         // updating transmitter pointing directions
         this->transmitter_fls.updatePointingAngle(          this->pointing_direction);
         this->transmitter_port.updatePointingAngle(         this->pointing_direction);
         this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);
-        if(DEBUGMODE_AUV) std::cout<<"\t AUVClass: page 108 \n";
     }
 
 
@@ -330,10 +298,8 @@ public:
         ScattererClass scatterer_port       = scatterer;
         ScattererClass scatterer_starboard  = scatterer;
 
-
         // finding the pointing direction in spherical
         torch::Tensor auv_pointing_direction_spherical = fCart2Sph(this->pointing_direction);
-
 
         // asking the transmitters to subset the scatterers by multithreading
         std::thread transmitterFLSSubset_t(&AUVClass::subsetScatterers, this, \
@@ -387,6 +353,8 @@ public:
     }
 
     // Imaging Function
+    /* =========================================================================
+    ------------------------------------------------------------------------- */ 
     void image(){
         
         // asking ULAs to decimate the signals obtained at each time step
@@ -457,17 +425,17 @@ public:
         std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
                                           &this->ULA_fls,                       \
                                           &this->transmitter_fls);
-        // std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
-        //                                    &this->ULA_port,                     \
-        //                                    &this->transmitter_port);
-        // std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
-        //                                         &this->ULA_starboard,           \
-        //                                         &this->transmitter_starboard);
+        std::thread ULA_port_beamforming_t(&ULAClass::nfdc_beamforming,         \
+                                           &this->ULA_port,                     \
+                                           &this->transmitter_port);
+        std::thread ULA_starboard_beamforming_t(&ULAClass::nfdc_beamforming,    \
+                                                &this->ULA_starboard,           \
+                                                &this->transmitter_starboard);
 
         // joining the filters back
         ULA_fls_beamforming_t.join(); 
-        // ULA_port_beamforming_t.join(); 
-        // ULA_starboard_beamforming_t.join();
+        ULA_port_beamforming_t.join(); 
+        ULA_starboard_beamforming_t.join();
 
     }
 

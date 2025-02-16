@@ -4,6 +4,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <torch/torch.h>
+#include <omp.h>            // the openMP
 
 
 // class definitions
@@ -62,7 +63,8 @@ public:
     torch::Tensor signalMatrix;
 
     // decimation-related
-    int decimation_factor;
+    int decimation_factor;                                  // the new decimation factor
+    float post_decimation_sampling_frequency;               // the new sampling frequency 
     torch::Tensor lowpassFilterCoefficientsForDecimation;   // 
 
     // imaging related 
@@ -267,50 +269,72 @@ public:
         std::vector<int64_t> scatterers_coordinates_shape = scatterers->coordinates.sizes().vec();
         
         // making a slot out of the coordinates
-        torch::Tensor slottedCoordinates = \
-            torch::permute(scatterers->coordinates.reshape({scatterers_coordinates_shape[0],    \
-                                                            scatterers_coordinates_shape[1],    \
-                                                            1                                   }), \
-                           {2, 1, 0}).reshape({1, (int)(scatterers->coordinates.numel()/3), 3});
+        torch::Tensor slottedCoordinates =                                      \
+            torch::permute(scatterers->coordinates.reshape({
+                scatterers_coordinates_shape[0],                                \
+                scatterers_coordinates_shape[1],                                \
+                1}                                                              \
+                ), {2, 1, 0}).reshape({
+                    1,                                                          \
+                    (int)(scatterers->coordinates.numel()/3),                   \
+                    3});
         
         // repeating along the y-direction number of sensor times. 
-        slottedCoordinates = torch::tile(slottedCoordinates, {this->num_sensors, 1, 1});
-        std::vector<int64_t> slottedCoordinates_shape = slottedCoordinates.sizes().vec();
+        slottedCoordinates = 
+            torch::tile(slottedCoordinates,                                     \
+                        {this->num_sensors, 1, 1});
+        std::vector<int64_t> slottedCoordinates_shape =                         \
+            slottedCoordinates.sizes().vec();
         
         // finding the shape of the sensor-coordinates
-        std::vector<int64_t> sensor_coordinates_shape = this->coordinates.sizes().vec();
+        std::vector<int64_t> sensor_coordinates_shape = \
+            this->coordinates.sizes().vec();
 
         // creating a slot tensor out of the sensor-coordinates
-        torch::Tensor slottedSensors = \
-            torch::permute(this->coordinates.reshape({sensor_coordinates_shape[0], \
-                                                      sensor_coordinates_shape[1], \
-                                                      1}), {2, 1, 0}).reshape({(int)(this->coordinates.numel()/3), \
-                                                                               1, \
-                                                                               3});
+        torch::Tensor slottedSensors =                                          \
+            torch::permute(this->coordinates.reshape({
+                sensor_coordinates_shape[0],                                    \
+                sensor_coordinates_shape[1],                                    \
+                1}), {2, 1, 0}).reshape({(int)(this->coordinates.numel()/3),    \
+                                        1,                                      \
+                                        3});
         
         // repeating slices along the x-coordinates
-        slottedSensors  = torch::tile(slottedSensors, {1, slottedCoordinates_shape[1], 1});
+        slottedSensors  =                                                       \
+            torch::tile(slottedSensors,                                         \
+                        {1, slottedCoordinates_shape[1], 1});
 
         // slotting the coordinate of the transmitter and duplicating along dimensions [0] and [1]
-        torch::Tensor slotted_location = torch::permute(this->location.reshape({3, 1, 1}), \
-                                                        {2, 1, 0}).reshape({1,1,3});
-        slotted_location = torch::tile(slotted_location, \
-                                       {slottedCoordinates_shape[0], slottedCoordinates_shape[1], 1});
+        torch::Tensor slotted_location =                                        \
+            torch::permute(this->location.reshape({3, 1, 1}),                   \
+                           {2, 1, 0}).reshape({1,1,3});
+        slotted_location =                                                      \
+            torch::tile(slotted_location, {slottedCoordinates_shape[0],         \
+                                           slottedCoordinates_shape[1],         \
+                                           1});
+
 
         // subtracting to find the relative distances
-        torch::Tensor distBetweenScatterersAndSensors = \
-            torch::linalg_norm(slottedCoordinates - slottedSensors,     2, 2, true, torch::kFloat);
+        torch::Tensor distBetweenScatterersAndSensors =                         \
+            torch::linalg_norm(slottedCoordinates - slottedSensors,             \
+                               2, 2, true, torch::kFloat);
 
         // substracting distance between relative fields
-        torch::Tensor distBetweenScatterersAndTransmitter = \
-            torch::linalg_norm(slottedCoordinates - slotted_location,   2, 2, true, torch::kFloat);
+        torch::Tensor distBetweenScatterersAndTransmitter =                     \
+            torch::linalg_norm(slottedCoordinates - slotted_location,           \
+                               2, 2, true, torch::kFloat);
 
         // adding up the distances
-        torch::Tensor distOfFlight      = distBetweenScatterersAndSensors + distBetweenScatterersAndTransmitter;
+        torch::Tensor distOfFlight      = \
+            distBetweenScatterersAndSensors + distBetweenScatterersAndTransmitter;
         torch::Tensor timeOfFlight      = distOfFlight/1500;
-        torch::Tensor samplesOfFlight   = torch::floor(timeOfFlight.squeeze() * this->sampling_frequency);
+        torch::Tensor samplesOfFlight   = \
+            torch::floor(timeOfFlight.squeeze() \
+            * this->sampling_frequency);
+
 
         // Adding pulses 
+        #pragma omp parallel for
         for(int sensor_index = 0; sensor_index < this->num_sensors; ++sensor_index){
             for(int scatter_index = 0; scatter_index < samplesOfFlight[0].numel(); ++scatter_index){
                 
@@ -353,20 +377,27 @@ public:
         // }
 
         // Creating matrix out of transmitted signal
-        torch::Tensor signalTensorAsArgument = \
-            transmitterObj->Signal.reshape({transmitterObj->Signal.numel(),1});
-        signalTensorAsArgument = torch::tile(signalTensorAsArgument, \
-                                             {1, this->signalMatrix.size(1)});
+        torch::Tensor signalTensorAsArgument =              \
+            transmitterObj->Signal.reshape({
+                transmitterObj->Signal.numel(),             \
+                1});
+        signalTensorAsArgument =                            \
+            torch::tile(signalTensorAsArgument,             \
+                        {1, this->signalMatrix.size(1)});
+
 
         // convolving the pulse-matrix with the signal matrix
         fConvolveColumns(this->signalMatrix,        \
                          signalTensorAsArgument);
 
+
         // trimming the convolved signal since the signal matrix length remains the same
         this->signalMatrix = \
-            this->signalMatrix.index({torch::indexing::Slice(0, numsamples), \
-                                      torch::indexing::Slice()});
+            this->signalMatrix.index({
+                torch::indexing::Slice(0, numsamples), \
+                torch::indexing::Slice()});
 
+        // returning
         return;
     }
 
@@ -418,6 +449,8 @@ public:
         // building parameters for downsampling
         int decimation_factor           = std::floor(this->sampling_frequency/transmitterObj->bandwidth);
         this->decimation_factor         = decimation_factor;
+        this->post_decimation_sampling_frequency =                              \
+            this->sampling_frequency / this->decimation_factor;
         int numsamples_after_decimation = std::floor(this->signalMatrix.size(0)/decimation_factor);
 
         // building the samples which will be subsetted
@@ -784,10 +817,12 @@ public:
         > For now, we're assuming that the r value is one. 
     ------------------------------------------------------------------------- */ 
     void nfdc_PolarToCartesian(){
-        
+
+
         // deciding image dimensions
-        int num_pixels_width    = 512;
-        int num_pixels_height   = 512;
+        int num_pixels_width    = 128;
+        int num_pixels_height   = 128;
+
 
         // creating query points
         torch::Tensor max_right   =                                             \
@@ -805,7 +840,6 @@ public:
                 * PI/180);
         torch::Tensor max_top     = torch::tensor({1});
         torch::Tensor max_bottom  = torch::min(this->range_centers);
-
         
 
         // creating query points along the x-dimension
@@ -847,6 +881,7 @@ public:
             torch::tile(range_values, \
                         {1, this->azimuth_centers.numel()});
 
+
         // getting angle-values
         torch::Tensor angle_values =                        \
             this->azimuth_centers                           \
@@ -864,6 +899,7 @@ public:
         torch::Tensor query_original_y = \
             range_values * torch::sin(angle_values * PI/180);
 
+
         // converting points to vector 2D format
         torch::Tensor query_source =                                            \
             torch::cat({                                                        \
@@ -871,35 +907,44 @@ public:
                 query_original_y.reshape({1, query_original_y.numel()})},       \
                 0);
 
+
         // converting reflectivity to corresponding 2D format
         torch::Tensor reflectivity_vectors = \
             this->beamformedImage.reshape({1, this->beamformedImage.numel()});
 
+
         // creating image
-        int num_pixels_x = 512;
-        int num_pixels_y = 512;
-        torch::Tensor cartesianImageLocal = \
-            torch::zeros({num_pixels_x, num_pixels_y}).to(torch::kComplexFloat);
+        torch::Tensor cartesianImageLocal =                 \
+            torch::zeros(                                   \
+                {num_pixels_height,                         \
+                 num_pixels_width}                          \
+                 ).to(torch::kComplexFloat);
 
 
         /*
         Next Aim: start interpolating the points on the uniform grid. 
         */ 
 
+        #pragma omp parallel for
         for(int x_index = 0; x_index < query_x.numel(); ++x_index){
-            std::cout<<"\t\t\t x_index = "<<x_index<<std::endl;
+            // if(DEBUG_ULA) std::cout << "\t\t\t x_index = " << x_index << " ";
+            #pragma omp parallel for
             for(int y_index = 0; y_index < query_y.numel(); ++y_index){
+                // if(DEBUG_ULA) if(y_index%16 == 0) std::cout<<".";
 
                 // getting current values
                 torch::Tensor current_x = query_x.index({x_index}).reshape({1, 1});
                 torch::Tensor current_y = query_y.index({y_index}).reshape({1, 1});
 
+
                 // getting the query value
                 torch::Tensor query_vector = torch::cat({current_x, current_y}, 0);
+
 
                 // copying the query source
                 torch::Tensor query_source_relative = query_source;
                 query_source_relative = query_source_relative - query_vector;
+
 
                 // subsetting using absolute values and masks 
                 float threshold = delta_r * 10;
@@ -909,14 +954,16 @@ public:
                 auto mask_col = \
                     torch::abs(query_source_relative[1]) <= threshold;
                 auto mask_together = torch::mul(mask_row, mask_col);
+
                 
 
                 // calculating number of points in threshold neighbourhood
                 int num_points_in_threshold_neighbourhood = \
-                    torch::sum(mask_together).item<int>();
+                    torch::sum(mask_together).item<int>(); 
                 if (num_points_in_threshold_neighbourhood == 0){
                     continue;
                 }
+
 
                 // subsetting points in neighbourhood
                 torch::Tensor PointsInNeighbourhood =       \
@@ -926,15 +973,18 @@ public:
                 torch::Tensor ReflectivitiesInNeighbourhood = \
                     reflectivity_vectors.index({torch::indexing::Slice(), mask_together});
 
+
                 // finding the distance between the points
                 torch::Tensor relativeDistances = \
                     torch::linalg_norm(PointsInNeighbourhood, 2, 0, true, torch::kFloat);
+
 
                 // calculating weighing factor
                 torch::Tensor weighingFactor =                                  \
                     torch::nn::functional::softmax(                             \
                         torch::max(relativeDistances)- relativeDistances,       \
                         torch::nn::functional::SoftmaxFuncOptions(1));
+
 
                 // combining intensities using distances
                 torch::Tensor finalIntensity = \
@@ -946,6 +996,7 @@ public:
                 cartesianImageLocal.index_put_({x_index, y_index}, finalIntensity);
 
             }
+            // std::cout<<std::endl;
         }
 
         // saving to member function
