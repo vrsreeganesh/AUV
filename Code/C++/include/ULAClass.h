@@ -164,7 +164,7 @@ public:
                 ).reshape(transmitterObj->Signal.sizes());
         basebanding_vector =                                    \
             torch::exp(                                         \
-                COMPLEX_1j * 2 * PI                             \
+                -1 * COMPLEX_1j * 2 * PI                             \
                 * (transmitterObj->fc/this->sampling_frequency) \
                 * basebanding_vector);
 
@@ -520,54 +520,49 @@ public:
             std::ceil(transmitterObj->azimuthal_beamwidth / this->azimuth_cell_size); 
         
         // creating centers of range-cell centers
-        torch::Tensor range_centers =   \
-            this->range_cell_size *                                    \
-            torch::linspace(0,                                         \
-                            number_of_range_cells-1,                   \
-                            number_of_range_cells).to(torch::kFloat) + \
-            this->range_cell_size/2;
+        torch::Tensor range_centers = \
+            this->range_cell_size * \
+            torch::arange(0, number_of_range_cells) \
+            + this->range_cell_size/2;
         this->range_centers = range_centers;
-
+        
         // creating discretized azimuth-centers
-        torch::Tensor azimuth_centers = \
-            this->azimuth_cell_size *                           \
-            torch::linspace(0,                                  \
-                            number_of_azimuths_to_image - 1,    \
-                            number_of_azimuths_to_image) +      \
-            this->azimuth_cell_size/2;
+        torch::Tensor azimuth_centers =                     \
+            this->azimuth_cell_size *                       \
+            torch::arange(0, number_of_azimuths_to_image)   \
+            + this->azimuth_cell_size/2;
         this->azimuth_centers = azimuth_centers;
+        this->azimuth_centers = this->azimuth_centers - torch::mean(this->azimuth_centers);
 
         // finding the mesh values
         auto range_azimuth_meshgrid = \
-            torch::meshgrid({range_centers, azimuth_centers}, "ij");
+            torch::meshgrid({range_centers, \
+                             azimuth_centers}, "ij");
         torch::Tensor range_grid    = range_azimuth_meshgrid[0];    // the columns are range_centers
         torch::Tensor azimuth_grid  = range_azimuth_meshgrid[1];    // the rows are azimuth-centers
         
         // going from 2D to 3D
-        range_grid = torch::tile(range_grid.reshape({range_grid.size(0), \
-                                                     range_grid.size(1), \
-                                                     1}), \
-                                 {1,1,this->num_sensors});
-        azimuth_grid = torch::tile(azimuth_grid.reshape({azimuth_grid.size(0), \
-                                                         azimuth_grid.size(1), \
-                                                         1}), \
-                                          {1, 1, this->num_sensors});
+        range_grid = \
+            torch::tile(range_grid.reshape({range_grid.size(0), \
+                                            range_grid.size(1), \
+                                            1}), {1,1,this->num_sensors});
+        azimuth_grid = \
+            torch::tile(azimuth_grid.reshape({azimuth_grid.size(0), \
+                                              azimuth_grid.size(1), \
+                                              1}), {1, 1, this->num_sensors});
 
         // creating x_m tensor
         torch::Tensor sensorCoordinatesSlot = \
             this->inter_element_spacing * \
-            torch::linspace(0, \
-                            this->num_sensors - 1,\
-                            this->num_sensors).reshape({1,1,this->num_sensors}).to(torch::kFloat);
+            torch::arange(0, this->num_sensors).reshape({
+                1, 1, this->num_sensors
+            }).to(torch::kFloat);
+
         sensorCoordinatesSlot = \
             torch::tile(sensorCoordinatesSlot, \
                         {range_grid.size(0),\
                          range_grid.size(1),
                          1});
-        if(DEBUG_ULA) 
-            std::cout <<  "\t sensorCoordinatesSlot.sizes().vec() = "   \
-                      <<  sensorCoordinatesSlot.sizes().vec()           \
-                      <<  std::endl;
 
         // calculating distances
         torch::Tensor distanceMatrix =                                      \

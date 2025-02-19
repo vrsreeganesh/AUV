@@ -79,13 +79,13 @@ void SeafloorSetup(ScattererClass* scatterers) {
 
         // setting up hill dimensions
         torch::Tensor hill_dimensions_min = \
-            torch::tensor({10, \
-                           10, \
+            torch::tensor({5, \
+                           5, \
                            2}).reshape({3,1});
         torch::Tensor hill_dimensions_max = \
             torch::tensor({30, \
                            30, \
-                           7}).reshape({3,1});
+                           10}).reshape({3,1});
         torch::Tensor hill_dimensions = \
             hill_dimensions_min + \
             torch::mul(hill_dimensions_max - hill_dimensions_min, \

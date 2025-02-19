@@ -3,7 +3,7 @@ Aim: Signal Simulation
 --------------------------------------------------------------------------------
 ==============================================================================*/ 
 
-// including standard 
+// including standard packages
 #include <ostream>
 #include <torch/torch.h>
 #include <iostream>
@@ -15,63 +15,16 @@ Aim: Signal Simulation
 #include <cstdlib>          // For terminal access
 #include <omp.h>            // the openMP
 
-// hash defines
-#ifndef PRINTSPACE
-    #define PRINTSPACE      std::cout<<"\n\n\n";
-#endif
-#ifndef PRINTSMALLLINE
-    #define PRINTSMALLLINE  std::cout<<"------------------------------------------------------------------------------------"<<std::endl;
-#endif
-#ifndef PRINTDOTS
-    #define PRINTDOTS       std::cout<<"...................................................................................."<<std::endl;
-#endif
-#ifndef PRINTLINE
-    #define PRINTLINE       std::cout<<"===================================================================================="<<std::endl;
-#endif
-#ifndef PI
-    #define PI              3.14159265
-#endif
-
-// debugging hashdefine
-#ifndef DEBUGMODE
-    #define DEBUGMODE       false
-#endif
-
-// deciding to save tensors or not
-#ifndef SAVETENSORS
-    #define SAVETENSORS       true
-    // #define SAVETENSORS       false
-#endif
-
-// choose device here
-#ifndef DEVICE
-    #define DEVICE          torch::kCPU
-    // #define DEVICE          torch::kMPS
-    // #define DEVICE          torch::kCUDA
-#endif
-
-// Enable Imaging
-#define IMAGING_TOGGLE                  true
-
-
+// hash-defines
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/config.h"
 // class definitions
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ScattererClass.h"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/ULAClass.h"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/TransmitterClass.h"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/AUVClass.h"
-
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/classes.h"
 // setup-scripts
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/ULASetup/ULASetup.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/TransmitterSetup/TransmitterSetup.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/SeafloorSetup/SeafloorSetup.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/AUVSetup/AUVSetup.cpp"
-
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/setupscripts.h"
 // functions
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fPrintTensorSize.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fSph2Cart.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fCart2Sph.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fConvolveColumns.cpp"
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Functions/fRunSystemScriptInSeperateThread.cpp"
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/functions.h"
+
+
 
 
 // main-function
@@ -139,8 +92,6 @@ int main() {
         // signal simulation
         auv.simulateSignal(SeafloorScatter);
 
-
-
         // saving simulated signal
         if (SAVETENSORS) {
 
@@ -153,7 +104,8 @@ int main() {
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_starboard.pt");
 
             // running python script
-            std::string script_to_run = "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_SignalMatrix.py";
+            std::string script_to_run = \
+                "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_SignalMatrix.py";
             std::thread plotSignalMatrix_t(fRunSystemScriptInSeperateThread, \
                                            script_to_run);
             plotSignalMatrix_t.detach();
