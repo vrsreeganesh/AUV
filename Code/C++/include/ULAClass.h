@@ -106,12 +106,14 @@ public:
 
                 // normalizing 
                 float normvalue = torch::linalg_norm(sensorDirection, 2, 0, true, torch::kFloat).item<float>();
+
+
                 if (normvalue != 0){
                     sensorDirection = sensorDirection / normvalue;
                 }
                 
                 // copying direction 
-                this->sensorDirection = sensorDirection;
+                this->sensorDirection = sensorDirection.to(DATATYPE);
         }
 
     // overrinding printing
@@ -131,6 +133,7 @@ public:
         // calculating range-related parameters
         this->range_resolution      = 1500/(2 * transmitterObj->fc);
         this->range_cell_size       = 40 * this->range_resolution;
+        if (DEBUG_ULA) std::cout << "\t ULACLASS::init: line 136" << std::endl;
 
         // status printing
         if (DEBUG_ULA) {
@@ -141,15 +144,18 @@ public:
                       <<  this->range_cell_size                                 \
                       <<  std::endl;
         }
+        if (DEBUG_ULA) std::cout << "\t ULACLASS::init: line 147" << std::endl;
 
         // calculating azimuth-related parameters
         this->azimuthal_resolution =                                            \
             (1500/transmitterObj->fc)                                           \
             /((this->num_sensors-1)*this->inter_element_spacing); 
         this->azimuth_cell_size         = 2 * this->azimuthal_resolution;
+        if (DEBUG_ULA) std::cout << "\t ULACLASS::init: line 154" << std::endl;
 
         // creating and storing the match-filter
         this->nfdc_CreateMatchFilter(transmitterObj);
+        if (DEBUG_ULA) std::cout << "\t ULACLASS::init: line 158" << std::endl;
     }
 
     // Create match-filter
@@ -167,14 +173,17 @@ public:
                 -1 * COMPLEX_1j * 2 * PI                             \
                 * (transmitterObj->fc/this->sampling_frequency) \
                 * basebanding_vector);
+        if (DEBUG_ULA) std::cout << "\t\t ULAClass::nfdc_createMatchFilter: line 176" << std::endl;
 
         // multiplying the signal with the basebanding vector
         torch::Tensor match_filter =                        \
             torch::mul(transmitterObj->Signal,              \
                        basebanding_vector);
+        if (DEBUG_ULA) std::cout << "\t\t ULAClass::nfdc_createMatchFilter: line 182" << std::endl;
 
         // low-pass filtering to get the baseband signal
         fConvolve1D(match_filter, this->lowpassFilterCoefficientsForDecimation);
+        if (DEBUG_ULA) std::cout << "\t\t ULAClass::nfdc_createMatchFilter: line 186" << std::endl;
 
         // creating sampling-indices
         int decimation_factor = \
@@ -186,6 +195,7 @@ public:
             torch::linspace(1, \
                             (final_num_samples-1) * decimation_factor, 
                             final_num_samples).to(torch::kInt) - torch::tensor({1}).to(torch::kInt);
+        if (DEBUG_ULA) std::cout << "ULAClass::nfdc_createMatchFilter: line 197" << std::endl;
 
         // sampling the signal
         match_filter = match_filter.index({sampling_indices});
@@ -230,7 +240,7 @@ public:
         // length-normalize the sensor-direction
         this->sensorDirection = torch::div(this->sensorDirection, torch::linalg_norm(this->sensorDirection, \
                                                                            2, 0, true, \
-                                                                           torch::kFloat));
+                                                                           DATATYPE));
         if(DEBUG_ULA) std::cout<<"\t ULAClass: line 105 \n";
 
         // multiply with inter-element distance
@@ -241,7 +251,7 @@ public:
         // create integer-array
         // torch::Tensor integer_array = torch::linspace(0, \
         //                                               this->num_sensors-1, \
-        //                                               this->num_sensors).reshape({1, this->num_sensors}).to(torch::kFloat);
+        //                                               this->num_sensors).reshape({1, this->num_sensors}).to(DATATYPE);
         torch::Tensor integer_array = torch::linspace(0,                                            \
                                                       this->num_sensors-1,                          \
                                                       this->num_sensors).reshape({1,                \
@@ -250,8 +260,8 @@ public:
         if(DEBUG_ULA) std::cout<<"\t ULAClass: line 116 \n";    
 
         // 
-        torch::Tensor test = torch::mul(torch::tile(integer_array, {3, 1}).to(torch::kFloat), \
-                                       torch::tile(this->sensorDirection, {1, this->num_sensors}).to(torch::kFloat));
+        torch::Tensor test = torch::mul(torch::tile(integer_array, {3, 1}).to(DATATYPE), \
+                                       torch::tile(this->sensorDirection, {1, this->num_sensors}).to(DATATYPE));
         this->coordinates = this->location + test; 
         if(DEBUG_ULA) std::cout<<"\t ULAClass: line 120 \n";
     
@@ -263,10 +273,12 @@ public:
 
         // creating signal matrix
         int numsamples      = std::ceil((this->sampling_frequency * this->recording_period));
-        this->signalMatrix  = torch::zeros({numsamples, this->num_sensors}).to(torch::kFloat);
+        this->signalMatrix  = torch::zeros({numsamples, this->num_sensors}).to(DATATYPE);
+
 
         // getting shape of coordinates
-        std::vector<int64_t> scatterers_coordinates_shape = scatterers->coordinates.sizes().vec();
+        std::vector<int64_t> scatterers_coordinates_shape = \
+            scatterers->coordinates.sizes().vec();
         
         // making a slot out of the coordinates
         torch::Tensor slottedCoordinates =                                      \
@@ -278,6 +290,7 @@ public:
                     1,                                                          \
                     (int)(scatterers->coordinates.numel()/3),                   \
                     3});
+
         
         // repeating along the y-direction number of sensor times. 
         slottedCoordinates = 
@@ -285,6 +298,7 @@ public:
                         {this->num_sensors, 1, 1});
         std::vector<int64_t> slottedCoordinates_shape =                         \
             slottedCoordinates.sizes().vec();
+
         
         // finding the shape of the sensor-coordinates
         std::vector<int64_t> sensor_coordinates_shape = \
@@ -298,6 +312,7 @@ public:
                 1}), {2, 1, 0}).reshape({(int)(this->coordinates.numel()/3),    \
                                         1,                                      \
                                         3});
+
         
         // repeating slices along the x-coordinates
         slottedSensors  =                                                       \
@@ -314,15 +329,16 @@ public:
                                            1});
 
 
+
         // subtracting to find the relative distances
         torch::Tensor distBetweenScatterersAndSensors =                         \
             torch::linalg_norm(slottedCoordinates - slottedSensors,             \
-                               2, 2, true, torch::kFloat);
+                               2, 2, true, torch::kFloat).to(DATATYPE);
 
         // substracting distance between relative fields
         torch::Tensor distBetweenScatterersAndTransmitter =                     \
             torch::linalg_norm(slottedCoordinates - slotted_location,           \
-                               2, 2, true, torch::kFloat);
+                               2, 2, true, torch::kFloat).to(DATATYPE);
 
         // adding up the distances
         torch::Tensor distOfFlight      = \
@@ -331,6 +347,7 @@ public:
         torch::Tensor samplesOfFlight   = \
             torch::floor(timeOfFlight.squeeze() \
             * this->sampling_frequency);
+
 
 
         // Adding pulses 
@@ -357,6 +374,7 @@ public:
         }
 
 
+
         // // Adding pulses 
         // for(int sensor_index = 0; sensor_index < this->num_sensors; ++sensor_index){
 
@@ -372,7 +390,7 @@ public:
 
         //     // placing values according to histogram
         //     this->signalMatrix.index_put_({uniqueValues.to(torch::kLong), sensor_index}, \
-        //                                   uniqueCounts.to(torch::kFloat));
+        //                                   uniqueCounts.to(DATATYPE));
 
         // }
 
@@ -386,6 +404,7 @@ public:
                         {1, this->signalMatrix.size(1)});
 
 
+
         // convolving the pulse-matrix with the signal matrix
         fConvolveColumns(this->signalMatrix,        \
                          signalTensorAsArgument);
@@ -396,6 +415,7 @@ public:
             this->signalMatrix.index({
                 torch::indexing::Slice(0, numsamples), \
                 torch::indexing::Slice()});
+
 
         // returning
         return;
@@ -556,7 +576,7 @@ public:
             this->inter_element_spacing * \
             torch::arange(0, this->num_sensors).reshape({
                 1, 1, this->num_sensors
-            }).to(torch::kFloat);
+            }).to(DATATYPE);
 
         sensorCoordinatesSlot = \
             torch::tile(sensorCoordinatesSlot, \
@@ -619,10 +639,10 @@ public:
                             total_frame_size-1, \
                             total_frame_size).reshape({1, \
                                                        total_frame_size, \
-                                                       1}).to(torch::kFloat); // creating an array 1,...,frame_size of shape [1,frame_size, 1];
+                                                       1}).to(DATATYPE); // creating an array 1,...,frame_size of shape [1,frame_size, 1];
         mulFFTMatrix = \
             torch::div(mulFFTMatrix, \
-                       torch::tensor(total_frame_size).to(torch::kFloat)); // dividing by N
+                       torch::tensor(total_frame_size).to(DATATYPE)); // dividing by N
         mulFFTMatrix = mulFFTMatrix * 2 * PI * -1 * COMPLEX_1j; // creating tenosr values for -1j * 2pi * k/N
         mulFFTMatrix = \
             torch::tile(mulFFTMatrix, \
@@ -682,12 +702,14 @@ public:
                 1,                                          \
                 this->signalMatrix.size(0),                 \
                 this->signalMatrix.size(1)}); 
+
         
         // zero-padding to ensure correctness
         int ideal_length = \
             std::ceil(this->range_centers.numel() * this->frame_size);
         int num_zeros_to_pad_signal_along_dimension_0 = \
             ideal_length - this->signalMatrix.size(1);
+
 
         // printing 
         if (DEBUG_ULA) PRINTSMALLLINE
@@ -720,7 +742,7 @@ public:
             torch::Tensor zero_tensor   =                                   \
                 torch::zeros({this->signalMatrix.size(0),                   \
                               num_zeros_to_pad_signal_along_dimension_0,    \
-                              this->num_sensors}).to(torch::kFloat);
+                              this->num_sensors}).to(DATATYPE);
 
             // appending to signal matrix
             this->signalMatrix          =                                   \
@@ -730,14 +752,16 @@ public:
         // breaking the signal into frames
         fBuffer2D(this->signalMatrix, frame_size);
 
+
         // add some zeros to the end of frames to accomodate delaying of signals. 
         torch::Tensor zero_filled_tensor =                      \
             torch::zeros({this->signalMatrix.size(0),           \
                           this->num_buffer_zeros_per_frame,     \
-                          this->num_sensors}).to(torch::kFloat);
+                          this->num_sensors}).to(DATATYPE);
         this->signalMatrix =                                    \
             torch::cat({this->signalMatrix,                     \
                         zero_filled_tensor}, 1);
+
 
         // tiling it to ensure that it works for all range-angle combinations
         int number_of_azimuths_to_image = this->azimuth_centers.numel(); 
@@ -756,6 +780,7 @@ public:
         this->signalMatrix = torch::sum(this->signalMatrix, \
                                         2,                  \
                                         false);
+
         
         // printing some stuff
         if (DEBUG_ULA) std::cout<<"\t\t ULAClass::nfdc_beamforming: this->azimuth_centers.numel()      = "<<this->azimuth_centers.numel()  <<std::endl; 
@@ -767,6 +792,7 @@ public:
         torch::Tensor finalImage = \
             torch::zeros({this->frame_size * this->range_centers.numel(), \
                           this->azimuth_centers.numel()}).to(torch::kComplexFloat);
+
 
         // creating a loop to assign values
         for(int range_index = 0; range_index < this->range_centers.numel(); ++range_index){
@@ -799,9 +825,10 @@ public:
         this->beamformedImage = finalImage;
 
 
+
         // converting image from polar to cartesian
         nfdc_PolarToCartesian();
-        std::cout<<"\t\t ULAClass::nfdc_beamforming: finished nfdc_PolarToCartesian"<<std::endl;
+
 
     }
 
@@ -825,13 +852,13 @@ public:
                 torch::max(                                                     \
                     this->azimuth_centers                                       \
                     - torch::mean(this->azimuth_centers)                        \
-                    + torch::tensor({90}).to(torch::kFloat))                    \
+                    + torch::tensor({90}).to(DATATYPE))                    \
                 * PI/180);
         torch::Tensor max_left    =                                             \
             torch::cos(                                                         \
                 torch::min(this->azimuth_centers                                \
                            - torch::mean(this->azimuth_centers)                 \
-                           + torch::tensor({90}).to(torch::kFloat))             \
+                           + torch::tensor({90}).to(DATATYPE))             \
                 * PI/180);
         torch::Tensor max_top     = torch::tensor({1});
         torch::Tensor max_bottom  = torch::min(this->range_centers);
@@ -843,15 +870,15 @@ public:
                 max_left,                                   \
                 max_right,                                  \
                 num_pixels_width                            \
-                ).to(torch::kFloat);
+                ).to(DATATYPE);
         
         torch::Tensor query_y =                             \
             torch::linspace(                                \
                 max_bottom.item<float>(),                   \
                 max_top.item<float>(),                      \
                 num_pixels_height                           \
-                ).to(torch::kFloat);
-
+                ).to(DATATYPE);
+        
 
         // converting original coordinates to their corresponding cartesian
         float delta_r = 1/static_cast<float>(this->beamformedImage.size(0));
@@ -869,13 +896,13 @@ public:
                 delta_r,                                    \
                 this->beamformedImage.size(0) * delta_r,    \
                 this->beamformedImage.size(0)               \
-                ).to(torch::kFloat);
+                ).to(DATATYPE);
         range_values = \
             range_values.reshape({range_values.numel(), 1});
         range_values = \
             torch::tile(range_values, \
                         {1, this->azimuth_centers.numel()});
-
+        
 
         // getting angle-values
         torch::Tensor angle_values =                        \
@@ -893,6 +920,7 @@ public:
             range_values * torch::cos(angle_values * PI/180);
         torch::Tensor query_original_y = \
             range_values * torch::sin(angle_values * PI/180);
+        
 
 
         // converting points to vector 2D format
@@ -915,11 +943,9 @@ public:
                  num_pixels_width}                          \
                  ).to(torch::kComplexFloat);
 
-
         /*
         Next Aim: start interpolating the points on the uniform grid. 
         */ 
-
         #pragma omp parallel for
         for(int x_index = 0; x_index < query_x.numel(); ++x_index){
             // if(DEBUG_ULA) std::cout << "\t\t\t x_index = " << x_index << " ";
@@ -930,6 +956,8 @@ public:
                 // getting current values
                 torch::Tensor current_x = query_x.index({x_index}).reshape({1, 1});
                 torch::Tensor current_y = query_y.index({y_index}).reshape({1, 1});
+
+                
 
 
                 // getting the query value
@@ -950,6 +978,7 @@ public:
                     torch::abs(query_source_relative[1]) <= threshold;
                 auto mask_together = torch::mul(mask_row, mask_col);
 
+
                 
 
                 // calculating number of points in threshold neighbourhood
@@ -958,6 +987,7 @@ public:
                 if (num_points_in_threshold_neighbourhood == 0){
                     continue;
                 }
+                
 
 
                 // subsetting points in neighbourhood
@@ -971,7 +1001,9 @@ public:
 
                 // finding the distance between the points
                 torch::Tensor relativeDistances = \
-                    torch::linalg_norm(PointsInNeighbourhood, 2, 0, true, torch::kFloat);
+                    torch::linalg_norm(PointsInNeighbourhood, \
+                                       2, 0, true, \
+                                       torch::kFloat).to(DATATYPE);
 
 
                 // calculating weighing factor
@@ -1027,7 +1059,7 @@ public:
         int num_pixels_y = 512;
         torch::Tensor acousticImage =                       \
             torch::zeros({num_pixels_x,                     \
-                          num_pixels_y}).to(torch::kFloat);
+                          num_pixels_y}).to(DATATYPE);
 
         // finding the max and min values
         torch::Tensor min_x     = torch::min(scatterers_acoustic_cartesian[0]);
@@ -1076,7 +1108,7 @@ public:
             torch::Tensor relativeDistances = \
                 torch::linalg_norm(relativeCoordinates, \
                                    1, 0, true, \
-                                   torch::kFloat);if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_createAcousticImage: line 727"<<std::endl;
+                                   DATATYPE);if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_createAcousticImage: line 727"<<std::endl;
             // finding points that are within the threshold
             torch::Tensor conditionMeetingPoints = \
                 relativeDistances.squeeze() <= threshold_value;if(DEBUG_ULA) std::cout<<"\t\t\t ULAClass::nfdc_createAcousticImage: line 729"<<std::endl;

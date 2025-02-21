@@ -15,7 +15,7 @@ void fCreateHills(torch::Tensor& mean_vector,               \
 
     // the final heights of the points
     torch::Tensor finalHeights = \
-        torch::zeros({1, points2D[0].numel()}).to(torch::kFloat);
+        torch::zeros({1, points2D[0].numel()}).to(DATATYPE);
 
     // creating hills one by one
     for(int hill_index = 0; hill_index < num_hills; ++hill_index){

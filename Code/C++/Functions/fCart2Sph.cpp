@@ -31,14 +31,17 @@ torch::Tensor fCart2Sph(torch::Tensor cartesian_vector){
     if (DEBUG_Cart2Sph) std::cout<<"\t fCart2Sph: line 31 \n";
     
     // finding splat lengths
-    torch::Tensor xysplat_lengths = torch::linalg_norm(xysplat, 2, 0, true, torch::kFloat).to(DEVICE);
+    // torch::Tensor xysplat_lengths = torch::linalg_norm(xysplat, 2, 0, true, DATATYPE).to(DEVICE);
+    torch::Tensor xysplat_lengths = torch::linalg_norm(xysplat, 2, 0, true, torch::kFloat).to(DATATYPE);
     if (DEBUG_Cart2Sph) std::cout<<"\t fCart2Sph: line 35 \n";
     
     // finding azimuthal and elevation angles
     torch::Tensor azimuthal_angles = torch::atan2(xysplat[1],           xysplat[0]).to(DEVICE)      * 180/PI;
     azimuthal_angles               = azimuthal_angles.reshape({1, azimuthal_angles.numel()});
     torch::Tensor elevation_angles = torch::atan2(cartesian_vector[2],  xysplat_lengths).to(DEVICE) * 180/PI;
-    torch::Tensor rho_values       = torch::linalg_norm(cartesian_vector, 2, 0, true, torch::kFloat).to(DEVICE);
+    // torch::Tensor rho_values       = torch::linalg_norm(cartesian_vector, 2, 0, true, DATATYPE).to(DEVICE);
+    torch::Tensor rho_values       = torch::linalg_norm(cartesian_vector, \
+                                                        2, 0, true, torch::kFloat).to(DATATYPE);
     if (DEBUG_Cart2Sph) std::cout<<"\t fCart2Sph: line 42 \n";
     
 

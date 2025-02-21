@@ -33,6 +33,8 @@ int main() {
     // Ensuring no-gradients are calculated in this scope
     torch::NoGradGuard no_grad;
 
+    
+
     // Builing Sea-floor
     ScattererClass SeafloorScatter;
     std::thread scatterThread_t(SeafloorSetup, \
@@ -52,14 +54,17 @@ int main() {
                                     &transmitter_port, 
                                     &transmitter_starboard);
 
+
     // Joining threads
+    scatterThread_t.join();     // making the scattetr population thread join back
     ulaThread_t.join();         // making the ULA population thread join back
     transmitterThread_t.join(); // making the transmitter population thread join back
-    scatterThread_t.join();     // making the scattetr population thread join back
 
+    
     // building AUV 
     AUVClass auv;                   // instantiating class object
     AUVSetup(&auv);             // populating 
+    
     
     // attaching components to the AUV
     auv.ULA_fls                 = ula_fls;                  // attaching ULA-FLS to AUV
@@ -72,8 +77,13 @@ int main() {
     // storing 
     ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
 
+    
+
     // pre-computing the data-structures required for processing
     auv.init();
+
+
+
 
     // mimicking movement
     int number_of_stophops = 1;
@@ -88,6 +98,8 @@ int main() {
         
         // making the deep copy
         ScattererClass SeafloorScatter = SeafloorScatter_deepcopy;
+
+        
         
         // signal simulation
         auv.simulateSignal(SeafloorScatter);
@@ -114,6 +126,7 @@ int main() {
 
 
         if (IMAGING_TOGGLE) {
+
             // creating image from signals
             auv.image();
 

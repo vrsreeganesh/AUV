@@ -31,8 +31,8 @@ void SeafloorSetup(ScattererClass* scatterers) {
     int bed_length  = 100;  // length of the bed (y-dimension)
     
     // creating some tensors to pass. This is put outside to maintain scope
-    torch::Tensor box_coordinates   = torch::zeros({3,1}).to(torch::kFloat).to(DEVICE);
-    torch::Tensor box_reflectivity  = torch::zeros({1,1}).to(torch::kFloat).to(DEVICE); 
+    torch::Tensor box_coordinates   = torch::zeros({3,1}).to(DATATYPE).to(DEVICE);
+    torch::Tensor box_reflectivity  = torch::zeros({1,1}).to(DATATYPE).to(DEVICE); 
 
     // creating boxes
     if (BOXES)

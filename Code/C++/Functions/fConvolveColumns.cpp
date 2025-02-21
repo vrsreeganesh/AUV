@@ -34,6 +34,10 @@ void fConvolveColumns(torch::Tensor& inputMatrix, \
     // calculating length of final result
     int final_length = inputMatrix.size(0) + kernelMatrix.size(0) - 1; if(MYDEBUGFLAG) std::cout<<"\t\t\t fConvolveColumns: 27"<<std::endl;
 
+    // converting the two arguments to float since fft doesn'tw ork with halfs
+    inputMatrix = inputMatrix.to(torch::kFloat);
+    kernelMatrix = kernelMatrix.to(torch::kFloat);
+
     // calculating FFT of the two matrices
     torch::Tensor inputMatrix_FFT = torch::fft::fftn(inputMatrix, \
                                                      {final_length}, \
@@ -50,7 +54,10 @@ void fConvolveColumns(torch::Tensor& inputMatrix, \
                                                       {MulProduct.size(0)}, \
                                                       {0}); if(MYDEBUGFLAG) std::cout<<"\t\t\t fConvolveColumns: 43"<<std::endl;
 
+    // bringing them back to the  pipeline datatype
+    kernelMatrix = kernelMatrix.to(DATATYPE);
+
     // over-riding the result with the input so that we can save memory
-    inputMatrix = convolvedResult; if(MYDEBUGFLAG) std::cout<<"\t\t\t fConvolveColumns: 46"<<std::endl;
+    inputMatrix = convolvedResult.to(DATATYPE); if(MYDEBUGFLAG) std::cout<<"\t\t\t fConvolveColumns: 46"<<std::endl;
 
 }

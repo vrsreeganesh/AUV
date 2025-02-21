@@ -31,7 +31,7 @@ void fCreateBoxes(float across_track_length, \
     if(DEBUG_SEAFLOOR) std::cout<<"\t fCreateBoxes: line 41\n";
 
     // finding center point
-    torch::Tensor midxypoints   = torch::rand({3, num_boxes}).to(torch::kFloat).to(DEVICE);
+    torch::Tensor midxypoints   = torch::rand({3, num_boxes}).to(DATATYPE).to(DEVICE);
     midxypoints[0]              = midxypoints[0] * across_track_length;
     midxypoints[1]              = midxypoints[1] * along_track_length;
     midxypoints[2]              = 0;

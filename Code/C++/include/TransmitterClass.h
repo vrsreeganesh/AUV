@@ -162,8 +162,8 @@ public:
         // std::cout<<"\t TransmitterClass: AUV_pointing_vector_spherical = "<<torch::transpose(AUV_pointing_vector_spherical, 0, 1)<<std::endl;
 
         // calculating azimuth and elevation of transmitter object
-        torch::Tensor absolute_azimuth_of_transmitter   = yaw + torch::tensor({this->azimuthal_angle}).to(torch::kFloat).to(DEVICE);
-        torch::Tensor absolute_elevation_of_transmitter = pitch + torch::tensor({this->elevation_angle}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor absolute_azimuth_of_transmitter   = yaw + torch::tensor({this->azimuthal_angle}).to(DATATYPE).to(DEVICE);
+        torch::Tensor absolute_elevation_of_transmitter = pitch + torch::tensor({this->elevation_angle}).to(DATATYPE).to(DEVICE);
         if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: page 149 \n";
 
         // std::cout<<"\t TransmitterClass: this->azimuthal_angle = "<<this->azimuthal_angle<<std::endl;
@@ -172,10 +172,10 @@ public:
         // std::cout<<"\t TransmitterClass: absolute_elevation_of_transmitter = "<<absolute_elevation_of_transmitter<<std::endl;
 
         // converting back to Cartesian
-        torch::Tensor pointing_direction_spherical  = torch::zeros({3,1}).to(torch::kFloat).to(DEVICE);
+        torch::Tensor pointing_direction_spherical  = torch::zeros({3,1}).to(DATATYPE).to(DEVICE);
         pointing_direction_spherical[0]             = absolute_azimuth_of_transmitter;
         pointing_direction_spherical[1]             = absolute_elevation_of_transmitter;
-        pointing_direction_spherical[2]             = torch::tensor({1}).to(torch::kFloat).to(DEVICE);
+        pointing_direction_spherical[2]             = torch::tensor({1}).to(DATATYPE).to(DEVICE);
         if(DEBUGMODE_TRANSMITTER) std::cout<<"\t TransmitterClass: page 60 \n";
 
         this->pointing_direction = fSph2Cart(pointing_direction_spherical);
@@ -199,6 +199,8 @@ public:
         scatterers->coordinates = \
             scatterers->coordinates - this->location; 
 
+
+
         /*
         Note: I think something we can do is see if we can subset the matrices by checking coordinate values right away. If one of the coordinate values is x (relative coordiantes), we know for sure that the distance is greater than x, for sure. So, maybe that's something that we can work with 
         */
@@ -207,27 +209,30 @@ public:
         torch::Tensor scatterers_spherical          = fCart2Sph(scatterers->coordinates);
         torch::Tensor pointing_direction_spherical  = fCart2Sph(this->pointing_direction);
 
+
         // Calculating relative azimuths and radians
         torch::Tensor relative_spherical = \
             scatterers_spherical - pointing_direction_spherical;
+
         
         // clearing some stuff up
         scatterers_spherical.reset();
         pointing_direction_spherical.reset();
 
+
         // tensor corresponding to switch. 
         torch::Tensor tilt_angle_Tensor = \
-            torch::tensor({tilt_angle}).to(torch::kFloat).to(DEVICE);
+            torch::tensor({tilt_angle}).to(DATATYPE).to(DEVICE);
 
         // calculating length of axes
         torch::Tensor axis_a    = \
             torch::tensor({
                 this->azimuthal_beamwidth / 2
-                }).to(torch::kFloat).to(DEVICE);
+                }).to(DATATYPE).to(DEVICE);
         torch::Tensor axis_b    = \
             torch::tensor({
                 this->elevation_beamwidth / 2
-                }).to(torch::kFloat).to(DEVICE);
+                }).to(DATATYPE).to(DEVICE);
         
         // part of calculating the tilted ellipse
         torch::Tensor xcosa = relative_spherical[0] * torch::cos(tilt_angle_Tensor * PI/180);
@@ -236,21 +241,27 @@ public:
         torch::Tensor ycosa = relative_spherical[1] * torch::cos(tilt_angle_Tensor * PI/180);
         relative_spherical.reset();
 
+
         // finding points inside the tilted ellipse
         torch::Tensor scatter_boolean = \
             torch::div(torch::square(xcosa + ysina), torch::square(axis_a)) + \
             torch::div(torch::square(xsina - ycosa), torch::square(axis_b)) <= 1;
 
+
         // clearing
         xcosa.reset(); ysina.reset(); xsina.reset(); ycosa.reset();
+
 
         // subsetting points within the elliptical beam
         auto mask                   = (scatter_boolean == 1);    // creating a mask 
         scatterers->coordinates     = scatterers->coordinates.index({torch::indexing::Slice(),  mask});
         scatterers->reflectivity    = scatterers->reflectivity.index({torch::indexing::Slice(), mask});
 
+
         // this is where histogram shadowing comes in (later)
-        if (ENABLE_RAYTRACING) {rangeHistogramShadowing(scatterers); std::cout<<"\t\t TransmitterClass: line 232 "<<std::endl;}
+        if (ENABLE_RAYTRACING) {
+            rangeHistogramShadowing(scatterers); 
+        }
 
         // translating back to the points
         scatterers->coordinates = scatterers->coordinates + this->location;
@@ -301,14 +312,14 @@ public:
 
         // centering (verified)
         azimuth_centers     = azimuth_centers + torch::tensor({this->azimuthal_angle - \
-                                                               (this->azimuthal_beamwidth/2)}).to(torch::kFloat);
+                                                               (this->azimuthal_beamwidth/2)}).to(DATATYPE);
         elevation_centers   = elevation_centers + torch::tensor({this->elevation_angle - \
-                                                                 (this->elevation_beamwidth/2)}).to(torch::kFloat);  std::cout<<"\t\t TransmitterClass: line 285"<<std::endl;
+                                                                 (this->elevation_beamwidth/2)}).to(DATATYPE);  std::cout<<"\t\t TransmitterClass: line 285"<<std::endl;
 
         // building checkboxes
         torch::Tensor checkbox              = torch::zeros({numelevationcells, numazimuthcells}, torch::kBool);
-        torch::Tensor finalScatterBox       = torch::zeros({numelevationcells, numazimuthcells, 3}).to(torch::kFloat);
-        torch::Tensor finalReflectivityBox  = torch::zeros({numelevationcells, numazimuthcells}).to(torch::kFloat);  std::cout<<"\t\t TransmitterClass: line 290"<<std::endl;
+        torch::Tensor finalScatterBox       = torch::zeros({numelevationcells, numazimuthcells, 3}).to(DATATYPE);
+        torch::Tensor finalReflectivityBox  = torch::zeros({numelevationcells, numazimuthcells}).to(DATATYPE);  std::cout<<"\t\t TransmitterClass: line 290"<<std::endl;
 
         // going through each-range-cell
         for(int i = 0; i<(int)rangeBoundaries.numel(); ++i){

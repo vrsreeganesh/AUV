@@ -276,7 +276,7 @@ int main() {
   // // testing projection
   // torch::Tensor coordinates = torch::tensor({ 1,  2,  3,  4,
   //                                             0,  0,  0,  0,
-  //                                            -1, -1, -1, -1}).view({3,4}).to(torch::kFloat).to(torch::kMPS);
+  //                                            -1, -1, -1, -1}).view({3,4}).to(DATATYPE).to(torch::kMPS);
   // torch::Tensor coordinates_normalized = fColumnNormalize(coordinates);
   // torch::Tensor coordinates_projected = coordinates.clone();
   // coordinates_projected[2]  = torch::zeros({coordinates.size(1)});
@@ -292,7 +292,7 @@ int main() {
   // std::cout<<"coordinates = \n"<<coordinates<<std::endl;
   // PRINTSMALLLINE
   // std::cout<<"xy = \n"<<xy<<std::endl;
-  // torch::Tensor xylengths = torch::norm(xy, 2, 0, true, torch::kFloat);
+  // torch::Tensor xylengths = torch::norm(xy, 2, 0, true, DATATYPE);
   // std::cout<<"xylengths = \n"<<xylengths<<std::endl;
   // PRINTLINE
 

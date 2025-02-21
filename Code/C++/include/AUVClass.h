@@ -125,11 +125,14 @@ public:
         
         // call sync-component attributes
         this->syncComponentAttributes();
+        if (DEBUGMODE_AUV) std::cout << "AUVCLass::init: line 128" << std::endl;
 
         // initializing all the ULAs 
         this->ULA_fls.init(         &this->transmitter_fls); 
         this->ULA_port.init(        &this->transmitter_port); 
         this->ULA_starboard.init(   &this->transmitter_starboard);
+        if (DEBUGMODE_AUV) std::cout << "AUVCLass::init: line 134" << std::endl;
+        
 
         // precomputing delay-matrices for the ULA-class
         std::thread ULA_fls_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices,       \
@@ -141,6 +144,7 @@ public:
         std::thread ULA_starboard_precompute_weights_t(&ULAClass::nfdc_precomputeDelayMatrices, \
                                                        &this->ULA_starboard,                    \
                                                        &this->transmitter_starboard);
+        if (DEBUGMODE_AUV) std::cout << "AUVCLass::init: line 145" << std::endl;
 
         // joining the threads back
         ULA_fls_precompute_weights_t.join();
@@ -243,20 +247,20 @@ public:
                                             float target_azimuth_deg){
 
         // building parameters
-        torch::Tensor azimuth_correction            = torch::tensor({target_azimuth_deg}).to(torch::kFloat).to(DEVICE) - \
+        torch::Tensor azimuth_correction            = torch::tensor({target_azimuth_deg}).to(DATATYPE).to(DEVICE) - \
                                                       pointing_direction_spherical[0];
         torch::Tensor azimuth_correction_radians    = azimuth_correction * PI / 180;
 
         torch::Tensor yawCorrectionMatrix = \
             torch::tensor({torch::cos(azimuth_correction_radians).item<float>(),      \
-                           torch::cos(torch::tensor({90}).to(torch::kFloat).to(DEVICE)*PI/180 + azimuth_correction_radians).item<float>(), \
+                           torch::cos(torch::tensor({90}).to(DATATYPE).to(DEVICE)*PI/180 + azimuth_correction_radians).item<float>(), \
                            (float)0,                                                         \
                            torch::sin(azimuth_correction_radians).item<float>(),      \
-                           torch::sin(torch::tensor({90}).to(torch::kFloat).to(DEVICE)*PI/180 + azimuth_correction_radians).item<float>(), \
+                           torch::sin(torch::tensor({90}).to(DATATYPE).to(DEVICE)*PI/180 + azimuth_correction_radians).item<float>(), \
                            (float)0,                                                         \
                            (float)0,                                                         \
                            (float)0,                                                         \
-                           (float)1}).reshape({3,3}).to(torch::kFloat).to(DEVICE);
+                           (float)1}).reshape({3,3}).to(DATATYPE).to(DEVICE);
 
         // returning the matrix
         return yawCorrectionMatrix;
@@ -267,7 +271,7 @@ public:
                                               float target_elevation_deg){
 
         // building parameters
-        torch::Tensor elevation_correction            = torch::tensor({target_elevation_deg}).to(torch::kFloat).to(DEVICE) - \
+        torch::Tensor elevation_correction            = torch::tensor({target_elevation_deg}).to(DATATYPE).to(DEVICE) - \
                                                         pointing_direction_spherical[1];
         torch::Tensor elevation_correction_radians    = elevation_correction * PI / 180;
 
@@ -278,10 +282,10 @@ public:
                            (float)0,                                                           \
                            (float)0,                                                           \
                            torch::cos(elevation_correction_radians).item<float>(),      \
-                           torch::cos(torch::tensor({90}).to(torch::kFloat).to(DEVICE)*PI/180 + elevation_correction_radians).item<float>(),\
+                           torch::cos(torch::tensor({90}).to(DATATYPE).to(DEVICE)*PI/180 + elevation_correction_radians).item<float>(),\
                            (float)0,                                                           \
                            torch::sin(elevation_correction_radians).item<float>(),      \
-                           torch::sin(torch::tensor({90}).to(torch::kFloat).to(DEVICE)*PI/180 + elevation_correction_radians).item<float>()}).reshape({3,3}).to(torch::kFloat);
+                           torch::sin(torch::tensor({90}).to(DATATYPE).to(DEVICE)*PI/180 + elevation_correction_radians).item<float>()}).reshape({3,3}).to(DATATYPE);
 
         // returning the matrix
         return pitchCorrectionMatrix;
@@ -329,7 +333,6 @@ public:
                                  scatterer_starboard);
 
 
-
         // asking ULAs to simulate signal through multithreading
         std::thread ulafls_signalsim_t(&ULAClass::nfdc_simulateSignal,          \
                                        &this->ULA_fls,                          \
@@ -349,6 +352,7 @@ public:
         ulaport_signalsim_t.join();         // joining back the signals-sim thread for ULA-Port
         ulastarboard_signalsim_t.join();    // joining back the signal-sim thread for ULA-Starboard
         savetensor_t.join();                // joining back the signal-sim thread for tensor-saving
+
 
     }
 
@@ -419,7 +423,6 @@ public:
             
         }
 
-
         
         // performing the beamforming
         std::thread ULA_fls_beamforming_t(&ULAClass::nfdc_beamforming,          \
@@ -436,6 +439,7 @@ public:
         ULA_fls_beamforming_t.join(); 
         ULA_port_beamforming_t.join(); 
         ULA_starboard_beamforming_t.join();
+
 
     }
 

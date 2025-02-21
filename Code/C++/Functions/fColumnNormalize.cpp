@@ -7,7 +7,7 @@ torch::Tensor fColumnNormalize(torch::Tensor inputTensor){
                                                       2,              // order
                                                       0,              // dimension
                                                       true,           // keep-dims
-                                                      torch::kFloat); // d-type       
+                                                      DATATYPE); // d-type       
 
   // dividing the input by the norm
   torch::Tensor outputTensor = inputTensor/inputTensorNorm;
