@@ -3,64 +3,48 @@ Aim: Signal Simulation
 --------------------------------------------------------------------------------
 ==============================================================================*/ 
 
-// including standard packages
-#include <ostream>
-#include <torch/torch.h>
-#include <iostream>
-#include <thread>
-#include "math.h"
-#include <chrono>
-#include <Python.h>
-#include <Eigen/Dense>
-#include <cstdlib>          // For terminal access
-#include <omp.h>            // the openMP
-
-
+// including
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/packages.h"
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/config.h"       // hash-defines
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/classes.h"      // class definitions
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/classes.h"      // class defs
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/setupscripts.h" // setup-scripts
 #include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/functions.h"    // functions
-
-
 
 
 // main-function
 int main() {
 
     // Ensuring no-gradients are built
-    torch::NoGradGuard no_grad;
+    NoGradGuard no_grad;
 
     // Builing Sea-floor
     ScattererClass SeafloorScatter;
-    std::thread scatterThread_t(SeafloorSetup, \
-                                &SeafloorScatter);
+    thread scatterThread_t(SeafloorSetup, \
+                           ref(SeafloorScatter));
 
     // Building ULA
     ULAClass ula_fls, ula_port, ula_starboard;
-    std::thread ulaThread_t(ULASetup, \
-                            &ula_fls, \
-                            &ula_port, \
-                            &ula_starboard);
+    thread ulaThread_t(ULASetup, \
+                       ref(ula_fls), \
+                       ref(ula_port), \
+                       ref(ula_starboard));
     
     // Building Transmitter
     TransmitterClass transmitter_fls, transmitter_port, transmitter_starboard; 
-    std::thread transmitterThread_t(TransmitterSetup, 
-                                    &transmitter_fls, 
-                                    &transmitter_port, 
-                                    &transmitter_starboard);
-
+    thread transmitterThread_t(TransmitterSetup, 
+                               ref(transmitter_fls), 
+                               ref(transmitter_port), 
+                               ref(transmitter_starboard));
 
     // recombining threads
     scatterThread_t.join();     // making the scattetr population thread join back
     ulaThread_t.join();         // making the ULA population thread join back
     transmitterThread_t.join(); // making the transmitter population thread join back
 
-    
     // building AUV 
     AUVClass auv;                   // instantiating class object
     AUVSetup(&auv);             // populating 
-    
-    
+        
     // attaching components to the AUV
     auv.ULA_fls                 = ula_fls;                  // attaching ULA-FLS to AUV
     auv.ULA_port                = ula_port;                 // attaching ULA-Port to AUV
@@ -72,30 +56,23 @@ int main() {
     // storing 
     ScattererClass SeafloorScatter_deepcopy = SeafloorScatter;
 
-    
-
     // pre-computing the data-structures required for processing
     auv.init();
 
-
-
-
     // mimicking movement
-    int number_of_stophops = 100;
+    int number_of_stophops = 4;
     // if (true) return 0;
     for(int i = 0; i<number_of_stophops; ++i){
 
         // time measuring
-        auto start_time = std::chrono::high_resolution_clock::now();
+        auto start_time = high_resolution_clock::now();
         
         // printing some spaces
-        PRINTSPACE; PRINTSPACE; PRINTLINE; std::cout<<"i = "<<i<<std::endl; PRINTLINE
+        PRINTSPACE; PRINTSPACE; PRINTLINE; cout<<"i = "<<i<<endl; PRINTLINE
         
         // making the deep copy
         ScattererClass SeafloorScatter = SeafloorScatter_deepcopy;
 
-        
-        
         // signal simulation
         auv.simulateSignal(SeafloorScatter);
 
@@ -103,17 +80,17 @@ int main() {
         if (SAVETENSORS) {
 
             // saving the signal matrix tensors
-            torch::save(auv.ULA_fls.signalMatrix, \
+            save(auv.ULA_fls.signalMatrix, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_fls.pt");
-            torch::save(auv.ULA_port.signalMatrix, \
+            save(auv.ULA_port.signalMatrix, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_port.pt");
-            torch::save(auv.ULA_starboard.signalMatrix, \
+            save(auv.ULA_starboard.signalMatrix, \
                         "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/signalMatrix_starboard.pt");
 
             // running python script
-            std::string script_to_run = \
+            string script_to_run = \
                 "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/Python/Plot_SignalMatrix.py";
-            std::thread plotSignalMatrix_t(fRunSystemScriptInSeperateThread, \
+            thread plotSignalMatrix_t(fRunSystemScriptInSeperateThread, \
                                            script_to_run);
             plotSignalMatrix_t.detach();
         
@@ -128,15 +105,15 @@ int main() {
             // saving the tensors
             if(SAVETENSORS){
                 // saving the beamformed images
-                torch::save(auv.ULA_fls.beamformedImage, \
+                save(auv.ULA_fls.beamformedImage, \
                             "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_image.pt");
-                // torch::save(auv.ULA_port.beamformedImage, \
+                // save(auv.ULA_port.beamformedImage, \
                 //             "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_port_image.pt");
-                // torch::save(auv.ULA_starboard.beamformedImage, \
+                // save(auv.ULA_starboard.beamformedImage, \
                 //             "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_starboard_image.pt");
 
                 // saving cartesian image
-                torch::save(auv.ULA_fls.cartesianImage, \
+                save(auv.ULA_fls.cartesianImage, \
                             "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/Assets/ULA_fls_cartesianImage.pt");
 
                 // // running python file
@@ -148,9 +125,9 @@ int main() {
 
 
         // measuring and printing time taken
-        auto end_time   = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> time_duration = end_time - start_time;
-        PRINTDOTS; std::cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<std::endl; PRINTDOTS        
+        auto end_time   = high_resolution_clock::now();
+        duration<double> time_duration = end_time - start_time;
+        PRINTDOTS; cout<<"Time taken (i = "<<i<<") = "<<time_duration.count()<<" seconds"<<endl; PRINTDOTS        
 
         // moving to next position
         auv.step(0.5);

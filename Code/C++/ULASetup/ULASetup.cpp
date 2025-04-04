@@ -7,8 +7,8 @@ we'll create our LFM with 50 to 70KHz
 
 // Choosing device 
 #ifndef DEVICE
-    // #define DEVICE          torch::kMPS
-    #define DEVICE          torch::kCPU
+    // #define DEVICE          kMPS
+    #define DEVICE          kCPU
 #endif
 
 
@@ -17,9 +17,9 @@ we'll create our LFM with 50 to 70KHz
 
 
 
-void ULASetup(ULAClass* ula_fls, 
-              ULAClass* ula_port,
-              ULAClass* ula_starboard) {
+void ULASetup(ULAClass& ula_fls, 
+              ULAClass& ula_port,
+              ULAClass& ula_starboard) {
 
     // setting up ula
     int num_sensors             = 64;                           // number of sensors
@@ -29,46 +29,46 @@ void ULASetup(ULAClass* ula_fls,
 
 
     // building the direction for the sensors
-    torch::Tensor ULA_direction = torch::tensor({-1,0,0}).reshape({3,1}).to(DATATYPE).to(DEVICE);
-    ULA_direction               = ULA_direction/torch::linalg_norm(ULA_direction, 2, 0, true, DATATYPE).to(DEVICE);
+    Tensor ULA_direction = tensor({-1,0,0}).reshape({3,1}).to(DATATYPE).to(DEVICE);
+    ULA_direction               = ULA_direction/linalg_norm(ULA_direction, 2, 0, true, DATATYPE).to(DEVICE);
     ULA_direction               = ULA_direction * inter_element_spacing;
 
 
     // building the coordinates for the sensors
-    torch::Tensor ULA_coordinates = torch::mul(torch::linspace(0, num_sensors-1, num_sensors).to(DEVICE), \
+    Tensor ULA_coordinates = mul(linspace(0, num_sensors-1, num_sensors).to(DEVICE), \
                                                ULA_direction);
 
     // the coefficients for the decimation filter
-    torch::Tensor lowpassfiltercoefficients = torch::tensor({LOWPASS_DECIMATE_FILTER_COEFFICIENTS}).to(DATATYPE);
+    Tensor lowpassfiltercoefficients = tensor({LOWPASS_DECIMATE_FILTER_COEFFICIENTS}).to(DATATYPE);
 
 
     // assigning values 
-    ula_fls->num_sensors            = num_sensors;              // assigning number of sensors
-    ula_fls->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
-    ula_fls->coordinates            = ULA_coordinates;          // assigning ULA coordinates
-    ula_fls->sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
-    ula_fls->recording_period       = recording_period;         // assigning recording period
-    ula_fls->sensorDirection        = ULA_direction;            // ULA direction 
-    ula_fls->lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients; 
+    ula_fls.num_sensors            = num_sensors;              // assigning number of sensors
+    ula_fls.inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
+    ula_fls.coordinates            = ULA_coordinates;          // assigning ULA coordinates
+    ula_fls.sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
+    ula_fls.recording_period       = recording_period;         // assigning recording period
+    ula_fls.sensorDirection        = ULA_direction;            // ULA direction 
+    ula_fls.lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients; 
 
 
     // assigning values 
-    ula_port->num_sensors            = num_sensors;              // assigning number of sensors
-    ula_port->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
-    ula_port->coordinates            = ULA_coordinates;          // assigning ULA coordinates
-    ula_port->sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
-    ula_port->recording_period       = recording_period;         // assigning recording period
-    ula_port->sensorDirection        = ULA_direction;            // ULA direction
-    ula_port->lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients;  
+    ula_port.num_sensors            = num_sensors;              // assigning number of sensors
+    ula_port.inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
+    ula_port.coordinates            = ULA_coordinates;          // assigning ULA coordinates
+    ula_port.sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
+    ula_port.recording_period       = recording_period;         // assigning recording period
+    ula_port.sensorDirection        = ULA_direction;            // ULA direction
+    ula_port.lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients;  
 
 
     // assigning values 
-    ula_starboard->num_sensors            = num_sensors;              // assigning number of sensors
-    ula_starboard->inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
-    ula_starboard->coordinates            = ULA_coordinates;          // assigning ULA coordinates
-    ula_starboard->sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
-    ula_starboard->recording_period       = recording_period;         // assigning recording period
-    ula_starboard->sensorDirection        = ULA_direction;            // ULA direction 
-    ula_starboard->lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients; 
+    ula_starboard.num_sensors            = num_sensors;              // assigning number of sensors
+    ula_starboard.inter_element_spacing  = inter_element_spacing;    // assigning inter-element spacing
+    ula_starboard.coordinates            = ULA_coordinates;          // assigning ULA coordinates
+    ula_starboard.sampling_frequency     = sampling_frequency;       // assigning sampling frequencys
+    ula_starboard.recording_period       = recording_period;         // assigning recording period
+    ula_starboard.sensorDirection        = ULA_direction;            // ULA direction 
+    ula_starboard.lowpassFilterCoefficientsForDecimation = lowpassfiltercoefficients; 
     
 }
