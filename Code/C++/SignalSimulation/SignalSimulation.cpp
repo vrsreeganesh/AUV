@@ -15,14 +15,11 @@ Aim: Signal Simulation
 #include <cstdlib>          // For terminal access
 #include <omp.h>            // the openMP
 
-// hash-defines
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/config.h"
-// class definitions
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/classes.h"
-// setup-scripts
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/setupscripts.h"
-// functions
-#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/functions.h"
+
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/config.h"       // hash-defines
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/classes.h"      // class definitions
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/setupscripts.h" // setup-scripts
+#include "/Users/vrsreeganesh/Documents/GitHub/AUV/Code/C++/include/functions.h"    // functions
 
 
 
@@ -30,10 +27,8 @@ Aim: Signal Simulation
 // main-function
 int main() {
 
-    // Ensuring no-gradients are calculated in this scope
+    // Ensuring no-gradients are built
     torch::NoGradGuard no_grad;
-
-    
 
     // Builing Sea-floor
     ScattererClass SeafloorScatter;
@@ -55,7 +50,7 @@ int main() {
                                     &transmitter_starboard);
 
 
-    // Joining threads
+    // recombining threads
     scatterThread_t.join();     // making the scattetr population thread join back
     ulaThread_t.join();         // making the ULA population thread join back
     transmitterThread_t.join(); // making the transmitter population thread join back
@@ -86,7 +81,7 @@ int main() {
 
 
     // mimicking movement
-    int number_of_stophops = 1;
+    int number_of_stophops = 100;
     // if (true) return 0;
     for(int i = 0; i<number_of_stophops; ++i){
 
