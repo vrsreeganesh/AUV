@@ -99,4 +99,27 @@ public:
         fWriteMatrix(this->coordinates,   "../csv-files/coordinates.csv");
         fWriteVector(this->reflectivity,  "../csv-files/reflectivity.csv");
     }
+
+    // // overloading output
+    // friend std::ostream& operator<<(std::ostream& os, ScattererClass& scatterer){
+
+    //     // printing coordinate shape
+    //     os << format("\t> scatterer.coordinates.shape    = [{}, {}]\n",   scatterer.coordinates.size(), scatterer.coordinates[0].size());
+
+    //     // printing reflectivity shape
+    //     os << format("\t> scatterer.reflectivity.shape   = [{}, {}]",
+    //                  1, scatterer.reflectivity.size()) ;
+
+    //     // returning os
+    //     return os;
+    // }
+
+    // // copy constructor from a pointer
+    // ScattererClass(ScattererClass* scatterers){
+
+    //     // copying the values 
+    //     this->coordinates = scatterers->coordinates;
+    //     this->reflectivity = scatterers->reflectivity;
+    // }
+
 };

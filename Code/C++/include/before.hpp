@@ -30,4 +30,7 @@
 // pipeline-stages
 #include "ScattererClass.hpp"
 #include "ULAClass.hpp"
+#include "TransmitterClass.hpp"
 #include "../SeafloorSetup/SeaFloorSetup.hpp"
+#include "../ULASetup/ULASetup.hpp"
+#include "../TransmitterSetup/TransmitterSetup.hpp"
