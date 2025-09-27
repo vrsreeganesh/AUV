@@ -18,6 +18,7 @@
 #include <cmath>
 #include <random>
 #include <thread>
+#include <concepts>   // for std::integral, std::floating_point
 
 // custom definitions
 #include "hashdefines.hpp"
@@ -29,8 +30,12 @@
 
 // pipeline-stages
 #include "ScattererClass.hpp"
-#include "ULAClass.hpp"
 #include "TransmitterClass.hpp"
+#include "ULAClass.hpp"
+#include "AUVClass.hpp"
+
+// setup-scripts
 #include "../SeafloorSetup/SeaFloorSetup.hpp"
 #include "../ULASetup/ULASetup.hpp"
 #include "../TransmitterSetup/TransmitterSetup.hpp"
+#include "../AUVSetup/AUVSetup.hpp"
