@@ -1248,7 +1248,9 @@ public:
     // ULAClass&   operator=(const     ULAClass&   other)      = delete;
 
     
-    // build sensor-coordinates based on location
+    /* =========================================================================
+    Aim: Build Coordinates Based On Location
+    ------------------------------------------------------------------------- */
     void    buildCoordinatesBasedOnLocation();
 
     /* =========================================================================
@@ -1262,7 +1264,9 @@ public:
     void    nfdc_CreateMatchFilter(TransmitterClass<T>& transmitterObj);
 
 };
-// =================================================================================================
+/* =========================================================================
+Aim: Build Coordinates Based On Location
+------------------------------------------------------------------------- */
 template <typename T>
 void ULAClass<T>::buildCoordinatesBasedOnLocation()
 {

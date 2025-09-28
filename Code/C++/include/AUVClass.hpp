@@ -593,8 +593,8 @@ public:
     
     // transmitters
     TransmitterClass<T>     transmitter_fls;           // transmitter for front-looking SONAR
-    TransmitterClass<T>     transmitter_portside;      // mounted transmitter [obj of class, TransmitterClass]
-    TransmitterClass<T>     transmitter_starboard;     // mounted transmitter [obj of class, TransmitterClass]
+    TransmitterClass<T>     transmitter_portside;      // portside transmitter
+    TransmitterClass<T>     transmitter_starboard;     // starboard transmitter
 
     // derived or dependent attributes
     std::vector<std::vector<T>>     signalMatrix_1;               // matrix containing the signals obtained from ULA_1

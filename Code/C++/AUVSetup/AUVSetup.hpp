@@ -36,13 +36,13 @@ template <typename T>
 void fAUVSetup(AUVClass<T>& auv) {
 
     // building properties for the auv
-    auto    location                {std::vector<T>{0, 50, 30}};        // starting location of AUV
-    auto    velocity                {std::vector<T>{5, 0, 0}};          // starting velocity of AUV
-    auto    pointing_direction      {std::vector<T>{1, 0, 0}};          // pointing direction of AUV
+    auto    location                {std::vector<T>{0, 50, 30}};        // starting location
+    auto    velocity                {std::vector<T>{5, 0, 0}};          // starting velocity
+    auto    pointing_direction      {std::vector<T>{1, 0, 0}};          // pointing direction
 
     // assigning 
-    auv.location                = std::move(location);                  // assigning location of auv
-    auv.velocity                = std::move(velocity);                  // assigning vector representing velocity
-    auv.pointing_direction      = std::move(pointing_direction);        // assigning pointing direction of auv   
+    auv.location            = std::move(location);                  // assigning location
+    auv.velocity            = std::move(velocity);                  // assigning velocity
+    auv.pointing_direction  = std::move(pointing_direction);        // assigning pointing direction
     
 }

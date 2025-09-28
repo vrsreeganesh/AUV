@@ -165,22 +165,6 @@ auto operator*(T1 scalar,
     }
     return temp;
 }
-// // scalar * matrix =============================================================
-// template <typename T1, 
-//           typename T2, 
-//           typename = typename std::enable_if<std::is_arithmetic<T1>::value>::type>
-// auto operator*(T1 scalar, 
-//                const std::vector<std::vector<T2>>& inputMatrix)
-// {
-//     std::vector<std::vector<T2>> temp    {inputMatrix};
-//     for(int i = 0; i<inputMatrix.size(); ++i){
-//         std::transform(inputMatrix[i].begin(),
-//                        inputMatrix[i].end(),
-//                        temp[i].begin(),
-//                        [&scalar](T2 x){return static_cast<T2>(scalar) * x;});
-//     }
-//     return temp;
-// }
 // matrix-multiplication =======================================================
 template <typename T1, typename T2>
 auto matmul(const std::vector<std::vector<T1>>& matA,
