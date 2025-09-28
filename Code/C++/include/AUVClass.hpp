@@ -613,6 +613,8 @@ public:
     // functions
     void syncComponentAttributes();
     void init();
+    void simulate_signal(const  ScattererClass<T>&    seafloor);
+    void subset_scatterers(const  ScattererClass<T>&    seafloor);
 
 };
 
@@ -670,5 +672,74 @@ void AUVClass<T>::init()
     this->ULA_starboard.init(   this->transmitter_starboard);
 
     // pre-computing delay-matrices for ULA-class
+    cout << format("AUVClass<T>::init() : incomplete\n");
     
+}
+
+/*==============================================================================
+Member-Function: Subsetting the scatterers in the transmitter-range
+------------------------------------------------------------------------------*/ 
+template <typename T>
+void AUVClass<T>::subset_scatterers(const  ScattererClass<T>&    seafloor)
+{
+    // ensuring the components are synced
+    this->syncComponentAttributes();
+
+    // finding the pointing direction in spherical 
+    auto    auv_pointing_direction_spherical    {svr::cart2sph(this->pointing_direction)};
+
+    // boolean-vector indicating which scatterers are present 
+    auto    fls_scatterer_indices               {std::vector<std::size_t>()};
+    auto    portside_scatterer_indices          {std::vector<std::size_t>()};
+    auto    starboard_scatterer_indices         {std::vector<std::size_t>()};
+
+    // // Asking the transmitter to subset the scatterers
+    // this->transmitter_fls.subset_scatterers(seafloor, 
+    //                                         fls_scatterer_indices,    
+    //                                         0);
+    // this->transmitter_fls.subset_scatterers(seafloor, 
+    //                                         portside_scatterer_indices, 
+    //                                         auv_pointing_direction_spherical[1]);
+    // this->transmitter_fls.subset_scatterers(seafloor, 
+    //                                         starboard_scatterer_indices, 
+    //                                         -auv_pointing_direction_spherical[1]);
+
+
+    // multithreading it 
+    std::thread fls_t(&TransmitterClass<T>::subset_scatterers,
+                      &this->transmitter_fls,
+                      std::ref(seafloor),
+                      std::ref(fls_scatterer_indices),
+                      0);
+    std::thread portside_t(&TransmitterClass<T>::subset_scatterers,
+                           &this->transmitter_portside,
+                           std::ref(seafloor),
+                           std::ref(portside_scatterer_indices),
+                           auv_pointing_direction_spherical[1]);
+    std::thread starboard_t(&TransmitterClass<T>::subset_scatterers,
+                            &this->transmitter_starboard,
+                            std::ref(seafloor),
+                            std::ref(portside_scatterer_indices),
+                            -auv_pointing_direction_spherical[1]);
+
+    fls_t.join();
+    portside_t.join();
+    starboard_t.join();
+
+
+
+    
+
+}
+
+/*==============================================================================
+Aim: Simulate Signals received by ULAs in the AUV
+------------------------------------------------------------------------------*/ 
+template <typename T>
+void AUVClass<T>::simulate_signal(const     ScattererClass<T>&    seafloor){
+
+    // asking the transmitters subset the scatterers 
+    this->subset_scatterers(seafloor);
+
+
 }

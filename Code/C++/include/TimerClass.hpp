@@ -42,7 +42,8 @@ namespace   svr {
             auto msduration  = std::chrono::duration_cast<std::chrono::microseconds>(temp - startpoint);
             auto milliduration = std::chrono::duration_cast<std::chrono::milliseconds>(temp - startpoint);
             auto sduration   = std::chrono::duration_cast<std::chrono::seconds>(temp - startpoint);
-            PRINTLINE
+            if (functionname.size() == 0)   {functionname = "un-initialized";}
+            cout << "============================================================================================================== \n";
             cout << format("function-name = {} | {} nanoseconds | {} microseconds | {} milliseconds | {} seconds \n", 
                 functionname, 
                 nsduration.count(), 

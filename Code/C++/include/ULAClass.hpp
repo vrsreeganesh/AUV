@@ -1312,8 +1312,6 @@ Aim: Creating match-filter
 template <typename T>
 void    ULAClass<T>::nfdc_CreateMatchFilter(TransmitterClass<T>& transmitterObj)
 {
-    svr::Timer timer("nfdc_CreateMatchFilter");
-
     // creating matrix for basebanding signal
     auto    linspace00              {linspace(0,
                                               transmitterObj.Signal.size()-1,

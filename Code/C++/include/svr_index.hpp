@@ -1,6 +1,14 @@
 namespace   svr {
-    // =========================================================================
-    template    <typename T1, typename T2>
+    /*==========================================================================
+    y = index(vector, mask)
+    --------------------------------------------------------------------------*/
+    template    <typename T1,
+                 typename T2,
+                 typename = std::enable_if_t<std::is_arithmetic_v<T1>                   || 
+                                             std::is_same_v<T1, std::complex<float> >   ||
+                                             std::is_same_v<T1, std::complex<double> >
+                                            >
+                 >
     auto    index(const     std::vector<T1>&        input_vector,
                   const     std::vector<T2>&        indices_to_sample)
     {
@@ -20,4 +28,13 @@ namespace   svr {
         // returning
         return std::move(canvas);
     }
+    // /*==========================================================================
+    // y = index(matrix, mask)
+    // --------------------------------------------------------------------------*/
+    // template <typename T1, typename T2>
+    // auto index(const    std::vector<std::vector<T1>>&   input_matrix,
+    //            const    std::vector<bool>&              boolean_mask)
+    // {
+
+    // }
 }

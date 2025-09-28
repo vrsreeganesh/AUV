@@ -47,6 +47,9 @@
 #include "svr_index.hpp"
 #include "svr_flip.hpp"
 #include "svr_conj.hpp"
+#include "svr_reset.hpp"
+#include "svr_square.hpp"
+#include "svr_mask.hpp"
 
 
 #include "svr_coordinate_change.hpp"
