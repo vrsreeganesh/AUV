@@ -612,9 +612,20 @@ public:
 
     // functions
     void syncComponentAttributes();
-    void init();
-    void simulate_signal(const  ScattererClass<T>&    seafloor);
-    void subset_scatterers(const  ScattererClass<T>&    seafloor);
+    // void init(boost::asio::thread_pool&    thread_pool);
+    void init(svr::ThreadPool&  thread_pool);
+    // void simulate_signal(const     ScattererClass<T>&    seafloor,
+    //                      boost::asio::thread_pool&       thread_pool);
+    void simulate_signal(const     ScattererClass<T>&    seafloor,
+                         svr::ThreadPool&       thread_pool);
+    // void subset_scatterers(const  ScattererClass<T>&    seafloor,
+    //                        boost::asio::thread_pool&    thread_pool);
+    void subset_scatterers(const  ScattererClass<T>&    seafloor,
+                           svr::ThreadPool&             thread_pool,
+                           std::vector<std::size_t>&    fls_scatterer_indices,
+                           std::vector<std::size_t>&    portside_scatterer_indices,
+                           std::vector<std::size_t>&    starboard_scatterer_indices);
+    void step(T time_step);
 
 };
 
@@ -628,11 +639,10 @@ void AUVClass<T>::syncComponentAttributes()
     this->ULA_fls.location          = this->location;
     this->ULA_portside.location     = this->location;
     this->ULA_starboard.location    = this->location;
-
     
     // updating pointing-direction of ULAs
     auto    ula_fls_sensor_direction_spherical      {svr::cart2sph(this->pointing_direction)};
-    ula_fls_sensor_direction_spherical[0]   -=  90;
+    ula_fls_sensor_direction_spherical[0]           -=  90;
     auto    ula_fls_sensor_direction_cart           {svr::sph2cart(ula_fls_sensor_direction_spherical)};
 
     this->ULA_fls.sensor_direction          =   ula_fls_sensor_direction_cart;
@@ -656,23 +666,22 @@ void AUVClass<T>::syncComponentAttributes()
     this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);
 
 }
-
 /* =========================================================================
-Aim: Init
+Aim: Initializing objects and variables
 --------------------------------------------------------------------------*/ 
 template <typename T>
-void AUVClass<T>::init()
+void AUVClass<T>::init(svr::ThreadPool&  thread_pool)
 {
     // call sync-component attributes
     this->syncComponentAttributes();
 
-    // initializing all the ULAs
-    this->ULA_fls.init(         this->transmitter_fls);
-    this->ULA_portside.init(    this->transmitter_portside);
-    this->ULA_starboard.init(   this->transmitter_starboard);
+    // initializing the ULAs
+    thread_pool.push_back([&]{this->ULA_fls.init(         this->transmitter_fls);});
+    thread_pool.push_back([&]{this->ULA_portside.init(    this->transmitter_portside);});
+    thread_pool.push_back([&]{this->ULA_starboard.init(   this->transmitter_starboard);});
 
-    // pre-computing delay-matrices for ULA-class
-    cout << format("AUVClass<T>::init() : incomplete\n");
+    // converging
+    thread_pool.converge();
     
 }
 
@@ -680,7 +689,11 @@ void AUVClass<T>::init()
 Member-Function: Subsetting the scatterers in the transmitter-range
 ------------------------------------------------------------------------------*/ 
 template <typename T>
-void AUVClass<T>::subset_scatterers(const  ScattererClass<T>&    seafloor)
+void AUVClass<T>::subset_scatterers(const  ScattererClass<T>&    seafloor,
+                                    svr::ThreadPool&             thread_pool,
+                                    std::vector<std::size_t>&    fls_scatterer_indices,
+                                    std::vector<std::size_t>&    portside_scatterer_indices,
+                                    std::vector<std::size_t>&    starboard_scatterer_indices)
 {
     // ensuring the components are synced
     this->syncComponentAttributes();
@@ -688,58 +701,112 @@ void AUVClass<T>::subset_scatterers(const  ScattererClass<T>&    seafloor)
     // finding the pointing direction in spherical 
     auto    auv_pointing_direction_spherical    {svr::cart2sph(this->pointing_direction)};
 
-    // boolean-vector indicating which scatterers are present 
-    auto    fls_scatterer_indices               {std::vector<std::size_t>()};
-    auto    portside_scatterer_indices          {std::vector<std::size_t>()};
-    auto    starboard_scatterer_indices         {std::vector<std::size_t>()};
+    // spinning up the thread-pool
+    thread_pool.push_back(
+        [&]{transmitter_fls.subset_scatterers(seafloor,
+                                              fls_scatterer_indices,
+                                              0);}
+    );
+    thread_pool.push_back(
+        [&]{transmitter_portside.subset_scatterers(seafloor,
+                                                   portside_scatterer_indices,
+                                                   auv_pointing_direction_spherical[1]);}
+    );
+    thread_pool.push_back(
+        [&]{transmitter_starboard.subset_scatterers(seafloor,
+                                                    starboard_scatterer_indices,
+                                                    -1*auv_pointing_direction_spherical[1]);
+                                                }
+    );
 
-    // // Asking the transmitter to subset the scatterers
-    // this->transmitter_fls.subset_scatterers(seafloor, 
-    //                                         fls_scatterer_indices,    
-    //                                         0);
-    // this->transmitter_fls.subset_scatterers(seafloor, 
-    //                                         portside_scatterer_indices, 
-    //                                         auv_pointing_direction_spherical[1]);
-    // this->transmitter_fls.subset_scatterers(seafloor, 
-    //                                         starboard_scatterer_indices, 
-    //                                         -auv_pointing_direction_spherical[1]);
-
-
-    // multithreading it 
-    std::thread fls_t(&TransmitterClass<T>::subset_scatterers,
-                      &this->transmitter_fls,
-                      std::ref(seafloor),
-                      std::ref(fls_scatterer_indices),
-                      0);
-    std::thread portside_t(&TransmitterClass<T>::subset_scatterers,
-                           &this->transmitter_portside,
-                           std::ref(seafloor),
-                           std::ref(portside_scatterer_indices),
-                           auv_pointing_direction_spherical[1]);
-    std::thread starboard_t(&TransmitterClass<T>::subset_scatterers,
-                            &this->transmitter_starboard,
-                            std::ref(seafloor),
-                            std::ref(portside_scatterer_indices),
-                            -auv_pointing_direction_spherical[1]);
-
-    fls_t.join();
-    portside_t.join();
-    starboard_t.join();
-
-
-
-    
-
+    // waiting until all the work is done
+    thread_pool.converge();
 }
 
 /*==============================================================================
 Aim: Simulate Signals received by ULAs in the AUV
 ------------------------------------------------------------------------------*/ 
 template <typename T>
-void AUVClass<T>::simulate_signal(const     ScattererClass<T>&    seafloor){
+void AUVClass<T>::simulate_signal(const     ScattererClass<T>&    seafloor,
+                                  svr::ThreadPool&       thread_pool)
+{
+    // boolean-vector indicating which scatterers are present 
+    auto    fls_scatterer_indices               {std::vector<std::size_t>()};
+    auto    portside_scatterer_indices          {std::vector<std::size_t>()};
+    auto    starboard_scatterer_indices         {std::vector<std::size_t>()};
 
     // asking the transmitters subset the scatterers 
-    this->subset_scatterers(seafloor);
+    this->subset_scatterers(seafloor,
+                            thread_pool,
+                            fls_scatterer_indices,
+                            portside_scatterer_indices,
+                            starboard_scatterer_indices);
+
+    // printing the dimensions
+    cout << format("seafloor.coordinates[0].size()      = {}\n", seafloor.coordinates[0].size());
+    cout << format("fls_scatterer_indices.size()        = {}\n", fls_scatterer_indices.size());
+    cout << format("portside_scatterer_indices.size()   = {}\n", portside_scatterer_indices.size());
+    cout << format("starboard_scatterer_indices.size()  = {}\n", starboard_scatterer_indices.size());
+
+    // asking ULAs to simulate signal
+    thread_pool.push_back(
+        [&]{this->ULA_fls.simulate_signals(
+            seafloor,
+            fls_scatterer_indices,
+            this->transmitter_fls
+        );});
+    thread_pool.push_back(
+        [&](){this->ULA_portside.simulate_signals(
+            seafloor, 
+            portside_scatterer_indices,
+            this->transmitter_portside
+        );});
+    thread_pool.push_back(
+        [&](){
+            this->ULA_starboard.simulate_signals(
+                seafloor,
+                starboard_scatterer_indices,
+                this->transmitter_starboard
+            );});
+    
+    // waiting for threads to converge
+    thread_pool.converge();
 
 
+
+
+
+
+
+
+
+    // saving the seafloor-subsetting
+    auto    seafloor_fls    {svr::index(seafloor.coordinates,
+                                        fls_scatterer_indices,
+                                        0)};
+    auto    seafloor_portside   {svr::index(seafloor.coordinates,
+                                            portside_scatterer_indices,
+                                            0)};
+    auto    seafloor_starboard  {svr::index(seafloor.coordinates,
+                                            starboard_scatterer_indices,
+                                            0)};
+
+    // saving the tensors
+    fWriteMatrix(seafloor_fls,          "../csv-files/seafloor_fls.csv");
+    fWriteMatrix(seafloor_portside,     "../csv-files/seafloor_portside.csv");
+    fWriteMatrix(seafloor_starboard,    "../csv-files/seafloor_starboard.csv");
+
+
+}
+/*==============================================================================
+Aim: Moving the AUV to the next discrete position in the trajectory
+------------------------------------------------------------------------------*/ 
+template <typename T>
+void AUVClass<T>::step(T    time_step)
+{
+    // updating location
+    this->location  = this->location + this->velocity * time_step;
+
+    // update parameters of attached components
+    this->syncComponentAttributes();
 }

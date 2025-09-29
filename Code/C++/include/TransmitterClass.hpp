@@ -498,26 +498,15 @@ public:
 
     // Creating move-constructor and move-assignment
     TransmitterClass(TransmitterClass&& other)                  = default;
-    TransmitterClass&   operator=(TransmitterClass&& other)     =   default;
+    TransmitterClass&   operator=(TransmitterClass&& other)     = default;
 
-    /*==========================================================================
-    Aim: Update pointing angle
-    ----------------------------------------------------------------------------
-    Note:
-        > This function updates pointing angle based on AUV's pointing angle
-        > for now, we're assuming no roll;
-    --------------------------------------------------------------------------*/
+    // member-functions
     auto updatePointingAngle(std::vector<T> AUV_pointing_vector);
-    // auto subset_scatterers(const ScattererClass<T>&  seafloor,
-    //                        const T&                  tilt_angle);
     auto subset_scatterers(const ScattererClass<T>&    seafloor,
                            std::vector<std::size_t>&   indices,
                            const T&                    tilt_angle);
 
 };
-
-
-
 /*==========================================================================
 Aim: Update pointing angle
 ----------------------------------------------------------------------------
@@ -563,7 +552,8 @@ auto TransmitterClass<T>::subset_scatterers(const ScattererClass<T>&    seafloor
 
     // calculating relative azimuths and radians
     auto& relative_spherical    {scatterers_spherical};
-    relative_spherical  = scatterers_spherical - transpose(pointing_direction_spherical);
+    relative_spherical          = scatterers_spherical - \
+                                  transpose(pointing_direction_spherical);
 
     // resetting 
     svr::reset(pointing_direction_spherical);

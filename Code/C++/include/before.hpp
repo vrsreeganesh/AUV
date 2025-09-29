@@ -19,6 +19,13 @@
 #include <random>
 #include <thread>
 #include <concepts>   // for std::integral, std::floating_point
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <future>
+#include <stdexcept>
+#include <boost/asio.hpp>
 
 // custom definitions
 #include "hashdefines.hpp"

@@ -1248,27 +1248,20 @@ public:
     // ULAClass&   operator=(const     ULAClass&   other)      = delete;
 
     
-    /* =========================================================================
-    Aim: Build Coordinates Based On Location
-    ------------------------------------------------------------------------- */
+    // member-functions
     void    buildCoordinatesBasedOnLocation();
-
-    /* =========================================================================
-    Aim: Init 
-    ------------------------------------------------------------------------- */
-    void    init(TransmitterClass<T>&      transmitterObj);
-
-    /* =========================================================================
-    Aim: Creating match-filter
-    ------------------------------------------------------------------------- */
-    void    nfdc_CreateMatchFilter(TransmitterClass<T>& transmitterObj);
+    void    init(const TransmitterClass<T>&      transmitterObj);
+    void    nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitterObj);
+    void    simulate_signals(const ScattererClass<T>&       seafloor,
+                             const std::vector<std::size_t> scatterer_indices,
+                             const TransmitterClass<T>&     transmitter);
 
 };
 /* =========================================================================
 Aim: Build Coordinates Based On Location
 ------------------------------------------------------------------------- */
 template <typename T>
-void ULAClass<T>::buildCoordinatesBasedOnLocation()
+void    ULAClass<T>::buildCoordinatesBasedOnLocation()
 {
     
     // length-normalizing sensor-direction
@@ -1284,12 +1277,11 @@ void ULAClass<T>::buildCoordinatesBasedOnLocation()
                                {1, static_cast<std::size_t>(this->num_sensors)})};
     this->coordinates   =   this->location  +  test;
 }
-
 /* =========================================================================
 Aim: Init 
 ------------------------------------------------------------------------- */
 template <typename T>
-void    ULAClass<T>::init(TransmitterClass<T>&      transmitterObj)
+void    ULAClass<T>::init(const TransmitterClass<T>&      transmitterObj)
 {
     
     // calculating range-related parameters
@@ -1305,12 +1297,11 @@ void    ULAClass<T>::init(TransmitterClass<T>&      transmitterObj)
     this->nfdc_CreateMatchFilter(transmitterObj);
 
 }
-
 /* =========================================================================
 Aim: Creating match-filter
 ------------------------------------------------------------------------- */
 template <typename T>
-void    ULAClass<T>::nfdc_CreateMatchFilter(TransmitterClass<T>& transmitterObj)
+void    ULAClass<T>::nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitterObj)
 {
     // creating matrix for basebanding signal
     auto    linspace00              {linspace(0,
@@ -1352,4 +1343,16 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(TransmitterClass<T>& transmitterObj)
 
     // storing the match-filter to the class member
     this->matchFilter   =   std::move(match_filter);
+}
+/*==============================================================================
+Aim: Simulate signals received by uniform-linear-array
+------------------------------------------------------------------------------*/ 
+template <typename T>
+void    ULAClass<T>::simulate_signals(
+            const ScattererClass<T>&       seafloor,
+            const std::vector<std::size_t> scatterer_indices,
+            const TransmitterClass<T>&     transmitter
+        )
+{
+    cout << format("ULAClass<T>::simulate_signals: STATUS: Incomplete\n");
 }

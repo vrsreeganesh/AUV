@@ -50,6 +50,7 @@
 #include "svr_reset.hpp"
 #include "svr_square.hpp"
 #include "svr_mask.hpp"
+#include "svr_thread_pool.hpp"
 
 
 #include "svr_coordinate_change.hpp"

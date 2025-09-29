@@ -45,27 +45,28 @@ int main(){
     auv.transmitter_starboard   =   std::move(transmitter_starboard);
 
     // precomputing the data-structures required for processing
-    auv.init();
+    svr::ThreadPool thread_pool(3);
+    auv.init(thread_pool);
 
     // starting simulation
-    auto    num_stop_hops   {4};
+    auto    num_stop_hops   {10};
+    const   auto&   seafloor_const  {seafloor};
     for(auto    i = 0; i < num_stop_hops; ++i){
 
         // starting timer
         svr::Timer timer_stophop_i   {"stop-hop, i = "+std::to_string(i)};
 
         // signal simulation
-        auv.simulate_signal(seafloor);
+        auv.simulate_signal(seafloor_const, thread_pool);
 
-
-
+        // moving to next hop-position 
+        auv.step(0.5);
     }
 
 
 
-
-    // =====================================================
     
     // =====================================================
 	return 0;
+    // =====================================================
 }
