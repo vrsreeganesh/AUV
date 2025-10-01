@@ -1,8 +1,10 @@
+#pragma once
 /*==============================================================================
 y = vector - scalar
 ------------------------------------------------------------------------------*/
 template <typename T>
-auto operator-(const std::vector<T>& a, const T scalar){
+auto operator-(const std::vector<T>&    a, 
+               const T                  scalar){
     std::vector<T> temp(a.size());
     std::transform(a.begin(),
                    a.end(),

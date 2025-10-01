@@ -1,4 +1,15 @@
-// =============================================================================
+/*==============================================================================
+Dependencies
+------------------------------------------------------------------------------*/ 
+#pragma once
+#include <vector>   // for std::vector
+#include <utility>  // for std::pair
+#include <complex>  // for std::complex
+
+
+/*==============================================================================
+mesh-grid when working with l-values
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto meshgrid(const     std::vector<T>&    x,
               const     std::vector<T>&    y)
@@ -19,7 +30,9 @@ auto meshgrid(const     std::vector<T>&    x,
     return std::move(std::pair{xcanvas, ycanvas});
 
 }
-// =============================================================================
+/*==============================================================================
+meshgrid when working with r-values
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto meshgrid(std::vector<T>&&    x,
               std::vector<T>&&    y)

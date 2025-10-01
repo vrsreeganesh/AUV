@@ -1,5 +1,9 @@
+#pragma once
 namespace   svr {
-    // =========================================================================
+    /*==============================================================================
+    1D convolution of two vectors
+    > implemented through fft
+    ------------------------------------------------------------------------------*/ 
     template    <typename T1, typename T2>
     auto    conv1D(const    std::vector<T1>&     input_vector_A,
                    const    std::vector<T2>&     input_vector_B)

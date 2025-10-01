@@ -1,5 +1,9 @@
+#pragma once
+/*==============================================================================
+minimum along dimension 1
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
-auto    min(std::vector<std::vector<T>> input_matrix) -> std::enable_if_t<axis == 1, std::vector<std::vector<T>> >
+auto    min(const   std::vector<std::vector<T>>& input_matrix) -> std::enable_if_t<axis == 1, std::vector<std::vector<T>> >
 {
     // creating canvas
     auto    canvas      {std::vector<std::vector<T>>(input_matrix.size(),std::vector<T>(1))};

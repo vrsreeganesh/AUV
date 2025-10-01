@@ -51,6 +51,12 @@
 #include "svr_square.hpp"
 #include "svr_mask.hpp"
 #include "svr_thread_pool.hpp"
+#include "svr_gnu_plot.hpp"
+#include "svr_tensor_init.hpp"
+#include "svr_floor.hpp"
+#include "svr_squeeze.hpp"
+
+#include "auv_parameters.hpp"
 
 
 #include "svr_coordinate_change.hpp"

@@ -1,16 +1,20 @@
-// =============================================================================
+#pragma once
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto rand(const T min, const T max) {
+auto rand(const     T   min, 
+          const     T   max) {
     static std::random_device rd;   // Seed
     static std::mt19937 gen(rd());  // Mersenne Twister generator
     std::uniform_real_distribution<> dist(min, max);
     return dist(gen);
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto rand(const T       min, 
-          const T       max, 
-          const size_t  numelements) 
+auto rand(const     T               min, 
+          const     T               max, 
+          const     std::size_t     numelements) 
 {
     static std::random_device rd;   // Seed
     static std::mt19937 gen(rd());  // Mersenne Twister generator
@@ -22,11 +26,12 @@ auto rand(const T       min,
 
     return finaloutput;
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto rand(const T               argmin, 
-          const T               argmax, 
-          const vector<int>     dimensions)
+auto rand(const T                   argmin, 
+          const T                   argmax, 
+          const std::vector<int>    dimensions)
 {
 
     // throwing an error if dimension is greater than two 
@@ -51,10 +56,10 @@ auto rand(const T               argmin,
     return finaloutput;
 
 }
-// =============================================================================
-auto rand(const vector<int>     dimensions)
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
+auto rand(const std::vector<int>     dimensions)
 {
-
     using ReturnType = double;
 
     // throwing an error if dimension is greater than two 
@@ -77,11 +82,12 @@ auto rand(const vector<int>     dimensions)
     return std::move(finaloutput);
 
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto rand_complex_double(const T                argmin, 
-                         const T                argmax, 
-                         const vector<int>&  dimensions)
+auto rand_complex_double(const T                    argmin, 
+                         const T                    argmax, 
+                         const std::vector<int>&    dimensions)
 {
 
     // throwing an error if dimension is greater than two 
@@ -102,5 +108,4 @@ auto rand_complex_double(const T                argmin,
 
     // returning the finaloutput
     return finaloutput;
-
 }

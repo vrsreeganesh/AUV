@@ -1,4 +1,7 @@
-// scalar * vector =============================================================
+#pragma once
+/*==============================================================================
+y = scalar * vector
+------------------------------------------------------------------------------*/ 
 template <typename  T>
 auto    operator*(const     T                   scalar,
                   const     std::vector<T>&     input_vector)
@@ -11,9 +14,9 @@ auto    operator*(const     T                   scalar,
     // returning
     return std::move(canvas);
 }
-
-// scalar * vector =============================================================
-// template <typename T1, typename T2>
+/*==============================================================================
+y = scalar * vector
+------------------------------------------------------------------------------*/ 
 template <typename T1, typename T2,
           typename = std::enable_if_t<!std::is_same_v<std::decay_t<T1>, std::vector<T2>>>>
 auto operator*(const    T1                  scalar, 
@@ -32,8 +35,9 @@ auto operator*(const    T1                  scalar,
     // returning
     return std::move(canvas);
 }
-
-// vector * scalar =============================================================
+/*==============================================================================
+y = vector * scalar
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto    operator*(const     std::vector<T>&     input_vector,
                   const     T                   scalar)
@@ -48,8 +52,9 @@ auto    operator*(const     std::vector<T>&     input_vector,
     // returning
     return std::move(canvas);
 }
-
-// vector * vector =============================================================
+/*==============================================================================
+y = vector * vector
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto operator*(const std::vector<T>&    input_vector_A,
                const std::vector<T>&    input_vector_B)
@@ -71,6 +76,8 @@ auto operator*(const std::vector<T>&    input_vector_A,
     // moving it back
     return std::move(canvas);
 }
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T1, typename T2>
 auto    operator*(const     std::vector<T1>&    input_vector_A,
                   const     std::vector<T2>&    input_vector_B)
@@ -99,10 +106,11 @@ auto    operator*(const     std::vector<T1>&    input_vector_A,
     return std::move(canvas);
 
 }
-
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 // scalar * matrix =============================================================
 template <typename T>
-auto operator*(T                                    scalar, 
+auto operator*(const T                              scalar, 
                const std::vector<std::vector<T>>&   inputMatrix)
 {
     std::vector<std::vector<T>> temp    {inputMatrix};
@@ -112,9 +120,39 @@ auto operator*(T                                    scalar,
                        temp[i].begin(),
                        [&scalar](T x){return scalar * x;});
     }
-    return temp;
+    return std::move(temp);
 }
-// matrix * matrix =============================================================
+/*==============================================================================
+y = matrix * scalar
+------------------------------------------------------------------------------*/
+template <typename T>
+auto    operator*(const     std::vector<std::vector<T>>&    input_matrix,
+                  const     T                               scalar)
+{
+    // fetching matrix dimensions
+    const   auto&   num_rows_matrix     {input_matrix.size()};
+    const   auto&   num_cols_matrix     {input_matrix[0].size()};
+
+    // creating canvas
+    auto    canvas      {std::vector<std::vector<T>>(
+        num_rows_matrix,
+        std::vector<T>(num_cols_matrix)
+    )};
+
+    // storing the values
+    for(auto row = 0; row < num_rows_matrix; ++row)
+        std::transform(input_matrix[row].begin(),   input_matrix[row].end(),
+                       canvas[row].begin(),
+                       [&scalar](const  auto&   argx){
+                            return argx * scalar;
+                       });
+
+    // returning
+    return std::move(canvas);
+}
+/*==============================================================================
+y = matrix * matrix
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto operator*(const std::vector<std::vector<T>>& A,
                const std::vector<std::vector<T>>& B) -> std::vector<std::vector<T>>
@@ -151,10 +189,12 @@ auto operator*(const std::vector<std::vector<T>>& A,
         throw std::runtime_error("operator* dimension mismatch");
     }
 }
-// scalar * matrix =============================================================
+/*==============================================================================
+y = scalar * matrix
+------------------------------------------------------------------------------*/ 
 template <typename T1, typename T2>
-auto operator*(T1 scalar, 
-               const std::vector<std::vector<T2>>& inputMatrix)
+auto operator*(const T1                             scalar, 
+               const std::vector<std::vector<T2>>&  inputMatrix)
 {
     std::vector<std::vector<T2>> temp    {inputMatrix};
     for(int i = 0; i<inputMatrix.size(); ++i){
@@ -165,7 +205,9 @@ auto operator*(T1 scalar,
     }
     return temp;
 }
-// matrix-multiplication =======================================================
+/*==============================================================================
+matrix-multiplication
+------------------------------------------------------------------------------*/ 
 template <typename T1, typename T2>
 auto matmul(const std::vector<std::vector<T1>>& matA,
             const std::vector<std::vector<T2>>& matB)
@@ -196,7 +238,9 @@ auto matmul(const std::vector<std::vector<T1>>& matA,
     // returning 
     return finaloutput;
 }
-// matrix * vector  ============================================================
+/*==============================================================================
+y = matrix * vector
+------------------------------------------------------------------------------*/ 
 template    <typename T>
 auto operator*(const    std::vector<std::vector<T>>     input_matrix,
                const    std::vector<T>                  input_vector)
@@ -234,8 +278,9 @@ auto operator*(const    std::vector<std::vector<T>>     input_matrix,
     return std::move(canvas);
 
 }
-
-// scalar operators ============================================================
+/*==============================================================================
+scalar operators
+------------------------------------------------------------------------------*/
 auto operator*(const std::complex<double>   complexscalar, 
                const double                 doublescalar){
     return complexscalar * static_cast<std::complex<double>>(doublescalar);

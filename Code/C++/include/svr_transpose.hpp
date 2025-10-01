@@ -1,5 +1,8 @@
+#pragma once
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto transpose(const std::vector<T> input_vector){
+auto transpose(const    std::vector<T>&     input_vector){
     
     // creating canvas
     auto    canvas      {std::vector<std::vector<T>>{

@@ -1,5 +1,8 @@
+#pragma once
 namespace   svr {
-    // =====================================================
+    /*==============================================================================
+    y = tan-inverse(input_vector_A/input_vector_B)
+    ------------------------------------------------------------------------------*/ 
     template <typename T>
     auto atan2(const    std::vector<T>      input_vector_A,
                const    std::vector<T>      input_vector_B)
@@ -24,7 +27,9 @@ namespace   svr {
         // moving things back
         return std::move(canvas);
     }
-    // =====================================================
+    /*==============================================================================
+    y = tan-inverse(a/b)
+    ------------------------------------------------------------------------------*/ 
     template <typename T>
     auto atan2(T    scalar_A,
                T    scalar_B)

@@ -1,6 +1,8 @@
+#pragma once
 namespace   svr {
-    // =============================================================================
-    // For type-deductions
+    /*==============================================================================
+    For type-deductions
+    ------------------------------------------------------------------------------*/ 
     template <typename T>
     struct  fft_result_type;
 
@@ -21,8 +23,10 @@ namespace   svr {
     template <typename  T>
     using   fft_result_t    = typename fft_result_type<T>::type;
 
-    // =========================================================================
-    // y = fft(x, nfft)
+    /*==============================================================================
+    y = fft(x, nfft)
+        > calculating n-point dft where n-value is explicit
+    ------------------------------------------------------------------------------*/ 
     template<typename T>
     auto fft(const      std::vector<T>&     input_vector, 
              const      size_t              nfft)
@@ -59,8 +63,9 @@ namespace   svr {
         return std::move(finaloutput);
     }
 
-    // =========================================================================
-    // y = ifft(x, nfft)
+    /*==============================================================================
+    y = ifft(x, nfft)
+    ------------------------------------------------------------------------------*/ 
     template<typename T>
     auto ifft(const      std::vector<T>&     input_vector)
     {

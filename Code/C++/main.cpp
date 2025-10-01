@@ -48,8 +48,10 @@ int main(){
     svr::ThreadPool thread_pool(3);
     auv.init(thread_pool);
 
+
     // starting simulation
-    auto    num_stop_hops   {10};
+    auto    num_stop_hops   {4};
+    // auto    num_stop_hops   {1};
     const   auto&   seafloor_const  {seafloor};
     for(auto    i = 0; i < num_stop_hops; ++i){
 

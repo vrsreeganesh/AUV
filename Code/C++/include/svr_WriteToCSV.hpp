@@ -1,4 +1,7 @@
-// =============================================================================
+#pragma once
+/*==============================================================================
+writing the contents of a vector a csv-file
+------------------------------------------------------------------------------*/ 
 template <typename T>
 void fWriteVector(const vector<T>&              inputvector, 
                   const string&                 filename){
@@ -31,7 +34,9 @@ void fWriteVector(const vector<T>&              inputvector,
     // return
     return;
 }
-// Matrix writing ==============================================================
+/*==============================================================================
+writing the contents of a matrix to a csv-file
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto fWriteMatrix(const std::vector<std::vector<T>> inputMatrix, 
                   const string                      filename){
@@ -54,7 +59,9 @@ auto fWriteMatrix(const std::vector<std::vector<T>> inputMatrix,
     }
 
 }
-
+/*==============================================================================
+writing complex-matrix to a csv-file
+------------------------------------------------------------------------------*/ 
 template <>
 auto fWriteMatrix(const std::vector<std::vector<std::complex<double>>>  inputMatrix, 
                   const string                                          filename){

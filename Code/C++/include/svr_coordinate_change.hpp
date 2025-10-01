@@ -1,3 +1,4 @@
+#pragma once
 namespace svr {
     /*==========================================================================
     y = cart2sph(vector)
@@ -13,8 +14,12 @@ namespace svr {
         auto    xysplat_lengths     {norm(xysplat)};
 
         // finding azimuthal and elevation angles
-        auto    azimuthal_angles    {svr::atan2(xysplat[1], xysplat[0])     *   180.00/std::numbers::pi};
-        auto    elevation_angles    {svr::atan2(cartesian_vector[2], xysplat_lengths)   *   180.00/std::numbers::pi};
+        auto    azimuthal_angles    {svr::atan2(xysplat[1],
+                                                xysplat[0]) \
+                                     * 180.00/std::numbers::pi};
+        auto    elevation_angles    {svr::atan2(cartesian_vector[2], 
+                                                xysplat_lengths) \
+                                     * 180.00/std::numbers::pi};
         auto    rho_values          {norm(cartesian_vector)};
 
         // creating tensor to send back

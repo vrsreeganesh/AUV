@@ -1171,7 +1171,7 @@ class ULAClass
 {
 public:
     // intrinsic parameters
-    int                             num_sensors;                                // number of sensors
+    std::size_t                             num_sensors;                                // number of sensors
     T                               inter_element_spacing;                      // space between sensors
     std::vector<std::vector<T>>     coordinates;                                // coordinates of each sensor
     T                               sampling_frequency;                         // sampling frequency of the sensors
@@ -1180,7 +1180,7 @@ public:
 
     // derived 
     std::vector<T>                  sensor_direction;
-    std::vector<std::vector<T>>     signalMatrix;
+    std::vector<std::vector<T>>     signal_matrix;
 
     // decimation related
     int                 decimation_factor;                              // the new decimation factor
@@ -1224,7 +1224,7 @@ public:
                 sampling_frequency(sampling_frequency_arg),
                 recording_period(recording_period_arg),
                 location(std::move(location_arg)),
-                signalMatrix(std::move(signalMatrix_arg)),
+                signal_matrix(std::move(signalMatrix_arg)),
                 lowpass_filter_coefficients_for_decimation(std::move(lowpass_filter_coefficients_for_decimation_arg))
     {
         
@@ -1234,28 +1234,31 @@ public:
                                             coordinates[1][2] - coordinates[0][2]};
 
         // normalizing
-        auto    norm_value_temp     {std::inner_product(sensor_direction.begin(), sensor_direction.end(),
-                                                        sensor_direction.begin(),
-                                                        0.00)};
+        auto    norm_value_temp     {std::norm(std::inner_product(sensor_direction.begin(), 
+                                                                  sensor_direction.end(),
+                                                                  sensor_direction.begin(),
+                                                                  0.00))};
 
         // dividing
         if (norm_value_temp != 0)   {sensor_direction   =   sensor_direction / norm_value_temp;}
 
     }
 
-    // deleting copy constructor/assignment
-    // ULAClass(const  ULAClass&   other)                      = delete;
-    // ULAClass&   operator=(const     ULAClass&   other)      = delete;
+    // // deleting copy constructor/assignment
+    // ULAClass<T>(const  ULAClass<T>&   other)                    = delete;
+    // ULAClass<T>&   operator=(const  ULAClass<T>&   other)       = delete;
+    ULAClass<T>(ULAClass<T>&&    other)                         = delete;
+    ULAClass<T>&    operator=(const ULAClass<T>& other)         = default;
 
-    
     // member-functions
     void    buildCoordinatesBasedOnLocation();
+    void    buildCoordinatesBasedOnLocation(const  std::vector<T>&  new_location);
     void    init(const TransmitterClass<T>&      transmitterObj);
     void    nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitterObj);
     void    simulate_signals(const ScattererClass<T>&       seafloor,
                              const std::vector<std::size_t> scatterer_indices,
                              const TransmitterClass<T>&     transmitter);
-
+    void    build_sensor_coordinates_from_location();
 };
 /* =========================================================================
 Aim: Build Coordinates Based On Location
@@ -1263,19 +1266,34 @@ Aim: Build Coordinates Based On Location
 template <typename T>
 void    ULAClass<T>::buildCoordinatesBasedOnLocation()
 {
-    
     // length-normalizing sensor-direction
     this->sensor_direction      =   this->sensor_direction / norm(this->sensor_direction);
 
     // multiply with inter-element distance
-    this->sensor_direction      =   this->sensor_direction  *   this->inter_element_spacing;
+    auto    inter_element_vector    {this->sensor_direction * \
+                                     this->inter_element_spacing};
     
-    // create integer array
-    auto    integer_array       {linspace<T>(0, this->num_sensors-1, this->num_sensors)};
+    // create integer array (verified)
+    auto    integer_array       {linspace<T>(static_cast<T>(0),
+                                             static_cast<T>(this->num_sensors-1),
+                                             this->num_sensors)};
+
     auto    test    {svr::tile(integer_array,   {3,1})  *  \
-                     svr::tile(transpose(this->sensor_direction),   
+                     svr::tile(transpose(inter_element_vector),   
                                {1, static_cast<std::size_t>(this->num_sensors)})};
-    this->coordinates   =   this->location  +  test;
+    
+    // translating coordinates
+    this->coordinates   =  transpose( this->location)  +  test;
+
+}
+template <typename T>
+void    ULAClass<T>::buildCoordinatesBasedOnLocation(const  std::vector<T>&  new_location)
+{
+    // updating location
+    this->location  = new_location;
+
+    // calling the update-coordinates-function
+    this->buildCoordinatesBasedOnLocation();
 }
 /* =========================================================================
 Aim: Init 
@@ -1354,5 +1372,54 @@ void    ULAClass<T>::simulate_signals(
             const TransmitterClass<T>&     transmitter
         )
 {
+    // creating signal matrix
+    auto    num_samples     {static_cast<std::size_t>(
+        std::ceil(this->sampling_frequency * this->recording_period))} ;
+    this->signal_matrix     = svr::zeros<T>({this->num_sensors,
+                                             num_samples});
+
+    // placing dots for each sensor
+    
+    for(auto    sensor_index    =   0;
+        sensor_index    < num_sensors;
+        ++sensor_index)
+    {
+        // fetching sensor coordinates
+        const   auto   curr_sensor_coordinate   {std::vector<T>({
+            coordinates[0][sensor_index],
+            coordinates[1][sensor_index],
+            coordinates[2][sensor_index]
+        })};
+
+        // subsetting scatterers
+        const   auto    subsetted_scatterers    {svr::index(seafloor.coordinates,
+                                                            scatterer_indices,
+                                                            0)};
+        const   auto    subset_scatterer_return {svr::index(seafloor.reflectivity,
+                                                            scatterer_indices)};
+                                                            
+        // calculating distance between sensor and scatterer
+        auto    dist_from_sensor    {subsetted_scatterers - transpose(curr_sensor_coordinate)};
+        dist_from_sensor        =   norm(dist_from_sensor, 0);
+
+        // distance between transmitter and scatterer
+        auto    dist_from_transmitter   {subsetted_scatterers - transpose(curr_sensor_coordinate)};
+        dist_from_transmitter   =   norm(dist_from_transmitter, 0);
+        
+        // calculating time-of-flight
+        auto   time_of_flight  {
+            dist_from_sensor/transmitter.speed_of_sound     + \
+            dist_from_transmitter/transmitter.speed_of_sound
+        };
+        auto&   indices_of_flight   {time_of_flight};
+        indices_of_flight   = svr::floor(time_of_flight * this->sampling_frequency);
+
+        // placing returns in the signal matrix
+        edit_accumulate(this->signal_matrix[sensor_index],
+                        svr::squeeze(indices_of_flight),
+                        subset_scatterer_return);
+    }    
+
+    // this->signal
     cout << format("ULAClass<T>::simulate_signals: STATUS: Incomplete\n");
 }

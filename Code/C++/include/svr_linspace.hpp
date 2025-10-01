@@ -1,50 +1,58 @@
-// in-place
+/*==============================================================================
+Dependencies
+------------------------------------------------------------------------------*/ 
+#pragma once
+#include <vector>
+#include <complex>
+
+
+/*==============================================================================
+in-place
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto linspace(auto&            input,
-              auto             startvalue,
-              auto             endvalue,
-              auto             numpoints) -> void
+auto linspace(auto&             input,
+              const     auto    startvalue,
+              const     auto    endvalue,
+              const     auto    numpoints) -> void
 {
     auto stepsize = static_cast<T>(endvalue - startvalue)/static_cast<T>(numpoints-1);
     for(int i = 0; i<input.size(); ++i) {input[i] = startvalue + i*stepsize;}
 };
-// in-place
+/*==============================================================================
+in-place
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto linspace(vector<complex<T>>&   input,
-              auto                  startvalue,
-              auto                  endvalue,
-              auto                  numpoints) -> void
+auto linspace(std::vector<std::complex<T>>&     input,
+              const     auto                    startvalue,
+              const     auto                    endvalue,
+              const     auto                    numpoints) -> void
 {
     auto stepsize = static_cast<T>(endvalue - startvalue)/static_cast<T>(numpoints-1);
     for(int i = 0; i<input.size(); ++i) {
         input[i] = startvalue + static_cast<T>(i)*stepsize;
     }
 };
-
-// return-type
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto linspace(T             startvalue,
-              T             endvalue,
-              size_t        numpoints)
+auto linspace(const     T               startvalue,
+              const     T               endvalue,
+              const     std::size_t     numpoints)
 {
-    vector<T> input(numpoints);
+    std::vector<T> input(numpoints);
     auto stepsize = static_cast<T>(endvalue - startvalue)/static_cast<T>(numpoints-1);
-    
     for(int i = 0; i<input.size(); ++i) {input[i] = startvalue + static_cast<T>(i)*stepsize;}
-    
-    return input;
+    return std::move(input);
 };
-
-// return-type
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T, typename U>
-auto linspace(T             startvalue,
-              U             endvalue,
-              size_t        numpoints)
+auto linspace(const     T               startvalue,
+              const     U               endvalue,
+              const     std::size_t     numpoints)
 {
-    vector<double> input(numpoints);
+    std::vector<double> input(numpoints);
     auto stepsize = static_cast<double>(endvalue - startvalue)/static_cast<double>(numpoints-1);
-    
     for(int i = 0; i<input.size(); ++i) {input[i] = startvalue + i*stepsize;}
-    
-    return input;
+    return std::move(input);
 };

@@ -1,5 +1,7 @@
-// =============================================================================
-// y = cos(input_vector)
+#pragma once
+/*==============================================================================
+y = cos(input_vector)
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto cos(const  std::vector<T>&     input_vector)
 {
@@ -14,10 +16,11 @@ auto cos(const  std::vector<T>&     input_vector)
     // returning the output
     return std::move(canvas);
 }
-// =============================================================================
-// y = cosd(input_vector)
+/*==============================================================================
+y = cosd(input_vector)
+------------------------------------------------------------------------------*/ 
 template <typename T>
-auto cosd(std::vector<T>     input_vector)
+auto cosd(const std::vector<T>     input_vector)
 {
     // created canvas
     auto    canvas      {input_vector};

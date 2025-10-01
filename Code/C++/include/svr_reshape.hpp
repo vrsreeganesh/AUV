@@ -1,5 +1,8 @@
-// ========================================================================
-// reshaping a matrix into another matrix
+#pragma once
+
+/*==============================================================================
+reshaping a matrix into another matrix
+------------------------------------------------------------------------------*/ 
 template <std::size_t M, std::size_t N, typename T>
 auto reshape(const  std::vector<std::vector<T>>&     input_matrix){
 
@@ -28,8 +31,9 @@ auto reshape(const  std::vector<std::vector<T>>&     input_matrix){
     // moving it back
     return std::move(canvas);
 }
-// ========================================================================
-// reshaping a matrix into a vector
+/*==============================================================================
+reshaping a matrix into a vector
+------------------------------------------------------------------------------*/ 
 template<std::size_t M, typename T>
 auto reshape(const std::vector<std::vector<T>>& input_matrix){
     
@@ -48,10 +52,9 @@ auto reshape(const std::vector<std::vector<T>>& input_matrix){
     // moving it back
     return std::move(canvas);
 }
-
-// =========================================================
-// Matrix to matrix
-// =========================================================
+/*==============================================================================
+Matrix to matrix
+------------------------------------------------------------------------------*/ 
 template<typename T>
 auto reshape(const std::vector<std::vector<T>>& input_matrix,
              const std::size_t                  M,
@@ -82,10 +85,9 @@ auto reshape(const std::vector<std::vector<T>>& input_matrix,
     // moving it back
     return std::move(canvas);
 }
-
-// =========================================================
-// converting a matrix into a vector
-// =========================================================
+/*==============================================================================
+converting a matrix into a vector
+------------------------------------------------------------------------------*/ 
 template<typename T>
 auto reshape(const std::vector<std::vector<T>>& input_matrix,
              const size_t                       M){

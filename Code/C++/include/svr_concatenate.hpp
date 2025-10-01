@@ -1,5 +1,8 @@
-// input = [vector, vector], 
-// output = [vector]
+#pragma once
+/*==============================================================================
+input = [vector, vector], 
+output = [vector]
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto concatenate(const  std::vector<T>&     input_vector_A,
                  const  std::vector<T>&     input_vector_B) -> std::enable_if_t<axis == 1, std::vector<T> >
@@ -18,9 +21,10 @@ auto concatenate(const  std::vector<T>&     input_vector_A,
     return std::move(canvas);
 
 }
-// =========================================================
-// input = [vector, vector], 
-// output = [matrix]
+/*==============================================================================
+input = [vector, vector], 
+output = [matrix]
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto concatenate(const  std::vector<T>&     input_vector_A,
                  const  std::vector<T>&     input_vector_B) -> std::enable_if_t<axis == 0, std::vector<std::vector<T>> >
@@ -42,9 +46,10 @@ auto concatenate(const  std::vector<T>&     input_vector_A,
     return std::move(canvas);
 
 }
-// =========================================================
-// input = [vector, vector, vector], 
-// output = [matrix]
+/*==============================================================================
+input = [vector, vector, vector], 
+output = [matrix]
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto concatenate(const  std::vector<T>&     input_vector_A,
                  const  std::vector<T>&     input_vector_B,
@@ -69,9 +74,10 @@ auto concatenate(const  std::vector<T>&     input_vector_A,
     return std::move(canvas);
 
 }
-// =========================================================
-// input = [matrix, vector], 
-// output = [matrix]
+/*==============================================================================
+input = [matrix, vector], 
+output = [matrix]
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto concatenate(const  std::vector<std::vector<T>>&    input_matrix,
                  const  std::vector<T>                  input_vector) -> std::enable_if_t<axis == 0, std::vector<std::vector<T>> >

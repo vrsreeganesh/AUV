@@ -1,3 +1,4 @@
+#pragma once
 namespace   svr {
     /*==========================================================================
     Element-wise squaring vector

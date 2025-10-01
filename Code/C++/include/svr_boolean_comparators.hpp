@@ -1,4 +1,6 @@
-// =============================================================================
+#pragma once
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T, typename U>
 auto operator<(const    std::vector<T>&     input_vector,
                const    U                   scalar)
@@ -16,7 +18,8 @@ auto operator<(const    std::vector<T>&     input_vector,
     // returning 
     return std::move(canvas);
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T, typename U>
 auto operator<=(const    std::vector<T>&     input_vector,
                 const    U                   scalar)
@@ -52,7 +55,8 @@ auto operator>(const    std::vector<T>&     input_vector,
     // returning 
     return std::move(canvas);
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <typename T, typename U>
 auto operator>=(const    std::vector<T>&     input_vector,
                 const    U                   scalar)

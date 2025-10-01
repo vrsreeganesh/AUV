@@ -1,8 +1,11 @@
+#pragma once
 namespace   svr {
-    // =====================================================
+    /*==============================================================================
+    tiling a vector
+    ------------------------------------------------------------------------------*/ 
     template <typename T>
     auto tile(const     std::vector<T>&         input_vector,
-              const     std::vector<size_t>     mul_dimensions){
+              const     std::vector<size_t>&    mul_dimensions){
 
         // creating canvas
         const   std::size_t&   num_rows    {1 * mul_dimensions[0]};
@@ -27,10 +30,12 @@ namespace   svr {
         // returning
         return std::move(canvas);
     }
-    // =====================================================
+    /*==============================================================================
+    tiling a matrix
+    ------------------------------------------------------------------------------*/ 
     template <typename T>
     auto tile(const     std::vector<std::vector<T>>&    input_matrix,
-              const     std::vector<size_t>             mul_dimensions){
+              const     std::vector<size_t>&            mul_dimensions){
 
         // creating canvas
         const   std::size_t&   num_rows    {input_matrix.size()     * mul_dimensions[0]};

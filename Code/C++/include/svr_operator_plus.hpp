@@ -1,5 +1,7 @@
-// =============================================================================
-// y = vector + vector
+#pragma once
+/*==============================================================================
+y = vector + vector
+------------------------------------------------------------------------------*/ 
 template <typename T>
 std::vector<T> operator+(const std::vector<T>& a, 
                          const std::vector<T>& b) 
@@ -17,7 +19,8 @@ std::vector<T> operator+(const std::vector<T>& a,
 
     return result;
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 // y = vector + vector
 template <typename T>
 std::vector<T>& operator+=(std::vector<T>& a, 
@@ -113,15 +116,15 @@ std::vector<std::vector<T>> operator+(const std::vector<std::vector<T>>& a,
         }
     }
     else {
-        PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE 
-        cout << format("check this again \n");
+        std::cerr << "operator+: yet to be implemented \n";
     }
 
     // returning
     return std::move(canvas);
 }
-// =============================================================================
-// y = vector + scalar
+/*==============================================================================
+y = vector + scalar
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto operator+(const    std::vector<T>&     input_vector,
                const    T                   scalar)
@@ -137,8 +140,9 @@ auto operator+(const    std::vector<T>&     input_vector,
     // returning canvas
     return std::move(canvas);
 }
-// =============================================================================
-// y = scalar + vector
+/*==============================================================================
+y = scalar + vector
+------------------------------------------------------------------------------*/ 
 template <typename T>
 auto operator+(const    T                   scalar,
                const    std::vector<T>&     input_vector)

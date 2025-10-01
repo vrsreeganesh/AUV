@@ -1,11 +1,14 @@
-// =============================================================================
+#pragma once
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto sum(const  std::vector<T>&    input_vector) -> std::enable_if_t<axis == 0, std::vector<T>>
 {
     // returning the input as is
     return input_vector;
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto sum(const  std::vector<std::vector<T>>&    input_matrix) -> std::enable_if_t<axis == 0, std::vector<T>>
 {
@@ -23,7 +26,8 @@ auto sum(const  std::vector<std::vector<T>>&    input_matrix) -> std::enable_if_
     return std::move(canvas);
 
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto sum(const  std::vector<std::vector<T>>&    input_matrix) -> std::enable_if_t<axis == 1, std::vector<std::vector<T>>>
 {
@@ -41,7 +45,8 @@ auto sum(const  std::vector<std::vector<T>>&    input_matrix) -> std::enable_if_
     return std::move(canvas);
 
 }
-// =============================================================================
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
 template <std::size_t axis, typename T>
 auto sum(const  std::vector<T>&     input_vector_A,
          const  std::vector<T>&     input_vector_B) -> std::enable_if_t<axis == 0, std::vector<T> >

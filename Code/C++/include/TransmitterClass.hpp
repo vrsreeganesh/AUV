@@ -459,6 +459,9 @@ template <typename T>
 class TransmitterClass{
 public:
 
+    // A shared pointer to the configuration object
+    std::shared_ptr<svr::AUVParameters> config_ptr;
+
     // physical/intrinsic properties
     std::vector<T>      location;               // location tensor 
     std::vector<T>      pointing_direction;     // pointing direction
@@ -476,6 +479,7 @@ public:
     T                   f_high;                 // highest frequency of LFM
     T                   fc;                     // center frequency of LFM
     T                   bandwidth;              // bandwidth of LFM
+    T                   speed_of_sound {1500};     // speed of sound
 
     // shadowing properties
     int                 azimuthQuantDensity;        // quantization of angles along the azimuth
