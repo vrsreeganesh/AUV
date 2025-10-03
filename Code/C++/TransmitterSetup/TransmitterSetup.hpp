@@ -46,7 +46,7 @@ void fTransmitterSetup(TransmitterClass<T>&    transmitter_fls,
 
     // transmitter-fls
     transmitter_fls.location                = location;                         // Assigning location
-    transmitter_fls.Signal                  = Signal;                           // Assigning signal
+    transmitter_fls.signal                  = Signal;                           // Assigning signal
     transmitter_fls.azimuthal_angle         = azimuthal_angle_fls;              // assigning azimuth angle
     transmitter_fls.elevation_angle         = elevation_angle;                  // assigning elevation angle
     transmitter_fls.azimuthal_beamwidth     = azimuthal_beamwidth_fls;          // assigning azimuth-beamwidth
@@ -66,7 +66,7 @@ void fTransmitterSetup(TransmitterClass<T>&    transmitter_fls,
 
     // transmitter-portside
     transmitter_portside.location                  = location;                     // Assigning location
-    transmitter_portside.Signal                    = Signal;                       // Assigning signal
+    transmitter_portside.signal                    = Signal;                       // Assigning signal
     transmitter_portside.azimuthal_angle           = azimuthal_angle_port;         // assigning azimuth angle
     transmitter_portside.elevation_angle           = elevation_angle;              // assigning elevation angle
     transmitter_portside.azimuthal_beamwidth       = azimuthal_beamwidth_port;     // assigning azimuth-beamwidth
@@ -86,7 +86,7 @@ void fTransmitterSetup(TransmitterClass<T>&    transmitter_fls,
 
     // transmitter-starboard
     transmitter_starboard.location                     = location;                     // assigning location
-    transmitter_starboard.Signal                       = Signal;                       // assigning signal
+    transmitter_starboard.signal                       = Signal;                       // assigning signal
     transmitter_starboard.azimuthal_angle              = azimuthal_angle_starboard;    // assigning azimuthal signal
     transmitter_starboard.elevation_angle              = elevation_angle;
     transmitter_starboard.azimuthal_beamwidth          = azimuthal_beamwidth_starboard;

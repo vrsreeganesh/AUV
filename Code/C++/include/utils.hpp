@@ -43,6 +43,11 @@
 #include "svr_tan.hpp"
 #include "svr_tile.hpp"
 #include "svr_fft.hpp"
+
+#include "svr_real.hpp"
+#include "svr_imag.hpp"
+#include "svr_slice.hpp"
+
 #include "svr_conv.hpp"
 #include "svr_index.hpp"
 #include "svr_flip.hpp"

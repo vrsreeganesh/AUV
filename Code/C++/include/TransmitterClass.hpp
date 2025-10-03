@@ -467,7 +467,7 @@ public:
     std::vector<T>      pointing_direction;     // pointing direction
 
     // basic parameters
-    std::vector<T>      Signal;                 // transmitted signal (LFM)
+    std::vector<T>      signal;                 // transmitted signal (LFM)
     T                   azimuthal_angle;        // transmitter's azimuthal pointing direction
     T                   elevation_angle;        // transmitter's elevation pointing direction
     T                   azimuthal_beamwidth;    // azimuthal beamwidth of transmitter

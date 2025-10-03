@@ -733,6 +733,7 @@ void AUVClass<T>::simulate_signal(const     ScattererClass<T>&      seafloor,
                             portside_scatterer_indices,
                             starboard_scatterer_indices);
 
+
     // asking ULAs to simulate signal
     thread_pool.push_back(
         [&]{this->ULA_fls.simulate_signals(
@@ -757,30 +758,29 @@ void AUVClass<T>::simulate_signal(const     ScattererClass<T>&      seafloor,
     // waiting for threads to converge
     thread_pool.converge();
 
-    // 
 
 
 
 
 
 
+    // // saving the seafloor-subsetting
+    // auto    seafloor_fls    {svr::index(seafloor.coordinates,
+    //                                     fls_scatterer_indices,
+    //                                     0)};
+    // auto    seafloor_portside   {svr::index(seafloor.coordinates,
+    //                                         portside_scatterer_indices,
+    //                                         0)};
+    // auto    seafloor_starboard  {svr::index(seafloor.coordinates,
+    //                                         starboard_scatterer_indices,
+    //                                         0)};
 
-    // saving the seafloor-subsetting
-    auto    seafloor_fls    {svr::index(seafloor.coordinates,
-                                        fls_scatterer_indices,
-                                        0)};
-    auto    seafloor_portside   {svr::index(seafloor.coordinates,
-                                            portside_scatterer_indices,
-                                            0)};
-    auto    seafloor_starboard  {svr::index(seafloor.coordinates,
-                                            starboard_scatterer_indices,
-                                            0)};
+    
 
-
-    // saving the tensors
-    fWriteMatrix(seafloor_fls,          "../csv-files/seafloor_fls.csv");
-    fWriteMatrix(seafloor_portside,     "../csv-files/seafloor_portside.csv");
-    fWriteMatrix(seafloor_starboard,    "../csv-files/seafloor_starboard.csv");
+    // // saving the tensors
+    // fWriteMatrix(seafloor_fls,          "../csv-files/seafloor_fls.csv");
+    // fWriteMatrix(seafloor_portside,     "../csv-files/seafloor_portside.csv");
+    // fWriteMatrix(seafloor_starboard,    "../csv-files/seafloor_starboard.csv");
 
 
 }

@@ -27,6 +27,8 @@
 #include <stdexcept>
 #include <boost/asio.hpp>
 
+// #include <fftw3.h>          // for fft
+
 // custom definitions
 #include "hashdefines.hpp"
 #include "usings.hpp"

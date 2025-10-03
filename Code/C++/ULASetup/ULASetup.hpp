@@ -4,7 +4,7 @@ void fULASetup(ULAClass<T>&     ula_fls,
                ULAClass<T>&     ula_starboard)
 {
     // setting up ula
-    auto    num_sensors                 {static_cast<int>(64)};             // number of sensors
+    auto    num_sensors                 {static_cast<int>(32)};             // number of sensors
     T       sampling_frequency          {static_cast<T>(160e3)};            // sampling frequency
     T       inter_element_spacing       {1500/(2*sampling_frequency)};      // space between samples
     T       recording_period            {10e-2};                            // sampling-period

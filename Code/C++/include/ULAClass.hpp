@@ -1323,15 +1323,15 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitt
 {
     // creating matrix for basebanding signal
     auto    linspace00              {linspace(0,
-                                              transmitterObj.Signal.size()-1,
-                                              transmitterObj.Signal.size())};
+                                              transmitterObj.signal.size()-1,
+                                              transmitterObj.signal.size())};
     auto    basebanding_vector      {linspace00 * \
                                      exp(-1.00 * 1i * 2.00 * std::numbers::pi * \
                                          (transmitterObj.fc / this->sampling_frequency)*\
                                          linspace00)};
 
     // multiplying signal with basebanding signal
-    auto    match_filter        {transmitterObj.Signal  *   basebanding_vector};
+    auto    match_filter        {transmitterObj.signal  *   basebanding_vector};
 
     // low-pass filtering with baseband signal to obtain baseband signal
     match_filter    =   svr::conv1D(match_filter,
@@ -1379,7 +1379,6 @@ void    ULAClass<T>::simulate_signals(
                                              num_samples});
 
     // placing dots for each sensor
-    
     for(auto    sensor_index    =   0;
         sensor_index    < num_sensors;
         ++sensor_index)
@@ -1418,7 +1417,18 @@ void    ULAClass<T>::simulate_signals(
         edit_accumulate(this->signal_matrix[sensor_index],
                         svr::squeeze(indices_of_flight),
                         subset_scatterer_return);
-    }    
+
+    }
+
+    for(auto row =0 ; row < this->signal_matrix.size(); ++row){
+        this->signal_matrix[row] = \
+            svr::conv1D_long<4096>(this->signal_matrix[row], 
+                                   transmitter.signal);
+
+    }
+
+    
+        
 
     // this->signal
     cout << format("ULAClass<T>::simulate_signals: STATUS: Incomplete\n");

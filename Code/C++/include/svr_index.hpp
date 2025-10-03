@@ -82,8 +82,11 @@ namespace   svr {
                               });
             }
         }
+        else {
+            std::cerr << "svr_index | this dim is not implemented \n";
+        }
 
-        // moving it back
+        // moving it back 
         return std::move(canvas);
     }
 }   
