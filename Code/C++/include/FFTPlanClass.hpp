@@ -1,0 +1,217 @@
+namespace   svr     {
+
+    template    <typename   sourceType,
+                 typename   destinationType,
+                 typename   = std::enable_if_t<std::is_same_v<sourceType,       double>   &&
+                                               std::is_same_v<destinationType,  std::complex<double>>
+                                              >
+                >
+    class FFTPlanClass
+    {
+        public:
+
+            // Members
+            std::size_t     nfft_;
+            fftw_complex*   in_;
+            fftw_complex*   out_;
+            fftw_plan       plan_;
+
+            /*==================================================================
+            Constructor
+            ------------------------------------------------------------------*/
+            ~FFTPlanClass()
+            {
+                fftw_destroy_plan(      plan_);
+                fftw_free(              in_);
+                fftw_free(              out_);
+            }
+            /*==================================================================
+            Default Constructor
+            ------------------------------------------------------------------*/
+            FFTPlanClass(const  std::size_t     nfft):  nfft_(nfft)
+            {
+                // allocating input-region
+                in_     =   reinterpret_cast<fftw_complex*>(
+                    fftw_malloc(nfft_   *   sizeof(fftw_complex))
+                );
+                out_    =   reinterpret_cast<fftw_complex*>(
+                    fftw_malloc(nfft_   *   sizeof(fftw_complex))
+                );
+                if(!in_ || !out_)   {throw std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | REPORT: in-out allocation failed");}
+
+                // creating plan
+                plan_   =   fftw_plan_dft_1d(
+                    static_cast<int>(nfft_),
+                    in_,
+                    out_,
+                    FFTW_FORWARD,
+                    FFTW_MEASURE
+                );
+                if(!plan_)          {throw std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | REPORT: plan-creation failed");}
+            }
+            /*==================================================================
+            Copy Constructor
+            ------------------------------------------------------------------*/
+            FFTPlanClass(const  FFTPlanClass&   other)
+            {
+                // copying nfft
+                nfft_   =   other.nfft_;
+
+                // allocating input-region
+                in_     =   reinterpret_cast<fftw_complex*>(
+                    fftw_malloc(nfft_   *   sizeof(fftw_complex))
+                );
+                out_    =   reinterpret_cast<fftw_complex*>(
+                    fftw_malloc(nfft_   *   sizeof(fftw_complex))
+                );
+                if(!in_ || !out_)   {throw std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | REPORT: in-out allocation failed");}
+
+                // copying input-region and output-region
+                std::memcpy(in_,    other.in_,  nfft_   * sizeof(fftw_complex));
+                std::memcpy(out_,   other.out_, nfft_   *   sizeof(fftw_complex));
+
+                // creating plan
+                plan_   =   fftw_plan_dft_1d(
+                    static_cast<int>(nfft_),
+                    in_,
+                    out_,
+                    FFTW_FORWARD,
+                    FFTW_MEASURE
+                );
+                if(!plan_)          {throw std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | REPORT: plan-creation failed");}
+            }
+            /*==================================================================
+            Copy Assignment
+            ------------------------------------------------------------------*/
+            FFTPlanClass&   operator=(const     FFTPlanClass&   other)
+            {
+                // handling self-assignment
+                if  (this   ==  &other)     {return *this;}
+
+                // cleaning-up existing resources
+                fftw_destroy_plan(      plan_);
+                fftw_free(              in_);
+                fftw_free(              out_);
+
+                // allocating input-region and output-region
+                in_     =   reinterpret_cast<fftw_complex*>(
+                    fftw_malloc(nfft_   *   sizeof(fftw_complex))
+                );
+                out_    =   reinterpret_cast<fftw_complex*>(
+                    fftw_malloc(nfft_   *   sizeof(fftw_complex))
+                );
+                if(!in_ || !out_)     {throw  std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | FUNCTION: Copy-Assignment | REPORT: in-out allocation failed");}
+
+                // copying contents
+                std::copy(in_,  other.in_,  nfft_ * sizeof(fftw_complex));
+                std::copy(out_, other.out_, nfft_ * sizeof(fftw_complex));
+
+                // creating engine
+                plan_   =   fftw_plan_dft_1d(
+                    static_cast<int>(nfft_),
+                    in_,
+                    out_,
+                    FFTW_FORWARD,
+                    FFTW_MEASURE
+                );
+                if(!plan_)   {throw  std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | FUNCTION: Copy-Assignment | REPORT: plan-creation failed");}
+
+                // returning
+                return *this;
+            }
+            /*==================================================================
+            Move Constructor
+            ------------------------------------------------------------------*/
+            FFTPlanClass(FFTPlanClass&& other)
+                :   nfft_(              other.nfft_),
+                    in_(                other.in_),
+                    out_(               other.out_),
+                    plan_(              other.plan_)
+            {
+                // resetting the others
+                other.nfft_         =   0;
+                other.in_           =   nullptr;
+                other.out_          =   nullptr;
+                other.plan_         =   nullptr;
+            }
+            /*==================================================================
+            Move Assignment
+            ------------------------------------------------------------------*/
+            FFTPlanClass&   operator=(FFTPlanClass&& other)
+            {
+                // self-assignment check
+                if  (this   !=  &other)     {return *this;}
+
+                // cleaning up existing resources
+                fftw_destroy_plan(      plan_);
+                fftw_free(              in_);
+                fftw_free(              out_);
+
+                // Copying-values and changing pointers
+                nfft_               =   other.nfft_;
+                in_                 =   other.in_;
+                out_                =   other.out_;
+                plan_               =   other.plan_;
+
+                // resetting source-members
+                other.nfft_         =   0;
+                other.in_           =   nullptr;
+                other.out_          =   nullptr;
+                other.plan_         =   nullptr;
+            }
+            /*==================================================================
+            Running fft
+            ------------------------------------------------------------------*/
+            std::vector<destinationType>
+            fft(const   std::vector<sourceType>&    input_vector)
+            {
+                // throwing an error
+                if  (input_vector.size()    >   nfft_)
+                    throw std::runtime_error("FILE: FFTPlanClass.hpp | CLASS: FFTPlanClass | FUNCTION: fft() | REPORT: input-vector size is greater than NFFT");
+
+                // copying inputs 
+                for(std::size_t index = 0; index < input_vector.size(); ++index)
+                {
+                    if  constexpr(
+                        std::is_same_v<     sourceType, double                  >
+                    ){
+                        in_[index][0]   =   input_vector[index];
+                        in_[index][1]   =   0;
+                    }
+                    else if constexpr(
+                        std::is_same_v<     sourceType, std::complex<double>    >
+                    ){
+                        in_[index][0]   =   input_vector[index].real();
+                        in_[index][1]   =   input_vector[index].imag();
+                    }
+                }
+
+                // executing fft
+                fftw_execute(plan_);
+
+                // copying results to output-vector
+                std::vector<destinationType>    output_vector(nfft_);
+                for(std::size_t index = 0; index < nfft_; ++index){
+                    if  constexpr(
+                        std::is_same_v<     destinationType,std::complex<double>    >
+                    ){
+                        output_vector[index]    =   std::complex<double>(
+                            out_[index][0],
+                            out_[index][1]
+                        );
+                    }
+                    else if constexpr(
+                        std::is_same_v<     destinationType,    double          >
+                    ){
+                        output_vector[index]    =   std::sqrt(
+                            std::pow(out_[index][0], 2)  +   \
+                            std::pow(out_[index][1], 2)
+                        );
+                    }
+                }
+
+                // returning output
+                return std::move(output_vector);
+            }      
+    };
+}
