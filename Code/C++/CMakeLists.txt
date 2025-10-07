@@ -1,5 +1,5 @@
+# setting architecture
 set(CMAKE_OSX_ARCHITECTURES arm64)
-
 
 # version of the cmake required
 cmake_minimum_required(VERSION 4.1.1)
