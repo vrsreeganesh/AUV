@@ -1,8 +1,15 @@
-template <typename T>
-void fTransmitterSetup(TransmitterClass<T>&    transmitter_fls,
-                       TransmitterClass<T>&    transmitter_portside,
-                       TransmitterClass<T>&    transmitter_starboard)
-{
+template    <
+    typename    T,
+    typename    =   std::enable_if_t<
+        std::is_same_v<T, double>    || 
+        std::is_same_v<T, float>
+    >
+>
+void fTransmitterSetup(
+    TransmitterClass<T>&    transmitter_fls,
+    TransmitterClass<T>&    transmitter_portside,
+    TransmitterClass<T>&    transmitter_starboard
+){
     // Setting up transmitter
     T       sampling_frequency      {160e3};                // sampling frequency
     T       f1                      {50e3};                 // first frequency of LFM

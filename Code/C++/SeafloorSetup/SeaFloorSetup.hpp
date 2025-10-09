@@ -1,4 +1,6 @@
-void fSeaFloorSetup(ScattererClass<double>&     scatterers){
+void fSeaFloorSetup(
+    ScattererClass<double>&     scatterers
+){
 
     // auto    save_files      {false};
     const   auto    save_files              {false};
@@ -13,8 +15,10 @@ void fSeaFloorSetup(ScattererClass<double>&     scatterers){
 	vector<double>					box_reflectivity;
 
 	// scatter density
-	auto	bed_width_density	{static_cast<double>(	10.00)};
-	auto 	bed_length_density	{static_cast<double>(	10.00)};
+	// auto	bed_width_density	{static_cast<double>(	10.00)};
+	// auto 	bed_length_density	{static_cast<double>(	10.00)};
+    auto	bed_width_density	{static_cast<double>(	5.00)};
+	auto 	bed_length_density	{static_cast<double>(	5.00)};
 
 	// setting up coordinates
 	auto	xpoints		{linspace<double>(0.00,
@@ -83,4 +87,7 @@ void fSeaFloorSetup(ScattererClass<double>&     scatterers){
         scatterers.reflectivity     = std::move(floorScatter_reflectivity);
 
     }
+
+    // printing status
+    std::cout << format("> Finished Sea-Floor Setup \n");
 }

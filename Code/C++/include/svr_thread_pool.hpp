@@ -7,8 +7,7 @@ namespace   svr {
         std::vector<std::future<void>>  future_vector;      // futures to wait on
 
         // Special-Members
-        ThreadPool(std::size_t num_threads)
-            : thread_pool(num_threads) {}
+        ThreadPool(std::size_t num_threads) : thread_pool(num_threads) {}
         ThreadPool(const ThreadPool& other)         = delete;
         ThreadPool& operator=(ThreadPool& other)    = delete;
 

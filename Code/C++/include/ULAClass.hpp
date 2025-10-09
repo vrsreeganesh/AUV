@@ -1255,9 +1255,16 @@ public:
     void    buildCoordinatesBasedOnLocation(const  std::vector<T>&  new_location);
     void    init(const TransmitterClass<T>&      transmitterObj);
     void    nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitterObj);
-    void    simulate_signals(const ScattererClass<T>&       seafloor,
-                             const std::vector<std::size_t> scatterer_indices,
-                             const TransmitterClass<T>&     transmitter);
+    // void    simulate_signals(const ScattererClass<T>&       seafloor,
+    //                          const std::vector<std::size_t> scatterer_indices,
+    //                          const TransmitterClass<T>&     transmitter);
+    void    simulate_signals(
+        const ScattererClass<T>&                                seafloor,
+        const std::vector<std::size_t>                          scatterer_indices,
+        const TransmitterClass<T>&                              transmitter,
+        svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+    );
     void    build_sensor_coordinates_from_location();
 };
 /* =========================================================================
@@ -1300,8 +1307,7 @@ Aim: Init
 ------------------------------------------------------------------------- */
 template <typename T>
 void    ULAClass<T>::init(const TransmitterClass<T>&      transmitterObj)
-{
-    
+{    
     // calculating range-related parameters
     this->range_resolution      =   1500.00/(2 * transmitterObj.fc);
     this->range_cell_size       =   40  *   this->range_resolution;
@@ -1312,15 +1318,18 @@ void    ULAClass<T>::init(const TransmitterClass<T>&      transmitterObj)
     this->azimuth_cell_size     =   2   *   this->azimuthal_resolution;
 
     // creating and storing match-filter
-    this->nfdc_CreateMatchFilter(transmitterObj);
+    this->nfdc_CreateMatchFilter(std::ref(transmitterObj));
 
 }
 /* =========================================================================
 Aim: Creating match-filter
 ------------------------------------------------------------------------- */
 template <typename T>
-void    ULAClass<T>::nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitterObj)
+void    ULAClass<T>::nfdc_CreateMatchFilter(
+    const TransmitterClass<T>& transmitterObj
+)
 {
+    cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter (entered)\n");
     // creating matrix for basebanding signal
     auto    linspace00              {linspace(0,
                                               transmitterObj.signal.size()-1,
@@ -1334,8 +1343,22 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitt
     auto    match_filter        {transmitterObj.signal  *   basebanding_vector};
 
     // low-pass filtering with baseband signal to obtain baseband signal
-    match_filter    =   svr::conv1D(match_filter,
-                                    this->lowpass_filter_coefficients_for_decimation);
+    // cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter(before)\n");
+    // cout << format("(before) match-filte r= {}, match_filter imag = {} \n", 
+    //     svr::real(match_filter),
+    //     svr::imag(match_filter)
+    // );
+    // cout << format("this->lowpass_filter_coefficients_for_decimation.size() = {}\n", this->lowpass_filter_coefficients_for_decimation.size());
+    match_filter    =   svr::conv1D(
+        match_filter,
+        this->lowpass_filter_coefficients_for_decimation
+    );
+    // return;
+    // cout << format("match-filte r= {}\n, match_filter imag = {} \n", 
+    //     svr::real(match_filter),
+    //     svr::imag(match_filter)
+    // );
+    // cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter\n");
     
     // creating sampling-indices
     int     decimation_factor   {static_cast<int>(std::floor(
@@ -1367,16 +1390,19 @@ Aim: Simulate signals received by uniform-linear-array
 ------------------------------------------------------------------------------*/ 
 template <typename T>
 void    ULAClass<T>::simulate_signals(
-            const ScattererClass<T>&       seafloor,
-            const std::vector<std::size_t> scatterer_indices,
-            const TransmitterClass<T>&     transmitter
-        )
+    const ScattererClass<T>&                                seafloor,
+    const std::vector<std::size_t>                          scatterer_indices,
+    const TransmitterClass<T>&                              transmitter,
+    svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+)
 {
     // creating signal matrix
     auto    num_samples     {static_cast<std::size_t>(
-        std::ceil(this->sampling_frequency * this->recording_period))} ;
-    this->signal_matrix     = svr::zeros<T>({this->num_sensors,
-                                             num_samples});
+        std::ceil(
+            this->sampling_frequency * this->recording_period
+        ))} ;
+    this->signal_matrix     = svr::zeros<T>({this->num_sensors, num_samples});
 
     // placing dots for each sensor
     for(auto    sensor_index    =   0;
@@ -1420,15 +1446,16 @@ void    ULAClass<T>::simulate_signals(
 
     }
 
-    for(auto row =0 ; row < this->signal_matrix.size(); ++row){
-        this->signal_matrix[row] = \
-            svr::conv1D_long<4096>(this->signal_matrix[row], 
-                                   transmitter.signal);
-
+    // convolving input-signal with each row
+    for(auto row = 0; row < this->signal_matrix.size(); ++row)
+    {
+        this->signal_matrix[row] = svr::conv1D_long_FFTPlanPool(
+            this->signal_matrix[row],
+            transmitter.signal,
+            fft_pool_handle,
+            ifft_pool_handle
+        );
     }
-
-    
-        
 
     // this->signal
     cout << format("ULAClass<T>::simulate_signals: STATUS: Incomplete\n");

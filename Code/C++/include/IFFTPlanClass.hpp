@@ -19,9 +19,9 @@ namespace   svr     {
             ------------------------------------------------------------------*/
             ~IFFTPlanClass()
             {
-                fftw_destroy_plan(plan_);
-                fftw_free(in_);
-                fftw_free(out_);
+                if(plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
+                if(in_   != nullptr)    {fftw_free(              in_);}
+                if(out_  != nullptr)    {fftw_free(              out_);}
             }
             /*==================================================================
             Constructor
@@ -78,9 +78,9 @@ namespace   svr     {
                 if(this == &other)     {return *this;}
 
                 // cleaning up existing resources
-                fft_destroy_plan(       plan_);
-                fft_free(               in_);
-                fft_free(               out_);
+                if(plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
+                if(in_   != nullptr)    {fftw_free(              in_);}
+                if(out_  != nullptr)    {fftw_free(              out_);}
 
                 // allocating space
                 nfft_   =   other.nfft_;
@@ -130,9 +130,9 @@ namespace   svr     {
                 if(this == &other)      {return *this;}
 
                 // cleaning up existing 
-                fftw_destroy_plan(      plan_);
-                fftw_free(              in_);
-                fftw_free(              out_);
+                if(plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
+                if(in_   != nullptr)    {fftw_free(              in_);}
+                if(out_  != nullptr)    {fftw_free(              out_);}
 
                 // Copying values and changing pointers
                 nfft_       =   other.nfft_;
@@ -232,18 +232,19 @@ namespace   svr     {
 
                 // normalize output
                 std::vector<destinationType>   output_vector(nfft_);
-                for(std::size_t index = 0; index < nfft_; ++index){
+                for(std::size_t index = 0; index < nfft_; ++index)
+                {
                     if constexpr(
                         std::is_same_v<     destinationType, double             >
                     ){
-                        output_vector[index]    =   out_[index][0]/std::sqrt(nfft_);
+                        output_vector[index]    =   out_[index][0] * 1.00/std::sqrt(nfft_);
                     }
                     else if constexpr(
                         std::is_same_v<     destinationType, std::complex<double>    >
                     ){
                         output_vector[index][0] =   std::complex<double>(
-                            out_[index][0]/nfft_, 
-                            out_[index][1]/nfft_
+                            out_[index][0]  *   1.00/std::sqrt(nfft_), 
+                            out_[index][1]  *   1.00/std::sqrt(nfft_)
                         );
                     }
                 }

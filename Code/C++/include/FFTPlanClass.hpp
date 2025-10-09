@@ -23,9 +23,9 @@ namespace   svr     {
             ------------------------------------------------------------------*/
             ~FFTPlanClass()
             {
-                if (plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
-                fftw_free(              in_);
-                fftw_free(              out_);
+                if(plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
+                if(in_   != nullptr)    {fftw_free(              in_);}
+                if(out_  != nullptr)    {fftw_free(              out_);}
             }
             /*==================================================================
             Default Constructor
@@ -36,6 +36,7 @@ namespace   svr     {
             ------------------------------------------------------------------*/
             FFTPlanClass(const  std::size_t     nfft)
             {
+
                 // allocating nfft
                 this->nfft_   = nfft;
 
@@ -99,9 +100,9 @@ namespace   svr     {
                 if  (this  ==  &other)     {return *this;}
 
                 // cleaning-up existing resources
-                fftw_destroy_plan(      plan_);
-                fftw_free(              in_);
-                fftw_free(              out_);
+                if(plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
+                if(in_   != nullptr)    {fftw_free(              in_);}
+                if(out_  != nullptr)    {fftw_free(              out_);}
 
                 // allocating input-region and output-region
                 nfft_   =   other.nfft_;
@@ -155,13 +156,13 @@ namespace   svr     {
                 if  (this   ==  &other)     {return *this;}
 
                 // cleaning up existing resources
-                fftw_destroy_plan(      plan_);
-                fftw_free(              in_);
-                fftw_free(              out_);
+                if(plan_ != nullptr)    {fftw_destroy_plan(      plan_);}
+                if(in_   != nullptr)    {fftw_free(              in_);}
+                if(out_  != nullptr)    {fftw_free(              out_);}
 
                 // Copying-values and changing pointers
                 nfft_               =   other.nfft_;
-                cout << format("\t\t FFTPlanClass&   operator=(FFTPlanClass&& other) | nfft_ = {}\n", nfft_);
+                cout << format("\t\t FFTPlanClass's MOVE assignment | nfft_ = {}\n", nfft_);
                 in_                 =   other.in_;
                 out_                =   other.out_;
                 plan_               =   other.plan_;
@@ -266,7 +267,8 @@ namespace   svr     {
 
                 // copying results to output-vector
                 std::vector<destinationType>    output_vector(nfft_);
-                for(std::size_t index = 0; index < nfft_; ++index){
+                for(std::size_t index = 0; index < nfft_; ++index)
+                {
                     if  constexpr(
                         std::is_same_v<     destinationType,std::complex<double>    >
                     ){
@@ -279,8 +281,8 @@ namespace   svr     {
                         std::is_same_v<     destinationType,    double          >
                     ){
                         output_vector[index]    =   std::sqrt(
-                            std::pow(out_[index][0], 2)  +   \
-                            std::pow(out_[index][1], 2)
+                            std::pow(out_[index][0] * (1.00 / std::sqrt(nfft_)), 2)  +   \
+                            std::pow(out_[index][1] * (1.00 / std::sqrt(nfft_)), 2)
                         );
                     }
                 }

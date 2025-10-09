@@ -613,13 +613,19 @@ public:
     // functions
     void syncComponentAttributes();
     void init(svr::ThreadPool&  thread_pool);
-    void simulate_signal(const     ScattererClass<T>&   seafloor,
-                         svr::ThreadPool&               thread_pool);
-    void subset_scatterers(const  ScattererClass<T>&    seafloor,
-                           svr::ThreadPool&             thread_pool,
-                           std::vector<std::size_t>&    fls_scatterer_indices,
-                           std::vector<std::size_t>&    portside_scatterer_indices,
-                           std::vector<std::size_t>&    starboard_scatterer_indices);
+    void simulate_signal(
+        const     ScattererClass<T>&                            seafloor,
+        svr::ThreadPool&                                        thread_pool,
+        svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+    );
+    void subset_scatterers(
+        const  ScattererClass<T>&    seafloor,
+        svr::ThreadPool&             thread_pool,
+        std::vector<std::size_t>&    fls_scatterer_indices,
+        std::vector<std::size_t>&    portside_scatterer_indices,
+        std::vector<std::size_t>&    starboard_scatterer_indices
+    );
     void step(T time_step);
 
 };
@@ -668,23 +674,28 @@ void AUVClass<T>::init(svr::ThreadPool&  thread_pool)
 {
     // call sync-component attributes
     this->syncComponentAttributes();
+    cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init::syncComponentAttributes \n");
 
     // initializing the ULAs
-    thread_pool.push_back([&]{this->ULA_fls.init(         this->transmitter_fls);});
-    thread_pool.push_back([&]{this->ULA_portside.init(    this->transmitter_portside);});
-    thread_pool.push_back([&]{this->ULA_starboard.init(   this->transmitter_starboard);});
+    thread_pool.push_back([&]{this->ULA_fls.init(         std::ref(this->transmitter_fls));});
+    thread_pool.push_back([&]{this->ULA_portside.init(    std::ref(this->transmitter_portside));});
+    thread_pool.push_back([&]{this->ULA_starboard.init(   std::ref(this->transmitter_starboard));});
     thread_pool.converge();
+
+    cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init \n");
     
 }
 /*==============================================================================
 Member-Function: Subsetting the scatterers in the transmitter-range
 ------------------------------------------------------------------------------*/ 
 template <typename T>
-void AUVClass<T>::subset_scatterers(const  ScattererClass<T>&    seafloor,
-                                    svr::ThreadPool&             thread_pool,
-                                    std::vector<std::size_t>&    fls_scatterer_indices,
-                                    std::vector<std::size_t>&    portside_scatterer_indices,
-                                    std::vector<std::size_t>&    starboard_scatterer_indices)
+void AUVClass<T>::subset_scatterers(
+    const  ScattererClass<T>&    seafloor,
+    svr::ThreadPool&             thread_pool,
+    std::vector<std::size_t>&    fls_scatterer_indices,
+    std::vector<std::size_t>&    portside_scatterer_indices,
+    std::vector<std::size_t>&    starboard_scatterer_indices
+)
 {
     // ensuring the components are synced
     this->syncComponentAttributes();
@@ -718,9 +729,16 @@ void AUVClass<T>::subset_scatterers(const  ScattererClass<T>&    seafloor,
 Aim: Simulate Signals received by ULAs in the AUV
 ------------------------------------------------------------------------------*/ 
 template <typename T>
-void AUVClass<T>::simulate_signal(const     ScattererClass<T>&      seafloor,
-                                  svr::ThreadPool&                  thread_pool)
+void AUVClass<T>::simulate_signal(
+    const     ScattererClass<T>&                            seafloor,
+    svr::ThreadPool&                                        thread_pool,
+    svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+)
 {
+
+    cout << format("\t\t\t\t\t\tAUVClass<T>::simulate_signal\n");
+
     // boolean-vector indicating which scatterers are present 
     auto    fls_scatterer_indices               {std::vector<std::size_t>()};
     auto    portside_scatterer_indices          {std::vector<std::size_t>()};
@@ -739,21 +757,23 @@ void AUVClass<T>::simulate_signal(const     ScattererClass<T>&      seafloor,
         [&]{this->ULA_fls.simulate_signals(
             seafloor,
             fls_scatterer_indices,
-            this->transmitter_fls
+            this->transmitter_fls,
+            fft_pool_handle,
+            ifft_pool_handle
         );});
-    // thread_pool.push_back(
-    //     [&](){this->ULA_portside.simulate_signals(
-    //         seafloor, 
-    //         portside_scatterer_indices,
-    //         this->transmitter_portside
-    //     );});
-    // thread_pool.push_back(
-    //     [&](){
-    //         this->ULA_starboard.simulate_signals(
-    //             seafloor,
-    //             starboard_scatterer_indices,
-    //             this->transmitter_starboard
-    //         );});
+    // // thread_pool.push_back(
+    // //     [&](){this->ULA_portside.simulate_signals(
+    // //         seafloor, 
+    // //         portside_scatterer_indices,
+    // //         this->transmitter_portside
+    // //     );});
+    // // thread_pool.push_back(
+    // //     [&](){
+    // //         this->ULA_starboard.simulate_signals(
+    // //             seafloor,
+    // //             starboard_scatterer_indices,
+    // //             this->transmitter_starboard
+    // //         );});
     
     // waiting for threads to converge
     thread_pool.converge();

@@ -47,16 +47,28 @@
 #include "svr_real.hpp"
 #include "svr_imag.hpp"
 #include "svr_slice.hpp"
+#include "svr_fast_inverse_square_root.hpp"
 
+
+#include "FFTPlanClass.hpp"
+#include "IFFTPlanClass.hpp"
+
+#include "FFTPlanPoolClass.hpp"
+#include "FFTPlanUniformPoolHandle.hpp"
+
+#include "IFFTPlanPoolClass.hpp"
+#include "IFFTPlanUniformPoolHandle.hpp"
+
+#include "svr_thread_pool.hpp"
 #include "svr_conv.hpp"
+
 #include "svr_index.hpp"
 #include "svr_flip.hpp"
 #include "svr_conj.hpp"
 #include "svr_reset.hpp"
 #include "svr_square.hpp"
 #include "svr_mask.hpp"
-#include "svr_thread_pool.hpp"
-#include "svr_gnu_plot.hpp"
+
 #include "svr_tensor_init.hpp"
 #include "svr_floor.hpp"
 #include "svr_squeeze.hpp"
@@ -65,6 +77,11 @@
 
 
 #include "svr_coordinate_change.hpp"
+
+
+
+
+
 
 
 

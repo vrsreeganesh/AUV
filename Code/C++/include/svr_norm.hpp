@@ -5,9 +5,35 @@ calculating norm for vector
 template <typename T>
 auto norm(const     std::vector<T>&     input_vector)
 {
-    return std::sqrt(std::inner_product(input_vector.begin(), input_vector.end(),
-                                        input_vector.begin(),
-                                        (T)0));
+    return std::sqrt(
+        std::inner_product(
+            input_vector.begin(), input_vector.end(),
+            input_vector.begin(),
+            (T)0
+        )
+    );
+}
+/*==============================================================================
+Calculating norm of a complex-vector
+------------------------------------------------------------------------------*/ 
+template    <>
+auto    norm(const  std::vector<std::complex<double>>&      input_vector)
+{
+    return std::sqrt(
+        std::inner_product(
+            input_vector.begin(),    input_vector.end(),
+            input_vector.begin(),
+            static_cast<double>(0),
+            std::plus<double>(),
+            [](const    auto&   argx,
+               const    auto&   argy){
+                return static_cast<double>(
+                    (argx * std::conj(argy)).real()
+                );
+            }
+        )
+    );
+
 }
 /*==============================================================================
 ------------------------------------------------------------------------------*/ 

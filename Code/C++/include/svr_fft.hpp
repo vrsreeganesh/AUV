@@ -80,8 +80,12 @@ namespace   svr {
         std::vector<std::complex<double>> output(nfft);
 
         // Allocate input (double) and output (fftw_complex) arrays
-        double* in = reinterpret_cast<double*>(fftw_malloc(sizeof(double) * nfft));
-        fftw_complex* out = reinterpret_cast<fftw_complex*>(fftw_malloc(sizeof(fftw_complex) * (nfft/2 + 1)));
+        double* in          = reinterpret_cast<double*>(
+            fftw_malloc(sizeof(double) * nfft)
+        );
+        fftw_complex* out   = reinterpret_cast<fftw_complex*>(
+            fftw_malloc(sizeof(fftw_complex) * (nfft/2 + 1))
+        );
 
         // Copy input and zero-pad if needed
         for (std::size_t i = 0; i < nfft; ++i) {
@@ -89,7 +93,9 @@ namespace   svr {
         }
 
         // Create FFTW plan and execute
-        fftw_plan plan = fftw_plan_dft_r2c_1d(static_cast<int>(nfft), in, out, FFTW_ESTIMATE);
+        fftw_plan plan  = fftw_plan_dft_r2c_1d(
+            static_cast<int>(nfft), in, out, FFTW_ESTIMATE
+        );
         fftw_execute(plan);
 
         // Copy FFTW output to std::vector<std::complex<double>>
@@ -158,55 +164,6 @@ namespace   svr {
     }
 
     /*==========================================================================
-    y = ifft()
-    using fftw
-    --------------------------------------------------------------------------*/ 
-    // #include <fftw3.h>
-    // #include <vector>
-    // #include <complex>
-    // #include <stdexcept>
-    // #include <algorithm>
-
-    // // template <typename T>
-    // auto ifft(const std::vector<std::complex<double>>&  input_vector, 
-    //           const std::size_t                         nfft)
-    // {
-    //     if (nfft <= 0)
-    //         throw std::runtime_error("nfft must be > 0");
-    //     if (input_vector.size() < nfft/2 + 1)
-    //         throw std::runtime_error("input spectrum must have at least nfft/2+1 bins");
-
-    //     // Output: real-valued time-domain signal
-    //     std::vector<double> output(nfft);
-
-    //     // Allocate FFTW input/output
-    //     fftw_complex* in = reinterpret_cast<fftw_complex*>(fftw_malloc(sizeof(fftw_complex) * (nfft/2 + 1)));
-    //     double* out = reinterpret_cast<double*>(fftw_malloc(sizeof(double) * nfft));
-
-    //     // Copy input spectrum into FFTW buffer
-    //     for (std::size_t i = 0; i < nfft/2 + 1; ++i) {
-    //         in[i][0] = input_vector[i].real();
-    //         in[i][1] = input_vector[i].imag();
-    //     }
-
-    //     // Create inverse plan and execute
-    //     fftw_plan plan = fftw_plan_dft_c2r_1d(static_cast<int>(nfft), in, out, FFTW_ESTIMATE);
-    //     fftw_execute(plan);
-
-    //     // Normalize by nfft (FFTW does unscaled IFFT)
-    //     for (std::size_t i = 0; i < nfft; ++i) {
-    //         output[i] = out[i] / static_cast<double>(nfft);
-    //     }
-
-    //     // Cleanup
-    //     fftw_destroy_plan(plan);
-    //     fftw_free(in);
-    //     fftw_free(out);
-
-    //     return output;
-    // }
-
-    /*==========================================================================
     x = ifft(std::vector<std::complex<double>> spectrum, nfft)
     --------------------------------------------------------------------------*/
     #include <fftw3.h>
@@ -227,9 +184,11 @@ namespace   svr {
 
         // Allocate FFTW input/output
         fftw_complex* in = reinterpret_cast<fftw_complex*>(
-            fftw_malloc(sizeof(fftw_complex) * (nfft/2 + 1)));
+            fftw_malloc(sizeof(fftw_complex) * (nfft/2 + 1))
+        );
         double* out = reinterpret_cast<double*>(
-            fftw_malloc(sizeof(double) * nfft));
+            fftw_malloc(sizeof(double) * nfft)
+        );
 
         // Copy *only* the first nfft/2+1 bins (rest are redundant due to symmetry)
         for (std::size_t i = 0; i < nfft/2 + 1; ++i) {
@@ -239,7 +198,11 @@ namespace   svr {
 
         // Create inverse FFTW plan
         fftw_plan plan = fftw_plan_dft_c2r_1d(
-            static_cast<int>(nfft), in, out, FFTW_ESTIMATE);
+            static_cast<int>(nfft), 
+            in, 
+            out, 
+            FFTW_ESTIMATE
+        );
 
         fftw_execute(plan);
 
