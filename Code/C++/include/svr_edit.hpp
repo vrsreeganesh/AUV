@@ -44,7 +44,12 @@ auto    edit_accumulate(std::vector<T1>&            input_vector,
     for(auto    i = 0; i < input_vector.size(); ++i){
         const   auto   target_index    {static_cast<std::size_t>(indices_to_edit[i])};   // 
         const   auto   new_value       {new_values[i]};
-        input_vector[target_index] += new_value;
+        if (target_index < input_vector.size()){
+            input_vector[target_index] = input_vector[target_index] + new_value;
+        }
+        else{
+            // std::cout << "warning: FILE: svr_edit.hpp | FUNCTION: edit_accumulate | REPORT: index out of bounds";
+        }
     }
     
     // no-return since in-place

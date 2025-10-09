@@ -4,14 +4,17 @@
 int main(){
 
 	// Setup
-	svr::Timer timer("main");
-    svr::ThreadPool thread_pool(3);
+	svr::Timer          timer(          "main");
+    svr::ThreadPool     thread_pool(    3);
+    
+    // setting up FFT/IFFT plan pools
+    auto    num_plans                   {32};
     svr::FFTPlanUniformPoolHandle<double, 
                                   std::complex<double>
-                                 >     fft_pool_handle(32,     16384);
+                                 >     fft_pool_handle(num_plans,     16384);
     svr::IFFTPlanUniformPoolHandle<std::complex<double>, 
                                    double
-                                  >    ifft_pool_handle(32,    16384);
+                                  >    ifft_pool_handle(num_plans,    16384);
 
     // Building Sea-Floor
     auto    seafloor     {ScattererClass<double>()};

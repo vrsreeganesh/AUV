@@ -761,19 +761,22 @@ void AUVClass<T>::simulate_signal(
             fft_pool_handle,
             ifft_pool_handle
         );});
-    // // thread_pool.push_back(
-    // //     [&](){this->ULA_portside.simulate_signals(
-    // //         seafloor, 
-    // //         portside_scatterer_indices,
-    // //         this->transmitter_portside
-    // //     );});
-    // // thread_pool.push_back(
-    // //     [&](){
-    // //         this->ULA_starboard.simulate_signals(
-    // //             seafloor,
-    // //             starboard_scatterer_indices,
-    // //             this->transmitter_starboard
-    // //         );});
+    thread_pool.push_back(
+        [&](){this->ULA_portside.simulate_signals(
+            seafloor, 
+            portside_scatterer_indices,
+            this->transmitter_portside,
+            fft_pool_handle,
+            ifft_pool_handle
+        );});
+    thread_pool.push_back(
+        [&](){this->ULA_starboard.simulate_signals(
+            seafloor,
+            starboard_scatterer_indices,
+            this->transmitter_starboard,
+            fft_pool_handle,
+            ifft_pool_handle
+        );});
     
     // waiting for threads to converge
     thread_pool.converge();

@@ -385,15 +385,16 @@ namespace   svr {
         // calculating fft(filter)
         auto    filter_zero_padded      {std::vector<double>(block_output_length, 0.0)};
         std::copy(small_signal.begin(), small_signal.end(), filter_zero_padded.begin());
-        auto    fph_lock0                {fft_pool_handle.lock()};
+        auto    fph_lock0               {fft_pool_handle.lock()};
         auto    curr_plan_pair          {fft_pool_handle.uniform_pool.fetch_plan()};
+        auto    pool_num_plans          {fft_pool_handle.num_plans};
+        fph_lock0.unlock();
         auto    filter_FFT              {
             curr_plan_pair.plan.fft(
                 filter_zero_padded
             )
         };
         curr_plan_pair.lock.unlock();
-        fph_lock0.unlock();
 
         // allocating space for storing input-blocks
         auto    signal_block_zero_padded    {std::vector<T>(block_output_length,    0.0)};
@@ -403,7 +404,7 @@ namespace   svr {
         auto    output_vector_mutex         {std::mutex()};
 
         // creating boost
-        svr::ThreadPool local_pool(fft_pool_handle.num_plans);
+        svr::ThreadPool local_pool(pool_num_plans);
 
         // going through the values 
         for(auto i = 0; i < num_blocks; ++i)
@@ -437,7 +438,7 @@ namespace   svr {
                         filter_FFT,
                         fftw_output,
                         conv_output,
-                        output_vector,
+                        std::ref(output_vector),
                         output_vector_mutex,
                         signal_size
                     );
@@ -447,7 +448,8 @@ namespace   svr {
         local_pool.converge();
 
         // returning final output
-        return std::move(output_vector);
+        // return std::move(output_vector);
+        return output_vector;
     }
 
     /*==========================================================================

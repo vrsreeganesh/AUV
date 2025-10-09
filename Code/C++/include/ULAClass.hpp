@@ -1342,23 +1342,11 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
     // multiplying signal with basebanding signal
     auto    match_filter        {transmitterObj.signal  *   basebanding_vector};
 
-    // low-pass filtering with baseband signal to obtain baseband signal
-    // cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter(before)\n");
-    // cout << format("(before) match-filte r= {}, match_filter imag = {} \n", 
-    //     svr::real(match_filter),
-    //     svr::imag(match_filter)
-    // );
-    // cout << format("this->lowpass_filter_coefficients_for_decimation.size() = {}\n", this->lowpass_filter_coefficients_for_decimation.size());
+    // low-pass filtering with baseband signal to obtain pure baseband signal
     match_filter    =   svr::conv1D(
         match_filter,
         this->lowpass_filter_coefficients_for_decimation
     );
-    // return;
-    // cout << format("match-filte r= {}\n, match_filter imag = {} \n", 
-    //     svr::real(match_filter),
-    //     svr::imag(match_filter)
-    // );
-    // cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter\n");
     
     // creating sampling-indices
     int     decimation_factor   {static_cast<int>(std::floor(

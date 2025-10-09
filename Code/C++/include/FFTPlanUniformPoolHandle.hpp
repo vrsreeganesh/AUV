@@ -20,10 +20,10 @@ namespace   svr
         /*======================================================================
         Core Members
         ----------------------------------------------------------------------*/ 
-        FFTPlanUniformPool<sourceType, destinationType>     uniform_pool;
-        std::mutex                                          mutex;
-        std::size_t                                         num_plans;
-        std::size_t                                         nfft;
+        svr::FFTPlanUniformPool<sourceType, destinationType>    uniform_pool;
+        std::mutex                                              mutex;
+        std::size_t                                             num_plans;
+        std::size_t                                             nfft;
 
         /*======================================================================
         Special Member-functions
