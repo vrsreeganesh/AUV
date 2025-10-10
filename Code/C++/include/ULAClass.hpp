@@ -1266,6 +1266,10 @@ public:
         svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
     );
     void    build_sensor_coordinates_from_location();
+    // void    decimate_signal();
+    void    decimate_signal(
+        const  TransmitterClass<T>&   transmitter
+    );
 };
 /* =========================================================================
 Aim: Build Coordinates Based On Location
@@ -1281,9 +1285,11 @@ void    ULAClass<T>::buildCoordinatesBasedOnLocation()
                                      this->inter_element_spacing};
     
     // create integer array (verified)
-    auto    integer_array       {linspace<T>(static_cast<T>(0),
-                                             static_cast<T>(this->num_sensors-1),
-                                             this->num_sensors)};
+    auto    integer_array       {svr::linspace<T>(
+        static_cast<T>(0), 
+        static_cast<T>(this->num_sensors-1),
+        this->num_sensors
+    )};
 
     auto    test    {svr::tile(integer_array,   {3,1})  *  \
                      svr::tile(transpose(inter_element_vector),   
@@ -1331,13 +1337,19 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
 {
     cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter (entered)\n");
     // creating matrix for basebanding signal
-    auto    linspace00              {linspace(0,
-                                              transmitterObj.signal.size()-1,
-                                              transmitterObj.signal.size())};
-    auto    basebanding_vector      {linspace00 * \
-                                     exp(-1.00 * 1i * 2.00 * std::numbers::pi * \
-                                         (transmitterObj.fc / this->sampling_frequency)*\
-                                         linspace00)};
+    auto    linspace00              {svr::linspace(
+        0,
+        transmitterObj.signal.size()-1,
+        transmitterObj.signal.size()
+    )};
+    auto    basebanding_vector      {
+        linspace00 * \
+        svr::exp(
+            -1.00 * 1i * 2.00 * std::numbers::pi * \
+            (transmitterObj.fc / this->sampling_frequency)*\
+            linspace00
+        )
+    };
 
     // multiplying signal with basebanding signal
     auto    match_filter        {transmitterObj.signal  *   basebanding_vector};
@@ -1358,9 +1370,11 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
         static_cast<T>(decimation_factor)
     ))};
     auto    sampling_indices    {
-        linspace(1,
-                 (final_num_samples - 1) * decimation_factor,
-                 final_num_samples)
+        svr::linspace(
+            1,
+            (final_num_samples - 1) * decimation_factor,
+            final_num_samples
+        )
     };
 
     // sampling the signal
@@ -1444,7 +1458,40 @@ void    ULAClass<T>::simulate_signals(
             ifft_pool_handle
         );
     }
+}
+/*==============================================================================
+Decimating the recorded signal
+    -> basebanding the signal
+    -> lowpass-filtering
+    -> downsample signals
+------------------------------------------------------------------------------*/
+template    <typename   T>
+void    ULAClass<T>::decimate_signal(
+    const  TransmitterClass<T>&   transmitter
+)
+{
+    // creating the matrix for frequency-shifting
+    auto    basebanding_signal      {svr::linspace(
+        static_cast<std::complex<T>>(   0),
+        static_cast<std::complex<T>>(   this->signal_matrix[0].size()-1),
+        static_cast<std::size_t>(       this->signal_matrix[0].size())
+    )};
 
-    // this->signal
-    cout << format("ULAClass<T>::simulate_signals: STATUS: Incomplete\n");
+    // tiling the signal along dim = 0
+    auto    basebanding_matrix      {svr::tile(
+        basebanding_signal,
+        {this->num_sensors, 1}
+    )};
+
+    // clearing out the basebanding signal since we don't need it anymore
+    basebanding_signal.clear();
+
+    // exponentiating signal to create final-basebanding matrix
+    basebanding_matrix  =   svr::exp(
+        1i * 2 * std::numbers::pi * (transmitter.fc - transmitter.f_low) * \
+        basebanding_matrix / sampling_frequency
+    );
+
+
+
 }

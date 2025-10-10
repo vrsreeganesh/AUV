@@ -576,7 +576,9 @@
 
 
 
-template <typename T>
+template <
+    typename T
+>
 class   AUVClass{
 public:
     
@@ -620,14 +622,18 @@ public:
         svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
     );
     void subset_scatterers(
-        const  ScattererClass<T>&    seafloor,
-        svr::ThreadPool&             thread_pool,
-        std::vector<std::size_t>&    fls_scatterer_indices,
-        std::vector<std::size_t>&    portside_scatterer_indices,
-        std::vector<std::size_t>&    starboard_scatterer_indices
+        const  ScattererClass<T>&       seafloor,
+        svr::ThreadPool&                thread_pool,
+        std::vector<std::size_t>&       fls_scatterer_indices,
+        std::vector<std::size_t>&       portside_scatterer_indices,
+        std::vector<std::size_t>&       starboard_scatterer_indices
     );
     void step(T time_step);
-
+    void image(
+        svr::ThreadPool&                                        thread_pool,
+        svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+    );
 };
 
 /*==========================================================================
@@ -781,31 +787,6 @@ void AUVClass<T>::simulate_signal(
     // waiting for threads to converge
     thread_pool.converge();
 
-
-
-
-
-
-
-    // // saving the seafloor-subsetting
-    // auto    seafloor_fls    {svr::index(seafloor.coordinates,
-    //                                     fls_scatterer_indices,
-    //                                     0)};
-    // auto    seafloor_portside   {svr::index(seafloor.coordinates,
-    //                                         portside_scatterer_indices,
-    //                                         0)};
-    // auto    seafloor_starboard  {svr::index(seafloor.coordinates,
-    //                                         starboard_scatterer_indices,
-    //                                         0)};
-
-    
-
-    // // saving the tensors
-    // fWriteMatrix(seafloor_fls,          "../csv-files/seafloor_fls.csv");
-    // fWriteMatrix(seafloor_portside,     "../csv-files/seafloor_portside.csv");
-    // fWriteMatrix(seafloor_starboard,    "../csv-files/seafloor_starboard.csv");
-
-
 }
 /*==============================================================================
 Aim: Moving the AUV to the next discrete position in the trajectory
@@ -818,4 +799,22 @@ void AUVClass<T>::step(T    time_step)
 
     // update parameters of attached components
     this->syncComponentAttributes();
+}
+/*==============================================================================
+Aim: Function that begins imaging from the recorded signals
+------------------------------------------------------------------------------*/
+template    <typename T>
+void AUVClass<T>::image(
+    svr::ThreadPool&                                        thread_pool,
+    svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+)
+{
+    // decimating signals obtained at each time-step
+    this->ULA_fls.decimate_signal(
+        this->transmitter_fls
+    );
+
+    // 
+
 }

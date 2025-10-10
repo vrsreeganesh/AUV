@@ -21,12 +21,16 @@ void fSeaFloorSetup(
 	auto 	bed_length_density	{static_cast<double>(	5.00)};
 
 	// setting up coordinates
-	auto	xpoints		{linspace<double>(0.00,
-                                          bed_width,
-                                          bed_width * bed_width_density)};
-    auto    ypoints     {linspace<double>(0.00,
-                                          bed_length,
-                                          bed_length * bed_length_density)};
+	auto	xpoints		{svr::linspace<double>(
+        0.00,
+        bed_width,
+        bed_width * bed_width_density
+    )};
+    auto    ypoints     {svr::linspace<double>(
+        0.00,
+        bed_length,
+        bed_length * bed_length_density
+    )};
     if(save_files)  fWriteVector(xpoints,   "../csv-files/xpoints.csv");        // verified
     if(save_files)  fWriteVector(ypoints,   "../csv-files/ypoints.csv");        // verified
 

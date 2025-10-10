@@ -76,6 +76,11 @@ int main(){
                             fft_pool_handle,
                             ifft_pool_handle);
 
+        // imaging
+        auv.image(  thread_pool,
+                    fft_pool_handle,
+                    ifft_pool_handle);
+
         // moving to next hop-position 
         auv.step(0.5);
     }

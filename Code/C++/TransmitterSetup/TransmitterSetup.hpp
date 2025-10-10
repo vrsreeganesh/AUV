@@ -19,9 +19,11 @@ void fTransmitterSetup(
     T       pulselength             {5e-2};                 // time of recording
 
     // building LFM
-    auto    timearray       {linspace<T>(0.00,
-                                         pulselength,
-                                         std::floor(pulselength * sampling_frequency))};
+    auto    timearray       {svr::linspace<T>(
+        0.00,
+        pulselength,
+        std::floor(pulselength * sampling_frequency)
+    )};
     auto    K               {f2 - f1/pulselength};    // calculating frequency-slope
     auto    Signal          {cos(2 * std::numbers::pi * \
                              (f1 + K*timearray) * \

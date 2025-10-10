@@ -27,8 +27,8 @@ void fCreateHills(const     std::vector<std::vector<T>>     mean_vector,
         auto    normalizedy     {piby2 * (points2D[1] - curr_hill_center_y) / halfwidth_y};
 
         // building height values
-        auto    heightx         {cos(normalizedx)   *   exp(abs(normalizedx)/10.00) };
-        auto    heighty         {cos(normalizedy)   *   exp(abs(normalizedy)/10.00) };
+        auto    heightx         {cos(normalizedx)   *   svr::exp(abs(normalizedx)/10.00) };
+        auto    heighty         {cos(normalizedy)   *   svr::exp(abs(normalizedy)/10.00) };
         auto    heights         {curr_hill_height  * heightx   * heighty};
 
         // boolean masking:     indices outside hill

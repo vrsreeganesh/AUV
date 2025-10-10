@@ -42,7 +42,12 @@ auto operator/=(const    std::vector<T>&     input_vector,
 /*==============================================================================
 element-wise with matrix
 ------------------------------------------------------------------------------*/ 
-template    <typename   T>
+template    <
+    typename   T,
+    typename    =   std::enable_if_t<
+        std::is_floating_point_v<T>
+    >
+>
 auto    operator/(const std::vector<std::vector<T>>&    input_matrix,
                   const T                               scalar)
 {
@@ -63,6 +68,42 @@ auto    operator/(const std::vector<std::vector<T>>&    input_matrix,
                        [&scalar](const  auto& argx){
                             return argx/scalar;
                        });
+    }
+
+    // returning values
+    return std::move(canvas);
+}
+template    <
+    typename    numeratorComplexType,
+    typename    denominatorType,
+    typename    =   std::enable_if_t<
+        std::is_floating_point_v<   numeratorComplexType> &&
+        std::is_arithmetic_v<       denominatorType>
+    >
+> 
+auto    operator/(
+    const   std::vector<std::vector<std::complex<numeratorComplexType>>>&   input_matrix,
+    const   denominatorType                                                 input_scalar
+)
+{
+    // fetching matrix-dimensions
+    const   auto&   num_rows_matrix     {input_matrix.size()};
+    const   auto&   num_cols_matrix     {input_matrix[0].size()};
+
+    // creating canvas
+    auto    canvas      {std::vector<std::vector<std::complex<numeratorComplexType>>>(
+        num_rows_matrix,
+        std::vector<std::complex<numeratorComplexType>>(num_cols_matrix)
+    )};
+
+    // dividing with values
+    for(auto    row = 0; row < num_rows_matrix; ++row){
+        std::transform(
+            input_matrix[row].begin(),   input_matrix[row].end(),
+            canvas[row].begin(),
+            [&input_scalar](const  auto& argx){
+                return argx / static_cast<std::complex<numeratorComplexType>>(input_scalar);
+            });
     }
 
     // returning values
