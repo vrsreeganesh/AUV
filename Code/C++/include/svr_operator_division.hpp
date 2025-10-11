@@ -109,3 +109,32 @@ auto    operator/(
     // returning values
     return std::move(canvas);
 }
+/*==============================================================================
+y = std::vector<std::complex<T>> / T
+------------------------------------------------------------------------------*/
+template    <
+    typename    T,
+    typename    =   std::enable_if_t<
+        std::is_floating_point_v<T>
+    >
+>
+auto    operator/(
+    const   std::vector<std::complex<T>>&   input_vector,
+    const   T                               input_scalar
+)
+{
+    // creating canvas
+    auto    canvas  {std::vector<std::complex<T>>(input_vector.size())};
+
+    // filling the canvas
+    std::transform(
+        input_vector.begin(),   input_vector.end(),
+        canvas.begin(),
+        [&input_scalar](const    auto&   argx){
+            return argx/static_cast<std::complex<T>>(input_scalar);
+        }
+    );
+
+    // returning
+    return std::move(canvas);
+}

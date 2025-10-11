@@ -144,7 +144,12 @@ namespace   svr {
     improvements:
         > make an inplace version of this
     --------------------------------------------------------------------------*/
-    template    <typename T>
+    template    <
+        typename    T,
+        std::enable_if_t<
+            std::is_floating_point_v<T>
+        >
+    >
     auto    conv1D_long_prototype(
         const   std::vector<T>&                     input_vector_A,
         const   std::vector<T>&                     input_vector_B,
@@ -527,9 +532,5 @@ namespace   svr {
         return std::move(canvas);
 
     }
-
-    /*==========================================================================
-    1D Convolution of a matrix and a vector (in-place)
-    --------------------------------------------------------------------------*/
     
 }

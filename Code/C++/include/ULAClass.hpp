@@ -1477,20 +1477,20 @@ void    ULAClass<T>::decimate_signal(
         static_cast<std::size_t>(       this->signal_matrix[0].size())
     )};
 
-    // tiling the signal along dim = 0
-    auto    basebanding_matrix      {svr::tile(
-        basebanding_signal,
-        {this->num_sensors, 1}
-    )};
-
-    // clearing out the basebanding signal since we don't need it anymore
-    basebanding_signal.clear();
-
     // exponentiating signal to create final-basebanding matrix
-    basebanding_matrix  =   svr::exp(
-        1i * 2 * std::numbers::pi * (transmitter.fc - transmitter.f_low) * \
-        basebanding_matrix / sampling_frequency
+    basebanding_signal  =   svr::exp(
+        1i * 2 * std::numbers::pi * transmitter.f_low * \
+        basebanding_signal / sampling_frequency
     );
+
+    // multiplying with signal to baseband signal
+    auto    basebanded_signal_matrix   {this->signal_matrix * basebanding_signal};
+
+    // convolving input-signal with low-pass filter
+    // auto    lowpass_impulse_response    {svr::conv1D_PlanPool(
+    //     basebanded_signal_matrix,
+    //     this->lowpass_filter_coefficients_for_decimation
+    // )};
 
 
 
