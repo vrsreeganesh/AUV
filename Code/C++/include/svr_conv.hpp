@@ -144,7 +144,12 @@ namespace   svr {
     improvements:
         > make an inplace version of this
     --------------------------------------------------------------------------*/
-    template    <typename T>
+    template    <
+        typename    T,
+        std::enable_if_t<
+            std::is_floating_point_v<T>
+        >
+    >
     auto    conv1D_long_prototype(
         const   std::vector<T>&                     input_vector_A,
         const   std::vector<T>&                     input_vector_B,
@@ -448,16 +453,13 @@ namespace   svr {
         local_pool.converge();
 
         // returning final output
-        // return std::move(output_vector);
-        return output_vector;
+        return std::move(output_vector);
+        // return output_vector;
     }
 
     /*==========================================================================
     Short-conv1D
     --------------------------------------------------------------------------*/ 
-    // template    <std::size_t    shortsize, 
-    //              typename       T1,
-    //              typename       T2>
     template    <typename       T1,
                  typename       T2>
     auto    conv1D_short(const    std::vector<T1>&   input_vector_A,
@@ -527,9 +529,5 @@ namespace   svr {
         return std::move(canvas);
 
     }
-
-    /*==========================================================================
-    1D Convolution of a matrix and a vector (in-place)
-    --------------------------------------------------------------------------*/
     
 }

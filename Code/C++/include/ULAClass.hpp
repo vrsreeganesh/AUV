@@ -1171,7 +1171,7 @@ class ULAClass
 {
 public:
     // intrinsic parameters
-    std::size_t                             num_sensors;                                // number of sensors
+    std::size_t                     num_sensors;                                // number of sensors
     T                               inter_element_spacing;                      // space between sensors
     std::vector<std::vector<T>>     coordinates;                                // coordinates of each sensor
     T                               sampling_frequency;                         // sampling frequency of the sensors
@@ -1181,11 +1181,12 @@ public:
     // derived 
     std::vector<T>                  sensor_direction;
     std::vector<std::vector<T>>     signal_matrix;
+    std::size_t                     num_samples;
 
     // decimation related
-    int                 decimation_factor;                              // the new decimation factor
-    T                   post_decimation_sampling_frequency;             // the new sampling frequency 
-    std::vector<T>      lowpass_filter_coefficients_for_decimation;     // filter-coefficients for filtering
+    int                             decimation_factor;                              // the new decimation factor
+    T                               post_decimation_sampling_frequency;             // the new sampling frequency 
+    std::vector<T>                  lowpass_filter_coefficients_for_decimation;     // filter-coefficients for filtering
 
     // imaging related
     T   range_resolution;               // theoretical range-resolution = $\frac{c}{2B}$
@@ -1199,11 +1200,14 @@ public:
     std::vector<std::vector<complex<T>>>    mulFFTMatrix;   // the matrix containing the delays for each-element as a slot
     std::vector<complex<T>>                 matchFilter;    // torch tensor containing the match-filter
     int    num_buffer_zeros_per_frame;                      // number of zeros we're adding per frame to ensure no-rotation
-    std::vector<std::vector<T>>    beamformedImage;         // the beamformed image
-    std::vector<std::vector<T>>    cartesianImage;          // the cartesian version of beamformed image
+    std::vector<std::vector<T>>     beamformedImage;         // the beamformed image
+    std::vector<std::vector<T>>     cartesianImage;          // the cartesian version of beamformed image
+
+    // Decimating Related
+    std::vector<std::complex<T>>    basebanding_signal;
 
     // Artificial acoustic-image related
-    std::vector<std::vector<T>>    currentArtificialAcousticImage;    // acoustic image directly produced
+    std::vector<std::vector<T>>     currentArtificialAcousticImage;    // acoustic image directly produced
 
 
     // Basic Constructor
@@ -1253,8 +1257,16 @@ public:
     // member-functions
     void    buildCoordinatesBasedOnLocation();
     void    buildCoordinatesBasedOnLocation(const  std::vector<T>&  new_location);
-    void    init(const TransmitterClass<T>&      transmitterObj);
-    void    nfdc_CreateMatchFilter(const TransmitterClass<T>& transmitterObj);
+    void    init(
+        const TransmitterClass<T>&                                          transmitterObj,
+        svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
+    );
+    void    nfdc_CreateMatchFilter(
+        const TransmitterClass<T>& transmitterObj,
+        svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
+    );
     // void    simulate_signals(const ScattererClass<T>&       seafloor,
     //                          const std::vector<std::size_t> scatterer_indices,
     //                          const TransmitterClass<T>&     transmitter);
@@ -1275,8 +1287,7 @@ public:
 Aim: Build Coordinates Based On Location
 ------------------------------------------------------------------------- */
 template <typename T>
-void    ULAClass<T>::buildCoordinatesBasedOnLocation()
-{
+void    ULAClass<T>::buildCoordinatesBasedOnLocation(){
     // length-normalizing sensor-direction
     this->sensor_direction      =   this->sensor_direction / norm(this->sensor_direction);
 
@@ -1296,9 +1307,7 @@ void    ULAClass<T>::buildCoordinatesBasedOnLocation()
                                {1, static_cast<std::size_t>(this->num_sensors)})};
     
     // translating coordinates
-    this->coordinates   =  transpose( this->location)  +  test;
-
-}
+    this->coordinates   =  transpose( this->location)  +  test;}
 template <typename T>
 void    ULAClass<T>::buildCoordinatesBasedOnLocation(const  std::vector<T>&  new_location)
 {
@@ -1312,27 +1321,54 @@ void    ULAClass<T>::buildCoordinatesBasedOnLocation(const  std::vector<T>&  new
 Aim: Init 
 ------------------------------------------------------------------------- */
 template <typename T>
-void    ULAClass<T>::init(const TransmitterClass<T>&      transmitterObj)
+void    ULAClass<T>::init(
+    const TransmitterClass<T>&      transmitterObj,
+    svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
+    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
+)
 {    
     // calculating range-related parameters
     this->range_resolution      =   1500.00/(2 * transmitterObj.fc);
     this->range_cell_size       =   40  *   this->range_resolution;
-
     // calculating azimuth-related parameters
     this->azimuthal_resolution  =   (1500.00 / transmitterObj.fc)   /   \
                                     (this->num_sensors - 1)  *   (this->inter_element_spacing);
     this->azimuth_cell_size     =   2   *   this->azimuthal_resolution;
 
-    // creating and storing match-filter
-    this->nfdc_CreateMatchFilter(std::ref(transmitterObj));
 
+    // creating basebanding signal
+    this->basebanding_signal    =   svr::linspace(
+        static_cast<std::complex<T>>(   0),
+        static_cast<std::complex<T>>(   this->num_samples-1),
+        static_cast<std::size_t>(       this->num_samples)
+    );
+    // exponentiating signal to create final-basebanding matrix
+    this->basebanding_signal  =   svr::exp(
+        1i * 2 * std::numbers::pi * transmitterObj.f_low * \
+        basebanding_signal / sampling_frequency
+    );
+    // asserting that the size of the signal is the same as that of the 
+    if (this->basebanding_signal.size() != this->num_samples)
+        throw std::runtime_error(
+            "FILE: ULAClass.hpp | FUNCTION: ULAClass::init() | REPORT: basebanding_signal.size() != num_samples"
+        );
+
+        
+    // creating and storing match-filter
+    // this->nfdc_CreateMatchFilter(std::ref(transmitterObj));
+    // this->nfdc_CreateMatchFilter(transmitterObj);
+    this->nfdc_CreateMatchFilter(transmitterObj, fph_match_filter, ifph_match_filter);
+
+    
 }
 /* =========================================================================
 Aim: Creating match-filter
 ------------------------------------------------------------------------- */
 template <typename T>
 void    ULAClass<T>::nfdc_CreateMatchFilter(
-    const TransmitterClass<T>& transmitterObj
+    const TransmitterClass<T>& transmitterObj,
+    svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
+    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
 )
 {
     cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter (entered)\n");
@@ -1345,20 +1381,33 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
     auto    basebanding_vector      {
         linspace00 * \
         svr::exp(
-            -1.00 * 1i * 2.00 * std::numbers::pi * \
-            (transmitterObj.fc / this->sampling_frequency)*\
+            1.00 * 1i * 2.00 * std::numbers::pi                 * \
+            (transmitterObj.f_low / this->sampling_frequency)   * \
             linspace00
         )
     };
 
     // multiplying signal with basebanding signal
-    auto    match_filter        {transmitterObj.signal  *   basebanding_vector};
+    auto    match_filter        {
+        transmitterObj.signal  *   basebanding_vector
+    };
+    basebanding_vector.clear();
 
     // low-pass filtering with baseband signal to obtain pure baseband signal
+    PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE 
+    cout << format("this->lowpass_filter_coefficients_for_decimation.size() = {}\n", this->lowpass_filter_coefficients_for_decimation.size());
+    cout << format("match_filter.size() = {}\n",match_filter.size());
+
     match_filter    =   svr::conv1D(
         match_filter,
         this->lowpass_filter_coefficients_for_decimation
     );
+    // match_filter    =   svr::conv1D_long_FFTPlanPool(
+    //     match_filter,
+    //     this->lowpass_filter_coefficients_for_decimation,
+    //     fph_match_filter,
+    //     ifph_match_filter
+    // );
     
     // creating sampling-indices
     int     decimation_factor   {static_cast<int>(std::floor(
@@ -1451,13 +1500,20 @@ void    ULAClass<T>::simulate_signals(
     // convolving input-signal with each row
     for(auto row = 0; row < this->signal_matrix.size(); ++row)
     {
+        // peforming convolution
         this->signal_matrix[row] = svr::conv1D_long_FFTPlanPool(
             this->signal_matrix[row],
             transmitter.signal,
             fft_pool_handle,
             ifft_pool_handle
         );
+
+        // only keeping first num-samples amount of samples
+        this->signal_matrix[row].resize(this->num_samples);
     }
+
+    
+
 }
 /*==============================================================================
 Decimating the recorded signal
@@ -1470,27 +1526,14 @@ void    ULAClass<T>::decimate_signal(
     const  TransmitterClass<T>&   transmitter
 )
 {
-    // creating the matrix for frequency-shifting
-    auto    basebanding_signal      {svr::linspace(
-        static_cast<std::complex<T>>(   0),
-        static_cast<std::complex<T>>(   this->signal_matrix[0].size()-1),
-        static_cast<std::size_t>(       this->signal_matrix[0].size())
-    )};
+    // multiplying with signal to baseband signal
+    auto    basebanded_signal_matrix   {this->signal_matrix * this->basebanding_signal};
 
-    // tiling the signal along dim = 0
-    auto    basebanding_matrix      {svr::tile(
-        basebanding_signal,
-        {this->num_sensors, 1}
-    )};
-
-    // clearing out the basebanding signal since we don't need it anymore
-    basebanding_signal.clear();
-
-    // exponentiating signal to create final-basebanding matrix
-    basebanding_matrix  =   svr::exp(
-        1i * 2 * std::numbers::pi * (transmitter.fc - transmitter.f_low) * \
-        basebanding_matrix / sampling_frequency
-    );
+    // convolving input-signal with low-pass filter
+    // auto    lowpass_impulse_response    {svr::conv1D_PlanPool(
+    //     basebanded_signal_matrix,
+    //     this->lowpass_filter_coefficients_for_decimation
+    // )};
 
 
 

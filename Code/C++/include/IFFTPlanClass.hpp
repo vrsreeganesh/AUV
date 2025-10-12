@@ -1,11 +1,17 @@
 #pragma once
 namespace   svr     {
-    template    <typename   sourceType,
-                 typename   destinationType,
-                 typename   = std::enable_if_t<std::is_same_v<sourceType,       std::complex<double>> && 
-                                               std::is_same_v<destinationType,  double>
-                                              >
-                >
+    
+    template    <typename T>
+    concept IFFTPlanClassSourceDestinationType = \
+        std::is_floating_point_v<T> || 
+        (
+            std::is_class_v<T>  && 
+            std::is_floating_point_v<typename T::value_type>
+        );
+    template    <
+        IFFTPlanClassSourceDestinationType sourceType,
+        IFFTPlanClassSourceDestinationType destinationType
+    >
     class   IFFTPlanClass
     {
         public:
@@ -163,13 +169,14 @@ namespace   svr     {
                 for(std::size_t index = 0; index < nfft_; ++index)
                 {
                     if  constexpr(
-                        std::is_same_v<     sourceType, std::complex<double>    >
+                        std::is_same_v<     sourceType, std::complex<double>    >   ||
+                        std::is_same_v<     sourceType, std::complex<float>     >
                     ){
                         in_[index][0]   =   input_vector[index].real();
                         in_[index][1]   =   input_vector[index].imag();
                     }
                     else if constexpr(
-                        std::is_same_v<     sourceType, double                  >
+                        std::is_floating_point_v<   sourceType  >
                     ){
                         in_[index][0]   =   input_vector[index];
                         in_[index][1]   =   0;
@@ -183,14 +190,15 @@ namespace   svr     {
                 std::vector<destinationType>   output_vector(nfft_);
                 for(std::size_t index = 0; index < nfft_; ++index){
                     if constexpr(
-                        std::is_same_v<     destinationType, double             >
+                        std::is_floating_point_v<   destinationType >
                     ){
-                        output_vector[index]    =   out_[index][0]/nfft_;
+                        output_vector[index]    =   static_cast<destinationType>(out_[index][0]/nfft_);
                     }
                     else if constexpr(
-                        std::is_same_v<     destinationType, std::complex<double>    >
+                        std::is_same_v<     destinationType, std::complex<double>    > ||
+                        std::is_same_v<     destinationType, std::complex<float>    >
                     ){
-                        output_vector[index][0] =   std::complex<double>(
+                        output_vector[index][0] =   destinationType(
                             out_[index][0]/nfft_, 
                             out_[index][1]/nfft_
                         );
@@ -214,13 +222,14 @@ namespace   svr     {
                 for(std::size_t index = 0; index < nfft_; ++index)
                 {
                     if  constexpr(
-                        std::is_same_v<     sourceType, std::complex<double>    >
+                        std::is_same_v<     sourceType, std::complex<double>    >   ||
+                        std::is_same_v<     sourceType, std::complex<float>    >
                     ){
                         in_[index][0]   =   input_vector[index].real();
                         in_[index][1]   =   input_vector[index].imag();
                     }
                     else if constexpr(
-                        std::is_same_v<     sourceType, double                  >
+                        std::is_floating_point_v<sourceType>
                     ){
                         in_[index][0]   =   input_vector[index];
                         in_[index][1]   =   0;
@@ -235,14 +244,15 @@ namespace   svr     {
                 for(std::size_t index = 0; index < nfft_; ++index)
                 {
                     if constexpr(
-                        std::is_same_v<     destinationType, double             >
+                        std::is_floating_point_v<destinationType>
                     ){
-                        output_vector[index]    =   out_[index][0] * 1.00/std::sqrt(nfft_);
+                        output_vector[index]    =   static_cast<destinationType>(out_[index][0] * 1.00/std::sqrt(nfft_));
                     }
                     else if constexpr(
-                        std::is_same_v<     destinationType, std::complex<double>    >
+                        std::is_same_v<     destinationType, std::complex<double>   >  ||
+                        std::is_same_v<     destinationType, std::complex<float>    >
                     ){
-                        output_vector[index][0] =   std::complex<double>(
+                        output_vector[index][0] =   destinationType(
                             out_[index][0]  *   1.00/std::sqrt(nfft_), 
                             out_[index][1]  *   1.00/std::sqrt(nfft_)
                         );

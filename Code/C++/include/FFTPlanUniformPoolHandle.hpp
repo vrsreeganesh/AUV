@@ -36,8 +36,8 @@ namespace   svr
                 nfft(nfft_arg)    {}
         FFTPlanUniformPoolHandle(const FFTPlanUniformPoolHandle& other)             = delete;
         FFTPlanUniformPoolHandle& operator=(const FFTPlanUniformPoolHandle& other)  = delete;
-        FFTPlanUniformPoolHandle(FFTPlanUniformPoolHandle&& other)                  = delete;
-        FFTPlanUniformPoolHandle& operator=(FFTPlanUniformPoolHandle&& other)       = delete;
+        FFTPlanUniformPoolHandle(FFTPlanUniformPoolHandle&& other)                  = default;
+        FFTPlanUniformPoolHandle& operator=(FFTPlanUniformPoolHandle&& other)       = default;
 
         /*======================================================================
         Member Functions

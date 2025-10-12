@@ -2,12 +2,17 @@
 
 namespace   svr     {
 
-    template    <typename   sourceType,
-                 typename   destinationType,
-                 typename   = std::enable_if_t<std::is_same_v<sourceType,       double>   &&
-                                               std::is_same_v<destinationType,  std::complex<double>>
-                                              >
-                >
+    template    <typename T>
+    concept FFTPlanClassSourceDestinationType = \
+        std::is_floating_point_v<T> || 
+        (
+            std::is_class_v<T>  && 
+            std::is_floating_point_v<typename T::value_type>
+        );
+    template    <
+        FFTPlanClassSourceDestinationType sourceType,
+        FFTPlanClassSourceDestinationType destinationType
+    >
     class FFTPlanClass
     {
         public:
@@ -195,13 +200,14 @@ namespace   svr     {
                 for(std::size_t index = 0; index < input_vector.size(); ++index)
                 {
                     if  constexpr(
-                        std::is_same_v<     sourceType, double                  >
+                        std::is_floating_point_v<sourceType>
                     ){
                         in_[index][0]   =   input_vector[index];
                         in_[index][1]   =   0;
                     }
                     else if constexpr(
-                        std::is_same_v<     sourceType, std::complex<double>    >
+                        std::is_same_v<sourceType,  std::complex<float>>    ||
+                        std::is_same_v<sourceType,  std::complex<double>>
                     ){
                         in_[index][0]   =   input_vector[index].real();
                         in_[index][1]   =   input_vector[index].imag();
@@ -215,19 +221,22 @@ namespace   svr     {
                 std::vector<destinationType>    output_vector(nfft_);
                 for(std::size_t index = 0; index < nfft_; ++index){
                     if  constexpr(
-                        std::is_same_v<     destinationType,std::complex<double>    >
+                        std::is_same_v<destinationType,  std::complex<float>>    ||
+                        std::is_same_v<destinationType,  std::complex<double>>
                     ){
-                        output_vector[index]    =   std::complex<double>(
+                        output_vector[index]    =   destinationType(
                             out_[index][0],
                             out_[index][1]
                         );
                     }
                     else if constexpr(
-                        std::is_same_v<     destinationType,    double          >
+                        std::is_floating_point_v<destinationType>
                     ){
-                        output_vector[index]    =   std::sqrt(
-                            std::pow(out_[index][0], 2)  +   \
-                            std::pow(out_[index][1], 2)
+                        output_vector[index]    =   static_cast<destinationType>(
+                            std::sqrt(
+                                std::pow(out_[index][0], 2)  +   \
+                                std::pow(out_[index][1], 2)
+                            )
                         );
                     }
                 }
@@ -249,13 +258,14 @@ namespace   svr     {
                 for(std::size_t index = 0; index < input_vector.size(); ++index)
                 {
                     if  constexpr(
-                        std::is_same_v<     sourceType, double                  >
+                        std::is_floating_point_v<sourceType>
                     ){
                         in_[index][0]   =   input_vector[index];
                         in_[index][1]   =   0;
                     }
                     else if constexpr(
-                        std::is_same_v<     sourceType, std::complex<double>    >
+                        std::is_same_v<sourceType, std::complex<float>> ||
+                        std::is_same_v<sourceType, std::complex<double>>
                     ){
                         in_[index][0]   =   input_vector[index].real();
                         in_[index][1]   =   input_vector[index].imag();
@@ -270,19 +280,22 @@ namespace   svr     {
                 for(std::size_t index = 0; index < nfft_; ++index)
                 {
                     if  constexpr(
-                        std::is_same_v<     destinationType,std::complex<double>    >
+                        std::is_same_v<     destinationType, std::complex<double>    >    ||
+                        std::is_same_v<     destinationType, std::complex<float>    >
                     ){
-                        output_vector[index]    =   std::complex<double>(
+                        output_vector[index]    =   destinationType(
                             out_[index][0] * (1.00 / std::sqrt(nfft_)),
                             out_[index][1] * (1.00 / std::sqrt(nfft_))
                         );
                     }
                     else if constexpr(
-                        std::is_same_v<     destinationType,    double          >
+                        std::is_floating_point_v<destinationType>
                     ){
-                        output_vector[index]    =   std::sqrt(
-                            std::pow(out_[index][0] * (1.00 / std::sqrt(nfft_)), 2)  +   \
-                            std::pow(out_[index][1] * (1.00 / std::sqrt(nfft_)), 2)
+                        output_vector[index]    =   destinationType(
+                            std::sqrt(
+                                std::pow(out_[index][0] * (1.00 / std::sqrt(nfft_)), 2)  +   \
+                                std::pow(out_[index][1] * (1.00 / std::sqrt(nfft_)), 2)
+                            )
                         );
                     }
                 }

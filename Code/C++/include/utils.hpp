@@ -1,22 +1,4 @@
-// // =============================================================================
 #include "svr_WriteToCSV.hpp"
-// // =============================================================================
-// template <typename F, typename R>
-// constexpr auto fElementWise(F&& func, R& range){
-//     std::transform(std::begin(range),
-//                    std::end(range),
-//                    std::begin(range),
-//                    std::forward<F>(func));
-//     // return range;
-// }
-// // =============================================================================
-// #include "svr_repmat.hpp"
-// // =============================================================================
-// auto SineElementWise(auto& input, auto constantvalue){
-//     for(auto& x: input) {x = std::sin(constantvalue * x);}
-//     // replace this with std::transform
-// };
-// // =============================================================================
 #include "svr_linspace.hpp"
 #include "svr_meshgrid.hpp"
 #include "svr_reshape.hpp"
@@ -47,7 +29,6 @@
 #include "svr_real.hpp"
 #include "svr_imag.hpp"
 #include "svr_slice.hpp"
-#include "svr_fast_inverse_square_root.hpp"
 
 
 #include "FFTPlanClass.hpp"
