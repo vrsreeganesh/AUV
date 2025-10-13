@@ -1,13 +1,15 @@
 #pragma once
 namespace   svr     {
-
-    template <
-        typename sourceType,
-        typename destinationType,
-        typename = std::enable_if_t<
-            std::is_same_v<sourceType, double> &&
-            std::is_same_v<destinationType, std::complex<double>>
-        >
+    template    <typename   T>
+    concept FFTPlanUniformPoolSourceDestinationType =   \
+        std::is_floating_point_v<T>     ||
+        (
+            std::is_class_v<T>          &&
+            std::is_floating_point_v<typename   T::value_type>
+        );
+    template    <
+        FFTPlanUniformPoolSourceDestinationType     sourceType,
+        FFTPlanUniformPoolSourceDestinationType     destinationType
     >
     class FFTPlanUniformPool {
     public:

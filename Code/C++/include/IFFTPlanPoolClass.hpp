@@ -5,14 +5,17 @@ Dependencies
 ------------------------------------------------------------------------------*/ 
 
 namespace   svr     {
-
+    
+    template    <typename   T>
+    concept     IFFTPlanUniformPoolSourceDestinationType    =   \
+        std::is_floating_point_v<T>     ||
+        (
+            std::is_class_v<T>  &&
+            std::is_floating_point_v<typename   T::value_type>
+        );
     template    <
-        typename    sourceType,
-        typename    destinationType,
-        typename    =   std::enable_if_t<
-            std::is_same_v<sourceType,  std::complex<double>>&&
-            std::is_same_v<destinationType, double>
-        >
+        IFFTPlanUniformPoolSourceDestinationType    sourceType,
+        IFFTPlanUniformPoolSourceDestinationType    destinationType
     >
     class IFFTPlanUniformPool
     {
