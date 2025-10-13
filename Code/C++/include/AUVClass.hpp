@@ -577,7 +577,8 @@
 
 
 template <
-    typename T
+    typename T,
+    typename    =   std::enable_if_t<std::is_floating_point_v<T>>
 >
 class   AUVClass{
 public:
@@ -614,34 +615,33 @@ public:
 
     // functions
     void syncComponentAttributes();
-    void init(svr::ThreadPool&  thread_pool);
+    void init(
+        svr::ThreadPool&                                                    thread_pool,
+        svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter);
     void simulate_signal(
         const     ScattererClass<T>&                            seafloor,
         svr::ThreadPool&                                        thread_pool,
         svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
-    );
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle);
     void subset_scatterers(
         const  ScattererClass<T>&       seafloor,
         svr::ThreadPool&                thread_pool,
         std::vector<std::size_t>&       fls_scatterer_indices,
         std::vector<std::size_t>&       portside_scatterer_indices,
-        std::vector<std::size_t>&       starboard_scatterer_indices
-    );
+        std::vector<std::size_t>&       starboard_scatterer_indices);
     void step(T time_step);
     void image(
         svr::ThreadPool&                                        thread_pool,
         svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
-    );
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle);
 };
 
 /*==========================================================================
 Aim: update attributes
 --------------------------------------------------------------------------*/
-template <typename T>
-void AUVClass<T>::syncComponentAttributes()
-{
+template <typename T, typename U>
+void AUVClass<T, U>::syncComponentAttributes(){
     // updating locations of ULAs
     this->ULA_fls.location          = this->location;
     this->ULA_portside.location     = this->location;
@@ -669,33 +669,41 @@ void AUVClass<T>::syncComponentAttributes()
     // updating transmitter pointing direction
     this->transmitter_fls.updatePointingAngle(          this->pointing_direction);
     this->transmitter_portside.updatePointingAngle(     this->pointing_direction);
-    this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);
-
-}
+    this->transmitter_starboard.updatePointingAngle(    this->pointing_direction);}
 /* =========================================================================
 Aim: Initializing objects and variables
 --------------------------------------------------------------------------*/ 
-template <typename T>
-void AUVClass<T>::init(svr::ThreadPool&  thread_pool)
-{
+template <typename T, typename U>
+void AUVClass<T, U>::init(
+    svr::ThreadPool&                                                    thread_pool,
+    svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
+    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
+){
     // call sync-component attributes
     this->syncComponentAttributes();
     cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init::syncComponentAttributes \n");
 
     // initializing the ULAs
-    thread_pool.push_back([&]{this->ULA_fls.init(         std::ref(this->transmitter_fls));});
-    thread_pool.push_back([&]{this->ULA_portside.init(    std::ref(this->transmitter_portside));});
-    thread_pool.push_back([&]{this->ULA_starboard.init(   std::ref(this->transmitter_starboard));});
+    thread_pool.push_back([&]{this->ULA_fls.init(         
+        std::ref(this->transmitter_fls),
+        fph_match_filter,
+        ifph_match_filter);});
+    thread_pool.push_back([&]{this->ULA_portside.init(    
+        std::ref(this->transmitter_portside),
+        fph_match_filter,
+        ifph_match_filter);});
+    thread_pool.push_back([&]{this->ULA_starboard.init(   
+        std::ref(this->transmitter_starboard),
+        fph_match_filter,
+        ifph_match_filter);});
     thread_pool.converge();
 
-    cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init \n");
-    
-}
+    cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init \n");   }
 /*==============================================================================
 Member-Function: Subsetting the scatterers in the transmitter-range
 ------------------------------------------------------------------------------*/ 
-template <typename T>
-void AUVClass<T>::subset_scatterers(
+template <typename T, typename U>
+void AUVClass<T, U>::subset_scatterers(
     const  ScattererClass<T>&    seafloor,
     svr::ThreadPool&             thread_pool,
     std::vector<std::size_t>&    fls_scatterer_indices,
@@ -734,8 +742,8 @@ void AUVClass<T>::subset_scatterers(
 /*==============================================================================
 Aim: Simulate Signals received by ULAs in the AUV
 ------------------------------------------------------------------------------*/ 
-template <typename T>
-void AUVClass<T>::simulate_signal(
+template <typename T, typename U>
+void AUVClass<T, U>::simulate_signal(
     const     ScattererClass<T>&                            seafloor,
     svr::ThreadPool&                                        thread_pool,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
@@ -791,8 +799,8 @@ void AUVClass<T>::simulate_signal(
 /*==============================================================================
 Aim: Moving the AUV to the next discrete position in the trajectory
 ------------------------------------------------------------------------------*/ 
-template <typename T>
-void AUVClass<T>::step(T    time_step)
+template <typename T, typename U>
+void AUVClass<T, U>::step(T    time_step)
 {
     // updating location
     this->location  = this->location + this->velocity * time_step;
@@ -803,8 +811,8 @@ void AUVClass<T>::step(T    time_step)
 /*==============================================================================
 Aim: Function that begins imaging from the recorded signals
 ------------------------------------------------------------------------------*/
-template    <typename T>
-void AUVClass<T>::image(
+template <typename T, typename U>
+void AUVClass<T, U>::image(
     svr::ThreadPool&                                        thread_pool,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle

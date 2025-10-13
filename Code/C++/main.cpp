@@ -9,12 +9,12 @@ int main(){
     
     // setting up FFT/IFFT plan pools
     auto    num_plans                   {32};
-    svr::FFTPlanUniformPoolHandle<double, 
-                                  std::complex<double>
-                                 >     fft_pool_handle(num_plans,     16384);
-    svr::IFFTPlanUniformPoolHandle<std::complex<double>, 
-                                   double
-                                  >    ifft_pool_handle(num_plans,    16384);
+    auto    nfft                        {16384};
+    svr::FFTPlanUniformPoolHandle<double, std::complex<double>>  fft_pool_handle(num_plans,     nfft);
+    svr::IFFTPlanUniformPoolHandle<std::complex<double>, double> ifft_pool_handle(num_plans,    nfft);
+    
+    svr::FFTPlanUniformPoolHandle<double, std::complex<double>>  fph_match_filter(num_plans,    128);
+    svr::IFFTPlanUniformPoolHandle<std::complex<double>, double>  ifph_match_filter(num_plans,  128);
 
     // Building Sea-Floor
     auto    seafloor     {ScattererClass<double>()};
@@ -60,7 +60,7 @@ int main(){
     auv.transmitter_starboard   =   std::move(      transmitter_starboard);
 
     // precomputing the data-structures required for processing
-    auv.init(thread_pool);
+    auv.init(thread_pool, fph_match_filter, ifph_match_filter);
 
     // starting simulation
     auto    num_stop_hops   {10};

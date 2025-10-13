@@ -453,16 +453,13 @@ namespace   svr {
         local_pool.converge();
 
         // returning final output
-        // return std::move(output_vector);
-        return output_vector;
+        return std::move(output_vector);
+        // return output_vector;
     }
 
     /*==========================================================================
     Short-conv1D
     --------------------------------------------------------------------------*/ 
-    // template    <std::size_t    shortsize, 
-    //              typename       T1,
-    //              typename       T2>
     template    <typename       T1,
                  typename       T2>
     auto    conv1D_short(const    std::vector<T1>&   input_vector_A,
