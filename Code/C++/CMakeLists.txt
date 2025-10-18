@@ -15,6 +15,12 @@ set_property(TARGET auv PROPERTY CXX_STANDARD 23)
 set_property(TARGET auv PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET auv PROPERTY CXX_EXTENSIONS OFF)  # optional, avoids GNU extensions
 
+# adding logging
+find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
+target_link_libraries(auv PRIVATE spdlog::spdlog fmt::fmt)
+
+
 # compiler optimization flags
 # target_compile_options(auv PRIVATE -Ofast)
 # target_compile_options(auv PRIVATE -O3 -ffast-math)

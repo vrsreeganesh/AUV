@@ -15,6 +15,7 @@ int main(){
     
     svr::FFTPlanUniformPoolHandle<double, std::complex<double>>  fph_match_filter(num_plans,    128);
     svr::IFFTPlanUniformPoolHandle<std::complex<double>, double>  ifph_match_filter(num_plans,  128);
+    spdlog::info("Finished Setting up FFT-Plans");
 
     // Building Sea-Floor
     auto    seafloor     {ScattererClass<double>()};
@@ -47,6 +48,10 @@ int main(){
     // converging threads
     thread_pool.converge();
 
+    // Logging
+    spdlog::info("Finished ULA Setup");
+    spdlog::info("Finished Transmitter Setup");
+
     // Building AUV
     AUVClass<double>    auv;
     fAUVSetup(auv);
@@ -58,9 +63,11 @@ int main(){
     auv.transmitter_fls         =   std::move(      transmitter_fls);
     auv.transmitter_portside    =   std::move(      transmitter_portside);
     auv.transmitter_starboard   =   std::move(      transmitter_starboard);
+    spdlog::info("Finished AUV Setup");
 
     // precomputing the data-structures required for processing
     auv.init(thread_pool, fph_match_filter, ifph_match_filter);
+    spdlog::info("Finished ULA Initialization");
 
     // starting simulation
     auto    num_stop_hops   {10};

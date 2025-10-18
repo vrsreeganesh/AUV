@@ -26,6 +26,7 @@
 #include <future>
 #include <stdexcept>
 #include <boost/asio.hpp>
+#include <spdlog/spdlog.h>
 
 // #include <fftw3.h>          // for fft
 

@@ -1166,7 +1166,9 @@
 // };
 
 
-template <typename T>
+template <
+    typename T
+>
 class ULAClass
 {
 public:
@@ -1267,9 +1269,6 @@ public:
         svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
         svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
     );
-    // void    simulate_signals(const ScattererClass<T>&       seafloor,
-    //                          const std::vector<std::size_t> scatterer_indices,
-    //                          const TransmitterClass<T>&     transmitter);
     void    simulate_signals(
         const ScattererClass<T>&                                seafloor,
         const std::vector<std::size_t>                          scatterer_indices,
@@ -1282,10 +1281,15 @@ public:
     void    decimate_signal(
         const  TransmitterClass<T>&   transmitter
     );
+    // void    decimate_signal(
+    //     const  TransmitterClass<T>&                                                 transmitter,
+    //     svr::FFTPlanUniformPoolHandle<  sourceType,         destinationType >&      fft_pool_handle,
+    //     svr::IFFTPlanUniformPoolHandle< destinationType,    sourceType>&            ifft_pool_handle
+    // );
 };
-/* =========================================================================
+/* =============================================================================
 Aim: Build Coordinates Based On Location
-------------------------------------------------------------------------- */
+------------------------------------------------------------------------------*/
 template <typename T>
 void    ULAClass<T>::buildCoordinatesBasedOnLocation(){
     // length-normalizing sensor-direction
@@ -1309,24 +1313,23 @@ void    ULAClass<T>::buildCoordinatesBasedOnLocation(){
     // translating coordinates
     this->coordinates   =  transpose( this->location)  +  test;}
 template <typename T>
-void    ULAClass<T>::buildCoordinatesBasedOnLocation(const  std::vector<T>&  new_location)
-{
+void    ULAClass<T>::buildCoordinatesBasedOnLocation(
+    const  std::vector<T>&  new_location
+){
     // updating location
     this->location  = new_location;
 
     // calling the update-coordinates-function
-    this->buildCoordinatesBasedOnLocation();
-}
-/* =========================================================================
+    this->buildCoordinatesBasedOnLocation();}
+/* =============================================================================
 Aim: Init 
-------------------------------------------------------------------------- */
+------------------------------------------------------------------------------*/
 template <typename T>
 void    ULAClass<T>::init(
-    const TransmitterClass<T>&      transmitterObj,
+    const TransmitterClass<T>&                                          transmitterObj,
     svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
-)
-{    
+){    
     // calculating range-related parameters
     this->range_resolution      =   1500.00/(2 * transmitterObj.fc);
     this->range_cell_size       =   40  *   this->range_resolution;
@@ -1357,21 +1360,21 @@ void    ULAClass<T>::init(
     // creating and storing match-filter
     // this->nfdc_CreateMatchFilter(std::ref(transmitterObj));
     // this->nfdc_CreateMatchFilter(transmitterObj);
-    this->nfdc_CreateMatchFilter(transmitterObj, fph_match_filter, ifph_match_filter);
+    this->nfdc_CreateMatchFilter(   transmitterObj, 
+                                    fph_match_filter, 
+                                    ifph_match_filter);
 
-    
-}
-/* =========================================================================
+    // logging
+    spdlog::info("Finished ULA Initialization");}
+/* =============================================================================
 Aim: Creating match-filter
-------------------------------------------------------------------------- */
+------------------------------------------------------------------------------*/
 template <typename T>
 void    ULAClass<T>::nfdc_CreateMatchFilter(
     const TransmitterClass<T>& transmitterObj,
     svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
-)
-{
-    cout << format("\t\t\t\t\t\t ULAClass<T>::nfdc_CreateMatchFilter (entered)\n");
+){
     // creating matrix for basebanding signal
     auto    linspace00              {svr::linspace(
         0,
@@ -1379,7 +1382,6 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
         transmitterObj.signal.size()
     )};
     auto    basebanding_vector      {
-        linspace00 * \
         svr::exp(
             1.00 * 1i * 2.00 * std::numbers::pi                 * \
             (transmitterObj.f_low / this->sampling_frequency)   * \
@@ -1388,23 +1390,19 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
     };
 
     // multiplying signal with basebanding signal
-    auto    match_filter        {
-        transmitterObj.signal  *   basebanding_vector
-    };
+    auto    match_filter        {   transmitterObj.signal * basebanding_vector   };
     basebanding_vector.clear();
 
     // low-pass filtering with baseband signal to obtain pure baseband signal
-    PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE PRINTLINE 
-    cout << format("this->lowpass_filter_coefficients_for_decimation.size() = {}\n", this->lowpass_filter_coefficients_for_decimation.size());
-    cout << format("match_filter.size() = {}\n",match_filter.size());
-
+    spdlog::warn("Shift to convolution method plan-based method");
     match_filter    =   svr::conv1D(
         match_filter,
-        this->lowpass_filter_coefficients_for_decimation
+        svr::complex(   this->lowpass_filter_coefficients_for_decimation    )
+        // this->lowpass_filter_coefficients_for_decimation
     );
     // match_filter    =   svr::conv1D_long_FFTPlanPool(
     //     match_filter,
-    //     this->lowpass_filter_coefficients_for_decimation,
+    //     svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
     //     fph_match_filter,
     //     ifph_match_filter
     // );
@@ -1435,7 +1433,9 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
 
     // storing the match-filter to the class member
     this->matchFilter   =   std::move(match_filter);
-}
+
+    // Logging
+    spdlog::info("Finished match-filter creation");}
 /*==============================================================================
 Aim: Simulate signals received by uniform-linear-array
 ------------------------------------------------------------------------------*/ 
@@ -1446,8 +1446,7 @@ void    ULAClass<T>::simulate_signals(
     const TransmitterClass<T>&                              transmitter,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
-)
-{
+){
     // creating signal matrix
     auto    num_samples     {static_cast<std::size_t>(
         std::ceil(
@@ -1512,24 +1511,36 @@ void    ULAClass<T>::simulate_signals(
         this->signal_matrix[row].resize(this->num_samples);
     }
 
-    
-
-}
+    // logging
+    spdlog::info("Finished signal-simulation");}
 /*==============================================================================
 Decimating the recorded signal
     -> basebanding the signal
     -> lowpass-filtering
     -> downsample signals
 ------------------------------------------------------------------------------*/
-template    <typename   T>
+template    <
+    typename                            T
+>
 void    ULAClass<T>::decimate_signal(
-    const  TransmitterClass<T>&   transmitter
+    const  TransmitterClass<T>&                                                 transmitter
 )
 {
     // multiplying with signal to baseband signal
-    auto    basebanded_signal_matrix   {this->signal_matrix * this->basebanding_signal};
+    auto    basebanded_signal_matrix   {
+        this->signal_matrix * this->basebanding_signal
+    };
+
+    // running low-pass filter
+    auto&   basebanded_lowpassfiltered_signal_matrix    {
+        basebanded_signal_matrix
+    };
 
 
+    
 
+
+    // logging
+    spdlog::warn("signal-decimation | incomplete");
 
 }

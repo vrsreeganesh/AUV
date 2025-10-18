@@ -93,5 +93,5 @@ void fSeaFloorSetup(
     }
 
     // printing status
-    std::cout << format("> Finished Sea-Floor Setup \n");
+    spdlog::info("Finished Sea-Floor Setup");
 }

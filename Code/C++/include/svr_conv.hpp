@@ -249,28 +249,103 @@ namespace   svr {
     /*==========================================================================
     Long-signal Conv1D with FFT-Plan-Pool
     --------------------------------------------------------------------------*/
+    // concept for the FFTPlans
+    template    <typename   T>
+    concept FFT_SourceDestination_DataType  =   \
+        std::is_floating_point_v<T>     ||  \
+        (
+            std::is_class_v<T> &&  
+            std::is_floating_point_v<typename   T::value_type>
+        );
+
+    // template    <
+    //     typename                        T,
+    //     typename    =   std::enable_if_t<
+    //         std::is_floating_point_v<T>
+    //     >
+    // >
+    // auto    conv_per_plan(
+    //     const   int                                             i,
+    //     const   int&                                            input_signal_block_size,
+    //     const   int&                                            filter_size,
+    //     const   int&                                            block_output_length,
+    //     const   std::vector<T>&                                 large_signal,
+    //     std::vector<T>                                          signal_block_zero_padded,
+    //     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
+    //     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle,
+    //     const   std::vector<std::complex<T>>&                   filter_FFT,
+    //     std::vector<T>                                          fftw_output,
+    //     std::vector<T>                                          conv_output,
+    //     std::vector<T>&                                         output_vector,
+    //     std::mutex&                                             output_vector_mutex,
+    //     const   auto&                                           signal_size
+    // )
+    // {
+    //     // calculating bounds
+    //     auto    analytical_start    {
+    //         (i*static_cast<int>(input_signal_block_size)) - (static_cast<int>(filter_size) - 1)
+    //     };
+    //     auto    analytical_end      {(i+1)*input_signal_block_size -1};
+    //     auto start_index     =   std::max(
+    //         static_cast<int>(0),    static_cast<int>(analytical_start)
+    //     );
+    //     auto end_index       =   std::min(
+    //         static_cast<int>(signal_size-1),static_cast<int>(analytical_end)
+    //     ); // [start-index, end-index)
+
+    //     // copying values
+    //     signal_block_zero_padded = std::move(std::vector<double>(block_output_length, 0.0));
+    //     std::copy(
+    //         large_signal.begin()                +   start_index,
+    //         large_signal.begin()                +   end_index       + 1,
+    //         signal_block_zero_padded.begin()    +   start_index     - analytical_start
+    //     );
+
+    //     // fetching an fft and IFFT plan
+    //     auto    fph_lock        {fft_pool_handle.lock()};
+    //     auto    ifph_lock       {ifft_pool_handle.lock()};
+    //     auto    fft_pair        {fft_pool_handle.uniform_pool.fetch_plan()};
+    //     auto    ifft_pair       {ifft_pool_handle.uniform_pool.fetch_plan()};
+
+    //     // performing ifft(fft(x) * filter-FFT)
+    //     fftw_output     =   ifft_pair.plan.ifft_l2_conserved(
+    //         fft_pair.plan.fft_l2_conserved(signal_block_zero_padded)   *   filter_FFT
+    //     );
+
+    //     // trimming away the first parts (since partial)
+    //     conv_output =   std::vector<T>(
+    //         fftw_output.begin() + filter_size - 1,
+    //         fftw_output.end()
+    //     );
+
+    //     // writing to final-output
+    //     auto    output_start_index = i * (block_output_length - (filter_size - 1));
+    //     std::lock_guard<std::mutex>     output_lock(output_vector_mutex);
+    //     std::copy(
+    //         conv_output.begin(), conv_output.end(),
+    //         output_vector.begin() + output_start_index
+    //     );
+    // }
+
     template    <
-        typename    T,
-        typename    =   std::enable_if_t<
-            std::is_same_v<T, double>    ||
-            std::is_same_v<T, float>
-        >
+        FFT_SourceDestination_DataType  sourceType,
+        FFT_SourceDestination_DataType  destinationType
     >
     auto    conv_per_plan(
-        const   int                                             i,
-        const   int&                                            input_signal_block_size,
-        const   int&                                            filter_size,
-        const   int&                                            block_output_length,
-        const   std::vector<T>&                                 large_signal,
-        std::vector<T>                                          signal_block_zero_padded,
-        svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle,
-        const   std::vector<std::complex<T>>&                   filter_FFT,
-        std::vector<T>                                          fftw_output,
-        std::vector<T>                                          conv_output,
-        std::vector<T>&                                         output_vector,
-        std::mutex&                                             output_vector_mutex,
-        const   auto&                                           signal_size
+        const   int                                                             i,
+        const   int&                                                            input_signal_block_size,
+        const   int&                                                            filter_size,
+        const   int&                                                            block_output_length,
+        const   std::vector<sourceType>&                                        large_signal,
+        std::vector<sourceType>                                                 signal_block_zero_padded,
+        svr::FFTPlanUniformPoolHandle<  sourceType,         destinationType>&   fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle< destinationType,    sourceType>&        ifft_pool_handle,
+        const   std::vector<destinationType>&                                   filter_FFT,
+        std::vector<sourceType>                                                 fftw_output,
+        std::vector<sourceType>                                                 conv_output,
+        std::vector<sourceType>&                                                output_vector,
+        std::mutex&                                                             output_vector_mutex,
+        const   auto&                                                           signal_size
     )
     {
 
@@ -306,7 +381,7 @@ namespace   svr {
         );
 
         // trimming away the first parts (since partial)
-        conv_output =   std::vector<T>(
+        conv_output =   std::vector<sourceType>(
             fftw_output.begin() + filter_size - 1,
             fftw_output.end()
         );
@@ -323,16 +398,17 @@ namespace   svr {
 
     template    <
         typename T,
+        FFT_SourceDestination_DataType  sourceType,
+        FFT_SourceDestination_DataType  destinationType,
         typename    =   std::enable_if_t<
-            std::is_same_v<T, double>    ||
-            std::is_same_v<T, float>
+            std::is_floating_point_v<T>
         >
     >
     auto    conv1D_long_FFTPlanPool(
-        const   std::vector<T>&                                 input_vector_A,
-        const   std::vector<T>&                                 input_vector_B,
-        svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+        const   std::vector<T>&                                                 input_vector_A,
+        const   std::vector<T>&                                                 input_vector_B,
+        svr::FFTPlanUniformPoolHandle<  sourceType,         destinationType>&   fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle< destinationType,    sourceType>&        ifft_pool_handle
     )
     {
         // Error checks

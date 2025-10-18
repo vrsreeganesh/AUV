@@ -18,6 +18,5 @@ void fAUVSetup(AUVClass<T>& auv) {
     auv.pointing_direction  = std::move(pointing_direction);    // assigning pointing direction
 
     // signaling end
-    std::cout << format("> Completed AUV-setup\n");
-    
+    spdlog::info("Completed AUV-setup");
 }

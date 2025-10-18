@@ -681,7 +681,6 @@ void AUVClass<T, U>::init(
 ){
     // call sync-component attributes
     this->syncComponentAttributes();
-    cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init::syncComponentAttributes \n");
 
     // initializing the ULAs
     thread_pool.push_back([&]{this->ULA_fls.init(         
@@ -698,7 +697,8 @@ void AUVClass<T, U>::init(
         ifph_match_filter);});
     thread_pool.converge();
 
-    cout << format("\t\t\t\t\t\t\t\t\t AUVClass<T>::init \n");   }
+    // logging
+    spdlog::info("Finished AUV Initialization");}
 /*==============================================================================
 Member-Function: Subsetting the scatterers in the transmitter-range
 ------------------------------------------------------------------------------*/ 
@@ -709,8 +709,7 @@ void AUVClass<T, U>::subset_scatterers(
     std::vector<std::size_t>&    fls_scatterer_indices,
     std::vector<std::size_t>&    portside_scatterer_indices,
     std::vector<std::size_t>&    starboard_scatterer_indices
-)
-{
+){
     // ensuring the components are synced
     this->syncComponentAttributes();
 
@@ -748,11 +747,7 @@ void AUVClass<T, U>::simulate_signal(
     svr::ThreadPool&                                        thread_pool,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
-)
-{
-
-    cout << format("\t\t\t\t\t\tAUVClass<T>::simulate_signal\n");
-
+){
     // boolean-vector indicating which scatterers are present 
     auto    fls_scatterer_indices               {std::vector<std::size_t>()};
     auto    portside_scatterer_indices          {std::vector<std::size_t>()};
@@ -795,13 +790,17 @@ void AUVClass<T, U>::simulate_signal(
     // waiting for threads to converge
     thread_pool.converge();
 
+    // logging
+    spdlog::info("Signal-Simulation Complete");
+
 }
 /*==============================================================================
 Aim: Moving the AUV to the next discrete position in the trajectory
 ------------------------------------------------------------------------------*/ 
 template <typename T, typename U>
-void AUVClass<T, U>::step(T    time_step)
-{
+void AUVClass<T, U>::step(
+    T    time_step
+){
     // updating location
     this->location  = this->location + this->velocity * time_step;
 
@@ -811,7 +810,10 @@ void AUVClass<T, U>::step(T    time_step)
 /*==============================================================================
 Aim: Function that begins imaging from the recorded signals
 ------------------------------------------------------------------------------*/
-template <typename T, typename U>
+template <
+    typename T, 
+    typename U
+>
 void AUVClass<T, U>::image(
     svr::ThreadPool&                                        thread_pool,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
