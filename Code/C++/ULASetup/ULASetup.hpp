@@ -1,14 +1,20 @@
-template    <
-    typename    T,
-    typename    = std::enable_if_t<
-        std::is_same_v<T, double>    ||
-        std::is_same_v<T, float>
-    >
+// template    <
+//     typename    T,
+//     typename    = std::enable_if_t<
+//         std::is_same_v<T, double>    ||
+//         std::is_same_v<T, float>
+//     >
+// >
+
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
 >
 void fULASetup(
-    ULAClass<T>&     ula_fls,
-    ULAClass<T>&     ula_portside,
-    ULAClass<T>&     ula_starboard)
+    ULAClass<T, sourceType, destinationType>&     ula_fls,
+    ULAClass<T, sourceType, destinationType>&     ula_portside,
+    ULAClass<T, sourceType, destinationType>&     ula_starboard)
 {
     // setting up ula
     auto    num_sensors                 {static_cast<int>(32)};             // number of sensors

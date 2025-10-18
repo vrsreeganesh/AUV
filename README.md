@@ -1,4 +1,4 @@
-# AUV: A Surveillance Protocol
+# The AUV Project
 Autonomous Underwater Vehicle Simulation
 
 

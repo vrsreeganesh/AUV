@@ -591,9 +591,9 @@ public:
     std::vector<T>      pointing_direction;     // AUV's pointing direction
     
     // uniform linear-arrays
-    ULAClass<T>         ULA_fls;                // front-looking SONAR ULA
-    ULAClass<T>         ULA_portside;           // mounted ULA [object of class, ULAClass]        
-    ULAClass<T>         ULA_starboard;          // mounted ULA [object of class, ULAClass]        
+    ULAClass<T, sourceType, destinationType>         ULA_fls;                // front-looking SONAR ULA
+    ULAClass<T, sourceType, destinationType>         ULA_portside;           // mounted ULA [object of class, ULAClass]        
+    ULAClass<T, sourceType, destinationType>         ULA_starboard;          // mounted ULA [object of class, ULAClass]        
     
     // transmitters
     TransmitterClass<T>     transmitter_fls;           // transmitter for front-looking SONAR
@@ -845,7 +845,9 @@ void AUVClass<T, sourceType, destinationType>::image(
 {
     // decimating signals obtained at each time-step
     this->ULA_fls.decimate_signal(
-        this->transmitter_fls
+        this->transmitter_fls,
+        fft_pool_handle,
+        ifft_pool_handle
     );
 
     // 

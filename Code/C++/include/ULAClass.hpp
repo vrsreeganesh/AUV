@@ -1167,7 +1167,9 @@
 
 
 template <
-    typename T
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
 >
 class ULAClass
 {
@@ -1253,8 +1255,8 @@ public:
     // // deleting copy constructor/assignment
     // ULAClass<T>(const  ULAClass<T>&   other)                    = delete;
     // ULAClass<T>&   operator=(const  ULAClass<T>&   other)       = delete;
-    ULAClass<T>(ULAClass<T>&&    other)                         = delete;
-    ULAClass<T>&    operator=(const ULAClass<T>& other)         = default;
+    ULAClass<T, sourceType, destinationType>(ULAClass<T, sourceType, destinationType>&&    other)                         = delete;
+    ULAClass<T, sourceType, destinationType>&    operator=(const ULAClass<T, sourceType, destinationType>& other)         = default;
 
     // member-functions
     void    buildCoordinatesBasedOnLocation();
@@ -1278,20 +1280,28 @@ public:
     );
     void    build_sensor_coordinates_from_location();
     // void    decimate_signal();
-    void    decimate_signal(
-        const  TransmitterClass<T>&   transmitter
-    );
+    // void    decimate_signal(
+    //     const  TransmitterClass<T>&   transmitter
+    // );
     // void    decimate_signal(
     //     const  TransmitterClass<T>&                                                 transmitter,
     //     svr::FFTPlanUniformPoolHandle<  sourceType,         destinationType >&      fft_pool_handle,
     //     svr::IFFTPlanUniformPoolHandle< destinationType,    sourceType>&            ifft_pool_handle
     // );
+    void    decimate_signal(
+        const  TransmitterClass<T>&                                                 transmitter,
+        svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle);
 };
 /* =============================================================================
 Aim: Build Coordinates Based On Location
 ------------------------------------------------------------------------------*/
-template <typename T>
-void    ULAClass<T>::buildCoordinatesBasedOnLocation(){
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
+>
+void    ULAClass<T, sourceType, destinationType>::buildCoordinatesBasedOnLocation(){
     // length-normalizing sensor-direction
     this->sensor_direction      =   this->sensor_direction / norm(this->sensor_direction);
 
@@ -1312,8 +1322,15 @@ void    ULAClass<T>::buildCoordinatesBasedOnLocation(){
     
     // translating coordinates
     this->coordinates   =  transpose( this->location)  +  test;}
-template <typename T>
-void    ULAClass<T>::buildCoordinatesBasedOnLocation(
+
+/*==============================================================================
+------------------------------------------------------------------------------*/ 
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
+>
+void    ULAClass<T, sourceType, destinationType>::buildCoordinatesBasedOnLocation(
     const  std::vector<T>&  new_location
 ){
     // updating location
@@ -1324,8 +1341,12 @@ void    ULAClass<T>::buildCoordinatesBasedOnLocation(
 /* =============================================================================
 Aim: Init 
 ------------------------------------------------------------------------------*/
-template <typename T>
-void    ULAClass<T>::init(
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
+>
+void    ULAClass<T, sourceType, destinationType>::init(
     const TransmitterClass<T>&                                          transmitterObj,
     svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
@@ -1369,8 +1390,12 @@ void    ULAClass<T>::init(
 /* =============================================================================
 Aim: Creating match-filter
 ------------------------------------------------------------------------------*/
-template <typename T>
-void    ULAClass<T>::nfdc_CreateMatchFilter(
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
+>
+void    ULAClass<T, sourceType, destinationType>::nfdc_CreateMatchFilter(
     const TransmitterClass<T>& transmitterObj,
     svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
@@ -1439,8 +1464,12 @@ void    ULAClass<T>::nfdc_CreateMatchFilter(
 /*==============================================================================
 Aim: Simulate signals received by uniform-linear-array
 ------------------------------------------------------------------------------*/ 
-template <typename T>
-void    ULAClass<T>::simulate_signals(
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
+>
+void    ULAClass<T, sourceType, destinationType>::simulate_signals(
     const ScattererClass<T>&                                seafloor,
     const std::vector<std::size_t>                          scatterer_indices,
     const TransmitterClass<T>&                              transmitter,
@@ -1519,11 +1548,15 @@ Decimating the recorded signal
     -> lowpass-filtering
     -> downsample signals
 ------------------------------------------------------------------------------*/
-template    <
-    typename                            T
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
 >
-void    ULAClass<T>::decimate_signal(
-    const  TransmitterClass<T>&                                                 transmitter
+void    ULAClass<T, sourceType, destinationType>::decimate_signal(
+    const  TransmitterClass<T>&                                                 transmitter,
+    svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
+    svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle
 )
 {
     // multiplying with signal to baseband signal
@@ -1531,10 +1564,20 @@ void    ULAClass<T>::decimate_signal(
         this->signal_matrix * this->basebanding_signal
     };
 
-    // running low-pass filter
-    auto&   basebanded_lowpassfiltered_signal_matrix    {
-        basebanded_signal_matrix
-    };
+    // // running low-pass filter
+    // auto&   basebanded_lowpassfiltered_signal_matrix    {
+    //     basebanded_signal_matrix
+    // };
+
+    // auto&   basebanded_lowpassfiltered_signal_matrix    {
+    //     svr::conv1D_long_FFTPlanPool(
+    //         basebanded_signal_matrix,
+    //         this->lowpass_filter_coefficients_for_decimation,
+    //         fft_pool_handle,
+    //         ifft_pool_handle
+    //     )
+    // };
+
 
 
     

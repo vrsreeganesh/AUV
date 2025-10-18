@@ -22,11 +22,11 @@ int main(){
     thread_pool.push_back([&]{fSeaFloorSetup(std::ref(seafloor));});
 
     // Building ULAs
-    ULAClass<double>    ula_fls, 
+    ULAClass<double, double, std::complex<double>>    ula_fls, 
                         ula_portside, 
                         ula_starboard;
     thread_pool.push_back([&]{
-        fULASetup<double>(
+        fULASetup<double, double, std::complex<double>>(
             std::ref(ula_fls),
             std::ref(ula_portside),
             std::ref(ula_starboard)
