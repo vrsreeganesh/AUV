@@ -53,7 +53,7 @@ int main(){
     spdlog::info("Finished Transmitter Setup");
 
     // Building AUV
-    AUVClass<double>    auv;
+    AUVClass<   double, double, std::complex<double>    >    auv;
     fAUVSetup(auv);
 
     // attaching components to the AUV

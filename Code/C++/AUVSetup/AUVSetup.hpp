@@ -1,11 +1,11 @@
 template <
-    typename    T,
-    typename    =   std::enable_if_t<
-        std::is_same_v<T, double>    || 
-        std::is_same_v<T, float>
-    >
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType
 >
-void fAUVSetup(AUVClass<T>& auv) {
+void fAUVSetup(
+    AUVClass<T, sourceType, destinationType>& auv
+) {
 
     // building properties for the auv
     auto    location            {std::vector<T>{0, 50, 30}};    // starting location
