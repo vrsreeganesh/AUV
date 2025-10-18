@@ -576,10 +576,7 @@
 
 
 
-template <
-    typename T,
-    typename    =   std::enable_if_t<std::is_floating_point_v<T>>
->
+template <svr::PureFloatingPointType T>
 class   AUVClass{
 public:
     
@@ -640,8 +637,8 @@ public:
 /*==========================================================================
 Aim: update attributes
 --------------------------------------------------------------------------*/
-template <typename T, typename U>
-void AUVClass<T, U>::syncComponentAttributes(){
+template <svr::PureFloatingPointType T>
+void AUVClass<T>::syncComponentAttributes(){
     // updating locations of ULAs
     this->ULA_fls.location          = this->location;
     this->ULA_portside.location     = this->location;
@@ -673,8 +670,8 @@ void AUVClass<T, U>::syncComponentAttributes(){
 /* =========================================================================
 Aim: Initializing objects and variables
 --------------------------------------------------------------------------*/ 
-template <typename T, typename U>
-void AUVClass<T, U>::init(
+template <svr::PureFloatingPointType T>
+void AUVClass<T>::init(
     svr::ThreadPool&                                                    thread_pool,
     svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter
@@ -702,8 +699,8 @@ void AUVClass<T, U>::init(
 /*==============================================================================
 Member-Function: Subsetting the scatterers in the transmitter-range
 ------------------------------------------------------------------------------*/ 
-template <typename T, typename U>
-void AUVClass<T, U>::subset_scatterers(
+template <svr::PureFloatingPointType T>
+void AUVClass<T>::subset_scatterers(
     const  ScattererClass<T>&    seafloor,
     svr::ThreadPool&             thread_pool,
     std::vector<std::size_t>&    fls_scatterer_indices,
@@ -741,8 +738,8 @@ void AUVClass<T, U>::subset_scatterers(
 /*==============================================================================
 Aim: Simulate Signals received by ULAs in the AUV
 ------------------------------------------------------------------------------*/ 
-template <typename T, typename U>
-void AUVClass<T, U>::simulate_signal(
+template <svr::PureFloatingPointType T>
+void AUVClass<T>::simulate_signal(
     const     ScattererClass<T>&                            seafloor,
     svr::ThreadPool&                                        thread_pool,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
@@ -797,8 +794,8 @@ void AUVClass<T, U>::simulate_signal(
 /*==============================================================================
 Aim: Moving the AUV to the next discrete position in the trajectory
 ------------------------------------------------------------------------------*/ 
-template <typename T, typename U>
-void AUVClass<T, U>::step(
+template <svr::PureFloatingPointType T>
+void AUVClass<T>::step(
     T    time_step
 ){
     // updating location
@@ -810,11 +807,8 @@ void AUVClass<T, U>::step(
 /*==============================================================================
 Aim: Function that begins imaging from the recorded signals
 ------------------------------------------------------------------------------*/
-template <
-    typename T, 
-    typename U
->
-void AUVClass<T, U>::image(
+template <svr::PureFloatingPointType T>
+void AUVClass<T>::image(
     svr::ThreadPool&                                        thread_pool,
     svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
     svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
