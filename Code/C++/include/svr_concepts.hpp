@@ -19,4 +19,14 @@ namespace   svr {
     template    <typename   T>
     concept     PureFloatingPointType   =   \
         std::is_floating_point_v<T>;
+    /*==========================================================================
+    Pure Complex-Floating type
+    --------------------------------------------------------------------------*/
+    template    <typename   T>
+    concept     PureComplexFloatingType =   \
+        (
+            std::is_class_v<T>          &&
+            requires    {typename   T::value_type;} &&
+            std::is_floating_point_v<typename   T::value_type>
+        );
 }

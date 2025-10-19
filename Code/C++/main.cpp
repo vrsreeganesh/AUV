@@ -7,26 +7,42 @@ int main(){
 	svr::Timer          timer(          "main");
     svr::ThreadPool     thread_pool(    3);
     
+    
+    
     // setting up FFT/IFFT plan pools
     auto    num_plans                   {32};
     auto    nfft                        {16384};
-    svr::FFTPlanUniformPoolHandle<double, std::complex<double>>  fft_pool_handle(num_plans,     nfft);
-    svr::IFFTPlanUniformPoolHandle<std::complex<double>, double> ifft_pool_handle(num_plans,    nfft);
-    
-    svr::FFTPlanUniformPoolHandle<double, std::complex<double>>  fph_match_filter(num_plans,    128);
-    svr::IFFTPlanUniformPoolHandle<std::complex<double>, double>  ifph_match_filter(num_plans,  128);
+    // pools for real-convolution
+    svr::FFTPlanUniformPoolHandle<      double, 
+                                        std::complex<double>    >  fft_pool_handle(num_plans,   nfft);
+    svr::IFFTPlanUniformPoolHandle<     std::complex<double>, 
+                                        double                  > ifft_pool_handle(num_plans,   nfft);
+    // pools for complex-convolution
+    svr::FFTPlanUniformPoolHandle<      std::complex<double>, 
+                                        std::complex<double>    >  fph_match_filter(num_plans,  128);
+    svr::IFFTPlanUniformPoolHandle<     std::complex<double>, 
+                                        std::complex<double>    >  ifph_match_filter(num_plans, 128);
+    // logging
     spdlog::info("Finished Setting up FFT-Plans");
 
+    
+    
     // Building Sea-Floor
     auto    seafloor     {ScattererClass<double>()};
     thread_pool.push_back([&]{fSeaFloorSetup(std::ref(seafloor));});
 
     // Building ULAs
-    ULAClass<double, double, std::complex<double>>    ula_fls, 
-                        ula_portside, 
-                        ula_starboard;
+    ULAClass<   double, 
+                double, 
+                std::complex<double>,
+                std::complex<double>>   ula_fls, 
+                                        ula_portside, 
+                                        ula_starboard;
     thread_pool.push_back([&]{
-        fULASetup<double, double, std::complex<double>>(
+        fULASetup<  double, 
+                    double, 
+                    std::complex<double>,
+                    std::complex<double>>(
             std::ref(ula_fls),
             std::ref(ula_portside),
             std::ref(ula_starboard)
@@ -53,7 +69,10 @@ int main(){
     spdlog::info("Finished Transmitter Setup");
 
     // Building AUV
-    AUVClass<   double, double, std::complex<double>    >    auv;
+    AUVClass<       double, 
+                    double, 
+                    std::complex<double>,
+                    std::complex<double>    >    auv;
     fAUVSetup(auv);
 
     // attaching components to the AUV
@@ -85,8 +104,8 @@ int main(){
 
         // imaging
         auv.image(  thread_pool,
-                    fft_pool_handle,
-                    ifft_pool_handle);
+                    fph_match_filter,
+                    ifph_match_filter);
 
         // moving to next hop-position 
         auv.step(0.5);
