@@ -1,17 +1,16 @@
 #pragma once
 
+/*==============================================================================
+including dependencies
+------------------------------------------------------------------------------*/ 
+#include "svr_concepts.hpp"
+
+
 namespace   svr     {
 
-    template    <typename T>
-    concept FFTPlanClassSourceDestinationType = \
-        std::is_floating_point_v<T> || 
-        (
-            std::is_class_v<T>  && 
-            std::is_floating_point_v<typename T::value_type>
-        );
     template    <
-        FFTPlanClassSourceDestinationType sourceType,
-        FFTPlanClassSourceDestinationType destinationType
+        svr::FFT_SourceDestination_Type sourceType,
+        svr::FFT_SourceDestination_Type destinationType
     >
     class FFTPlanClass
     {

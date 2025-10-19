@@ -240,19 +240,19 @@ namespace   svr     {
                 fftw_execute(plan_);
 
                 // normalize output
-                std::vector<destinationType>   output_vector(nfft_);
+                std::vector<    destinationType >   output_vector(nfft_);
                 for(std::size_t index = 0; index < nfft_; ++index)
                 {
                     if constexpr(
                         std::is_floating_point_v<destinationType>
                     ){
-                        output_vector[index]    =   static_cast<destinationType>(out_[index][0] * 1.00/std::sqrt(nfft_));
+                        output_vector[index]  =  static_cast<destinationType>(out_[index][0] * 1.00/std::sqrt(nfft_));
                     }
                     else if constexpr(
                         std::is_same_v<     destinationType, std::complex<double>   >  ||
                         std::is_same_v<     destinationType, std::complex<float>    >
                     ){
-                        output_vector[index][0] =   destinationType(
+                        output_vector[index] =   destinationType(
                             out_[index][0]  *   1.00/std::sqrt(nfft_), 
                             out_[index][1]  *   1.00/std::sqrt(nfft_)
                         );

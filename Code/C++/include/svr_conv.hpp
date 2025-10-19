@@ -328,8 +328,8 @@ namespace   svr {
     // }
 
     template    <
-        FFT_SourceDestination_DataType  sourceType,
-        FFT_SourceDestination_DataType  destinationType
+        svr::FFT_SourceDestination_Type  sourceType,
+        svr::FFT_SourceDestination_Type  destinationType
     >
     auto    conv_per_plan(
         const   int                                                             i,
@@ -362,7 +362,7 @@ namespace   svr {
         ); // [start-index, end-index)
 
         // copying values
-        signal_block_zero_padded = std::move(std::vector<double>(block_output_length, 0.0));
+        signal_block_zero_padded = std::move(std::vector<sourceType>(block_output_length, 0.0));
         std::copy(
             large_signal.begin()                +   start_index,
             large_signal.begin()                +   end_index       + 1,
@@ -397,12 +397,9 @@ namespace   svr {
     
 
     template    <
-        typename T,
-        FFT_SourceDestination_DataType  sourceType,
-        FFT_SourceDestination_DataType  destinationType,
-        typename    =   std::enable_if_t<
-            std::is_floating_point_v<T>
-        >
+        svr::FFT_SourceDestination_Type  T,
+        svr::FFT_SourceDestination_Type  sourceType,
+        svr::FFT_SourceDestination_Type  destinationType
     >
     auto    conv1D_long_FFTPlanPool(
         const   std::vector<T>&                                                 input_vector_A,
@@ -426,7 +423,7 @@ namespace   svr {
         };
 
         // copying 
-        auto    large_signal    {std::vector<double>(
+        auto    large_signal    {std::vector<T>(
             input_vector_A.size() + input_vector_B.size() - 1
         )};
         std::copy(large_signal_original.begin(),
@@ -464,8 +461,10 @@ namespace   svr {
         auto    output_start_index      {static_cast<int>(0)};
 
         // calculating fft(filter)
-        auto    filter_zero_padded      {std::vector<double>(block_output_length, 0.0)};
-        std::copy(small_signal.begin(), small_signal.end(), filter_zero_padded.begin());
+        auto    filter_zero_padded      {std::vector<T>(block_output_length, 0.0)};
+        std::copy(  small_signal.begin(), 
+                    small_signal.end(), 
+                    filter_zero_padded.begin());
         auto    fph_lock0               {fft_pool_handle.lock()};
         auto    curr_plan_pair          {fft_pool_handle.uniform_pool.fetch_plan()};
         auto    pool_num_plans          {fft_pool_handle.num_plans};
