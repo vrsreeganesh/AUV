@@ -1417,17 +1417,12 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::nfdc_CreateMatc
 
     // low-pass filtering with baseband signal to obtain pure baseband signal
     spdlog::warn("Shift to convolution method plan-based method");
-    match_filter    =   svr::conv1D(
-        match_filter,
-        svr::complex(   this->lowpass_filter_coefficients_for_decimation    )
-        // this->lowpass_filter_coefficients_for_decimation
+    match_filter    =   svr::conv1D_long_FFTPlanPool(
+        svr::complex(   match_filter    ),
+        svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
+        fph_match_filter,
+        ifph_match_filter
     );
-    // match_filter    =   svr::conv1D_long_FFTPlanPool(
-    //     match_filter,
-    //     svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
-    //     fph_match_filter,
-    //     ifph_match_filter
-    // );
     
     // creating sampling-indices
     int     decimation_factor   {static_cast<int>(std::floor(
