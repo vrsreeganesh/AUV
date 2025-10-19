@@ -843,11 +843,16 @@ void AUVClass<T, sourceType, destinationType>::image(
     svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle
 )
 {
+    // // decimating signals obtained at each time-step
+    // this->ULA_fls.decimate_signal(
+    //     this->transmitter_fls,
+    //     fft_pool_handle,
+    //     ifft_pool_handle
+    // );
+
     // decimating signals obtained at each time-step
     this->ULA_fls.decimate_signal(
-        this->transmitter_fls,
-        fft_pool_handle,
-        ifft_pool_handle
+        this->transmitter_fls
     );
 
     // 

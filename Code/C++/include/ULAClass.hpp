@@ -1288,10 +1288,12 @@ public:
     //     svr::FFTPlanUniformPoolHandle<  sourceType,         destinationType >&      fft_pool_handle,
     //     svr::IFFTPlanUniformPoolHandle< destinationType,    sourceType>&            ifft_pool_handle
     // );
+    // void    decimate_signal(
+    //     const  TransmitterClass<T>&                                                 transmitter,
+    //     svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
+    //     svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle);
     void    decimate_signal(
-        const  TransmitterClass<T>&                                                 transmitter,
-        svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle);
+        const  TransmitterClass<T>&                                                 transmitter);
 };
 /* =============================================================================
 Aim: Build Coordinates Based On Location
@@ -1554,9 +1556,7 @@ template <
     svr::FFT_SourceDestination_Type     destinationType
 >
 void    ULAClass<T, sourceType, destinationType>::decimate_signal(
-    const  TransmitterClass<T>&                                                 transmitter,
-    svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
-    svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle
+    const  TransmitterClass<T>&                                                 transmitter
 )
 {
     // multiplying with signal to baseband signal
