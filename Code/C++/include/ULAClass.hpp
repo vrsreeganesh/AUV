@@ -1558,24 +1558,19 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
         this->signal_matrix * this->basebanding_signal
     };
 
-    // // running low-pass filter
-    // auto&   basebanded_lowpassfiltered_signal_matrix    {
-    //     basebanded_signal_matrix
-    // };
-
-    // auto&   basebanded_lowpassfiltered_signal_matrix    {
-    //     svr::conv1D_long_FFTPlanPool(
-    //         basebanded_signal_matrix,
-    //         this->lowpass_filter_coefficients_for_decimation,
-    //         fft_pool_handle,
-    //         ifft_pool_handle
-    //     )
-    // };
-
-
-
-    
-
+    // performing it on each row
+    auto    basebanded_lowpassfiltered_signal_matrix    {basebanded_signal_matrix};
+    for(auto row = 0; row < basebanded_signal_matrix.size(); ++row){
+        basebanded_lowpassfiltered_signal_matrix[row] = \
+            std::move(
+                svr::conv1D_long_FFTPlanPool(
+                    basebanded_signal_matrix[row],
+                    svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
+                    fph, ifph
+                )
+            );
+    }
+    basebanded_signal_matrix.clear();
 
     // logging
     spdlog::warn("signal-decimation | incomplete");
