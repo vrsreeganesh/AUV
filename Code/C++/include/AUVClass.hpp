@@ -621,10 +621,10 @@ public:
         svr::FFTPlanUniformPoolHandle<T,                std::complex<T>>&   fph_match_filter,
         svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                 ifph_match_filter);
     void    simulate_signal(
-        const     ScattererClass<T>&                            seafloor,
-        svr::ThreadPool&                                        thread_pool,
-        svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle);
+        const     ScattererClass<T>&                                            seafloor,
+        svr::ThreadPool&                                                        thread_pool,
+        svr::FFTPlanUniformPoolHandle< sourceType, destinationType >&           fft_pool_handle,
+        svr::IFFTPlanUniformPoolHandle< destinationType, sourceType >&          ifft_pool_handle);
     void    subset_scatterers(
         const  ScattererClass<T>&       seafloor,
         svr::ThreadPool&                thread_pool,
@@ -761,10 +761,10 @@ template <
     svr::FFT_SourceDestination_Type     destinationType
 >
 void AUVClass<T, sourceType, destinationType>::simulate_signal(
-    const     ScattererClass<T>&                            seafloor,
-    svr::ThreadPool&                                        thread_pool,
-    svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&      fft_pool_handle,
-    svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&     ifft_pool_handle
+    const     ScattererClass<T>&                                                seafloor,
+    svr::ThreadPool&                                                            thread_pool,
+    svr::FFTPlanUniformPoolHandle<  sourceType,      destinationType     >&     fft_pool_handle,
+    svr::IFFTPlanUniformPoolHandle< destinationType, sourceType         >&      ifft_pool_handle
 ){
     // boolean-vector indicating which scatterers are present 
     auto    fls_scatterer_indices               {std::vector<std::size_t>()};
