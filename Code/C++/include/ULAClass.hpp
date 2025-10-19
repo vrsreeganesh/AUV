@@ -1284,21 +1284,10 @@ public:
         svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                     ifft_pool_handle
     );
     void    build_sensor_coordinates_from_location();
-    // void    decimate_signal();
-    // void    decimate_signal(
-    //     const  TransmitterClass<T>&   transmitter
-    // );
-    // void    decimate_signal(
-    //     const  TransmitterClass<T>&                                                 transmitter,
-    //     svr::FFTPlanUniformPoolHandle<  sourceType,         destinationType >&      fft_pool_handle,
-    //     svr::IFFTPlanUniformPoolHandle< destinationType,    sourceType>&            ifft_pool_handle
-    // );
-    // void    decimate_signal(
-    //     const  TransmitterClass<T>&                                                 transmitter,
-    //     svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
-    //     svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle);
     void    decimate_signal(
-        const  TransmitterClass<T>&                                                 transmitter);
+        const  TransmitterClass<T>&                                             transmitter,
+        svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&      fph,
+        svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&      ifph);
 };
 /* =============================================================================
 Aim: Build Coordinates Based On Location
@@ -1387,10 +1376,7 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::init(
             "FILE: ULAClass.hpp | FUNCTION: ULAClass::init() | REPORT: basebanding_signal.size() != num_samples"
         );
 
-        
     // creating and storing match-filter
-    // this->nfdc_CreateMatchFilter(std::ref(transmitterObj));
-    // this->nfdc_CreateMatchFilter(transmitterObj);
     this->nfdc_CreateMatchFilter(   transmitterObj, 
                                     fph_match_filter, 
                                     ifph_match_filter);
@@ -1567,7 +1553,9 @@ template <
     svr::PureComplexFloatingType        T_PureComplex
 >
 void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal(
-    const  TransmitterClass<T>&                                                 transmitter
+    const  TransmitterClass<T>&                                                 transmitter,
+    svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&          fph,
+    svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&          ifph
 )
 {
     // multiplying with signal to baseband signal

@@ -104,8 +104,8 @@ int main(){
 
         // imaging
         auv.image(  thread_pool,
-                    fft_pool_handle,
-                    ifft_pool_handle);
+                    fph_match_filter,
+                    ifph_match_filter);
 
         // moving to next hop-position 
         auv.step(0.5);

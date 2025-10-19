@@ -635,9 +635,9 @@ public:
     void    step(
         T time_step);
     void    image(
-        svr::ThreadPool&                                                            thread_pool,
-        svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle);
+        svr::ThreadPool&                                                    thread_pool,
+        svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&  fph,
+        svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&  ifph);
 };
 
 /*==========================================================================
@@ -845,22 +845,22 @@ template <
     svr::PureComplexFloatingType        T_PureComplex
 >
 void AUVClass<T, sourceType, destinationType, T_PureComplex>::image(
-    svr::ThreadPool&                                                            thread_pool,
-    svr::FFTPlanUniformPoolHandle<      sourceType,         destinationType>&   fft_pool_handle,
-    svr::IFFTPlanUniformPoolHandle<     destinationType,    sourceType>&        ifft_pool_handle
+    svr::ThreadPool&                                                    thread_pool,
+    svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&  fph,
+    svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&  ifph
 )
 {
-    // // decimating signals obtained at each time-step
-    // this->ULA_fls.decimate_signal(
-    //     this->transmitter_fls,
-    //     fft_pool_handle,
-    //     ifft_pool_handle
-    // );
-
     // decimating signals obtained at each time-step
     this->ULA_fls.decimate_signal(
-        this->transmitter_fls
+        this->transmitter_fls,
+        fph,
+        ifph
     );
+
+    // // decimating signals obtained at each time-step
+    // this->ULA_fls.decimate_signal(
+    //     this->transmitter_fls
+    // );
 
     // 
 
