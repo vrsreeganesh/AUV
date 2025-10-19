@@ -1,10 +1,11 @@
 template <
     svr::PureFloatingPointType          T,
     svr::FFT_SourceDestination_Type     sourceType,
-    svr::FFT_SourceDestination_Type     destinationType
+    svr::FFT_SourceDestination_Type     destinationType,
+    svr::PureComplexFloatingType        T_PureComplex
 >
 void fAUVSetup(
-    AUVClass<T, sourceType, destinationType>& auv
+    AUVClass<T, sourceType, destinationType, T_PureComplex>& auv
 ) {
 
     // building properties for the auv

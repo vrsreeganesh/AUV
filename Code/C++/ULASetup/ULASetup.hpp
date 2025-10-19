@@ -9,12 +9,13 @@
 template <
     svr::PureFloatingPointType          T,
     svr::FFT_SourceDestination_Type     sourceType,
-    svr::FFT_SourceDestination_Type     destinationType
+    svr::FFT_SourceDestination_Type     destinationType,
+    svr::PureComplexFloatingType        T_PureComplex
 >
 void fULASetup(
-    ULAClass<T, sourceType, destinationType>&     ula_fls,
-    ULAClass<T, sourceType, destinationType>&     ula_portside,
-    ULAClass<T, sourceType, destinationType>&     ula_starboard)
+    ULAClass<T, sourceType, destinationType, T_PureComplex>&     ula_fls,
+    ULAClass<T, sourceType, destinationType, T_PureComplex>&     ula_portside,
+    ULAClass<T, sourceType, destinationType, T_PureComplex>&     ula_starboard)
 {
     // setting up ula
     auto    num_sensors                 {static_cast<int>(32)};             // number of sensors
