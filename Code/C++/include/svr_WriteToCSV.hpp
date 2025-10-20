@@ -5,6 +5,10 @@ writing the contents of a vector a csv-file
 template <typename T>
 void fWriteVector(const vector<T>&              inputvector, 
                   const string&                 filename){
+    
+    spdlog::warn(
+        "File-write is taking place. Latency will be affected. Ignore if intentional"
+    );
 
     // opening a file
     std::ofstream fileobj(filename);

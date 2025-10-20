@@ -1399,24 +1399,25 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::nfdc_CreateMatc
 ){
     // creating matrix for basebanding signal
     auto    linspace00              {svr::linspace(
-        0,
-        transmitterObj.signal.size()-1,
-        transmitterObj.signal.size()
+        static_cast<T>(0),
+        static_cast<T>(transmitterObj.signal.size()-1),
+        static_cast<int>(transmitterObj.signal.size())
     )};
     auto    basebanding_vector      {
         svr::exp(
-            1.00 * 1i * 2.00 * std::numbers::pi                 * \
-            (transmitterObj.f_low / this->sampling_frequency)   * \
+            -1 * std::complex<T>(0, 1) * 2.00 * static_cast<T>(std::numbers::pi)                 * \
+            (static_cast<T>(transmitterObj.f_low) / static_cast<T>(this->sampling_frequency))   * \
             linspace00
         )
     };
 
     // multiplying signal with basebanding signal
-    auto    match_filter        {   transmitterObj.signal * basebanding_vector   };
+    auto    match_filter        {   
+        svr::complex(   transmitterObj.signal   ) * basebanding_vector   
+    };
     basebanding_vector.clear();
 
     // low-pass filtering with baseband signal to obtain pure baseband signal
-    spdlog::warn("Shift to convolution method plan-based method");
     match_filter    =   svr::conv1D_long_FFTPlanPool(
         svr::complex(   match_filter    ),
         svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
@@ -1566,7 +1567,8 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
                 svr::conv1D_long_FFTPlanPool(
                     basebanded_signal_matrix[row],
                     svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
-                    fph, ifph
+                    fph, 
+                    ifph
                 )
             );
     }

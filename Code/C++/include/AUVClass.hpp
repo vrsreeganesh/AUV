@@ -848,8 +848,7 @@ void AUVClass<T, sourceType, destinationType, T_PureComplex>::image(
     svr::ThreadPool&                                                    thread_pool,
     svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&  fph,
     svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&  ifph
-)
-{
+){
     // decimating signals obtained at each time-step
     this->ULA_fls.decimate_signal(
         this->transmitter_fls,

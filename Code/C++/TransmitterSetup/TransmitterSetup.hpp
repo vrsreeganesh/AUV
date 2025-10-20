@@ -11,7 +11,7 @@ void fTransmitterSetup(
     TransmitterClass<T>&    transmitter_starboard
 ){
     // Setting up transmitter
-    T       sampling_frequency      {160e3};                // sampling frequency
+    T       sampling_frequency      {240e3};                // sampling frequency
     T       f1                      {50e3};                 // first frequency of LFM
     T       f2                      {70e3};                 // second frequency of LFM
     T       fc                      {(f1 + f2)/2.00};       // finding center-frequency
@@ -24,9 +24,9 @@ void fTransmitterSetup(
         pulselength,
         std::floor(pulselength * sampling_frequency)
     )};
-    auto    K               {f2 - f1/pulselength};    // calculating frequency-slope
+    auto    K               {static_cast<T>(f2 - f1)/static_cast<T>(pulselength)};    // calculating frequency-slope
     auto    Signal          {cos(2 * std::numbers::pi * \
-                             (f1 + K*timearray) * \
+                             (f1 + 0.5*K*timearray) * \
                              timearray)};            // frequency at each time-step, with f1 = 0
 
     // Setting up transmitter
