@@ -12,7 +12,6 @@ namespace   svr {
             requires    {typename   T::value_type;} &&
             std::is_floating_point_v<typename   T::value_type>
         );
-
     /*==========================================================================
     Floating type or its complex variants
     --------------------------------------------------------------------------*/
@@ -26,6 +25,16 @@ namespace   svr {
     concept     PureComplexFloatingType =   \
         (
             std::is_class_v<T>          &&
+            requires    {typename   T::value_type;} &&
+            std::is_floating_point_v<typename   T::value_type>
+        );
+    /*==========================================================================
+    --------------------------------------------------------------------------*/
+    template    <typename   T>
+    concept     PureOrComplexFloatingType   =   \
+        std::is_floating_point_v<T>     ||
+        (
+            std::is_class_v<T>                      &&
             requires    {typename   T::value_type;} &&
             std::is_floating_point_v<typename   T::value_type>
         );

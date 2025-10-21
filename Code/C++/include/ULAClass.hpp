@@ -1430,6 +1430,7 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::nfdc_CreateMatc
         (static_cast<T>(this->sampling_frequency)/2.00) /   \
         (static_cast<T>(transmitterObj.bandwidth)/2.00))
     )};
+    this->decimation_factor =   decimation_factor;
     int     final_num_samples   {static_cast<int>(std::ceil(
         static_cast<T>(match_filter.size())/                \
         static_cast<T>(decimation_factor)
@@ -1554,13 +1555,13 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
     svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&          ifph
 )
 {
-    // multiplying with signal to baseband signal
+    // basebanding signals
     auto    basebanded_signal_matrix   {
         this->signal_matrix * this->basebanding_signal
     };
 
-    // performing it on each row
-    auto    basebanded_lowpassfiltered_signal_matrix    {basebanded_signal_matrix};
+    // low-pass filtering 
+    auto&    basebanded_lowpassfiltered_signal_matrix    {basebanded_signal_matrix};
     for(auto row = 0; row < basebanded_signal_matrix.size(); ++row){
         basebanded_lowpassfiltered_signal_matrix[row] = \
             std::move(
@@ -1572,7 +1573,17 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
                 )
             );
     }
-    basebanded_signal_matrix.clear();
+    // basebanded_signal_matrix.clear();
+
+    // decimating the signal
+    auto&   decimated_signal_matrix     {basebanded_lowpassfiltered_signal_matrix};
+    decimated_signal_matrix     =   svr::sample(
+        decimated_signal_matrix,
+        static_cast<std::size_t>(0),
+        static_cast<std::size_t>(this->decimation_factor),
+        static_cast<std::size_t>(0)
+    );
+
 
     // logging
     spdlog::warn("signal-decimation | incomplete");

@@ -1,5 +1,6 @@
 #include "svr_WriteToCSV.hpp"
 #include "svr_concepts.hpp"
+#include "svr_sample.hpp"
 #include "svr_linspace.hpp"
 #include "svr_meshgrid.hpp"
 #include "svr_reshape.hpp"
