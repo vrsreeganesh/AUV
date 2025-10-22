@@ -1284,6 +1284,11 @@ public:
         svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                     ifft_pool_handle
     );
     void    build_sensor_coordinates_from_location();
+    void    image(
+        const  TransmitterClass<T>&                                                 transmitter,
+        svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&          fph,
+        svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&          ifph
+    );
     void    decimate_signal(
         const  TransmitterClass<T>&                                             transmitter,
         svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&      fph,
@@ -1538,6 +1543,27 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::simulate_signal
     // logging
     spdlog::info("Finished signal-simulation");}
 /*==============================================================================
+Imaging 
+------------------------------------------------------------------------------*/
+template <
+    svr::PureFloatingPointType          T,
+    svr::FFT_SourceDestination_Type     sourceType,
+    svr::FFT_SourceDestination_Type     destinationType,
+    svr::PureComplexFloatingType        T_PureComplex
+>
+void    ULAClass< T, sourceType, destinationType, T_PureComplex >::image(
+    const  TransmitterClass<T>&                                                 transmitter,
+    svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&          fph,
+    svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&          ifph
+)
+{
+    // decimating 
+    this->decimate_signal(transmitter,fph, ifph);
+
+    // throwing a warning
+    spdlog::warn("ULAClass::image() | incomplete");
+}
+/*==============================================================================
 Decimating the recorded signal
     -> basebanding the signal
     -> lowpass-filtering
@@ -1573,7 +1599,6 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
                 )
             );
     }
-    // basebanded_signal_matrix.clear();
 
     // decimating the signal
     auto&   decimated_signal_matrix     {basebanded_lowpassfiltered_signal_matrix};
@@ -1584,8 +1609,6 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
         static_cast<std::size_t>(0)
     );
 
-
     // logging
     spdlog::warn("signal-decimation | incomplete");
-
 }

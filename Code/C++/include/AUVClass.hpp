@@ -849,18 +849,26 @@ void AUVClass<T, sourceType, destinationType, T_PureComplex>::image(
     svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&  fph,
     svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&  ifph
 ){
-    // decimating signals obtained at each time-step
-    this->ULA_fls.decimate_signal(
-        this->transmitter_fls,
-        fph,
-        ifph
-    );
-
-    // // decimating signals obtained at each time-step
-    // this->ULA_fls.decimate_signal(
-    //     this->transmitter_fls
-    // );
-
-    // 
-
+    thread_pool.push_back([&]{
+        this->ULA_fls.image(
+            this->transmitter_fls,
+            fph, ifph
+        );
+    });
+    thread_pool.push_back([&]{
+        this->ULA_portside.image(
+            this->transmitter_portside,
+            fph, ifph
+        );
+    });
+    thread_pool.push_back([&]{
+        this->ULA_starboard.image(
+            this->transmitter_starboard,
+            fph, ifph
+        );
+    });
+    
+    
+    // waiting for threads to converge
+    thread_pool.converge();
 }
