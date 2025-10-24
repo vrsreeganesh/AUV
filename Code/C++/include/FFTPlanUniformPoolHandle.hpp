@@ -37,10 +37,10 @@ namespace   svr
             :   uniform_pool(num_plans_arg, nfft_arg),
                 num_plans(num_plans_arg),
                 nfft(nfft_arg)    {}
-        FFTPlanUniformPoolHandle(const FFTPlanUniformPoolHandle& other)             = delete;
-        FFTPlanUniformPoolHandle& operator=(const FFTPlanUniformPoolHandle& other)  = delete;
-        FFTPlanUniformPoolHandle(FFTPlanUniformPoolHandle&& other)                  = default;
-        FFTPlanUniformPoolHandle& operator=(FFTPlanUniformPoolHandle&& other)       = default;
+        FFTPlanUniformPoolHandle(               const FFTPlanUniformPoolHandle& other   ) = delete;
+        FFTPlanUniformPoolHandle& operator=(    const FFTPlanUniformPoolHandle& other   ) = delete;
+        FFTPlanUniformPoolHandle(               FFTPlanUniformPoolHandle&& other        ) = default;
+        FFTPlanUniformPoolHandle& operator=(    FFTPlanUniformPoolHandle&& other        ) = default;
 
         /*======================================================================
         Member Functions

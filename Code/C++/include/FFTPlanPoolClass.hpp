@@ -64,10 +64,10 @@ namespace   svr     {
             // creating a vector of mutexes
             mutexes = std::move(std::vector<std::mutex>(num_plans));
         }
-        FFTPlanUniformPool(const FFTPlanUniformPool& other)             =   delete;
-        FFTPlanUniformPool& operator=(const FFTPlanUniformPool& other)  =   delete;
-        FFTPlanUniformPool(FFTPlanUniformPool&& other)                  =   default;
-        FFTPlanUniformPool& operator=(FFTPlanUniformPool&& other)       =   default;
+        FFTPlanUniformPool(             const FFTPlanUniformPool& other ) =   delete;
+        FFTPlanUniformPool& operator=(  const FFTPlanUniformPool& other ) =   delete;
+        FFTPlanUniformPool(             FFTPlanUniformPool&& other      ) =   default;
+        FFTPlanUniformPool& operator=(  FFTPlanUniformPool&& other      ) =   default;
 
         /*======================================================================
         Function to fetch a plan

@@ -1215,6 +1215,10 @@ public:
     // Artificial acoustic-image related
     std::vector<std::vector<T>>     currentArtificialAcousticImage;    // acoustic image directly produced
 
+    // // FFT-Plan Handles
+    // svr::FFTPlanUniformPoolHandle<  T_PureComplex, T_PureComplex  >  ula_fph_match_filter{};
+    // svr::IFFTPlanUniformPoolHandle< T_PureComplex, T_PureComplex  >  ula_ifph_match_filter{};
+
     // Basic Constructor
     ULAClass()  = default;
 
@@ -1227,13 +1231,13 @@ public:
              const  auto&   location_arg,
              const  auto&   signalMatrix_arg,
              const  auto&   lowpass_filter_coefficients_for_decimation_arg):
-                num_sensors(num_sensors_arg),
-                inter_element_spacing(inter_element_spacing_arg),
-                coordinates(std::move(coordinates_arg)),
-                sampling_frequency(sampling_frequency_arg),
-                recording_period(recording_period_arg),
-                location(std::move(location_arg)),
-                signal_matrix(std::move(signalMatrix_arg)),
+                num_sensors(                num_sensors_arg),
+                inter_element_spacing(      inter_element_spacing_arg),
+                coordinates(std::move(      coordinates_arg)),
+                sampling_frequency(         sampling_frequency_arg),
+                recording_period(           recording_period_arg),
+                location(std::move(         location_arg)),
+                signal_matrix(std::move(    signalMatrix_arg)),
                 lowpass_filter_coefficients_for_decimation(std::move(lowpass_filter_coefficients_for_decimation_arg))
     {
         
@@ -1263,7 +1267,7 @@ public:
 
     // Move-related Special Functions
     ULAClass<  T, sourceType, destinationType, T_PureComplex  >(
-        ULAClass<T, sourceType, destinationType, T_PureComplex>&&    other
+        ULAClass<T, sourceType, destinationType, T_PureComplex>&& other
     )   =   default;
     ULAClass<  T, sourceType, destinationType, T_PureComplex  >&    operator=(
         ULAClass<T, sourceType, destinationType, T_PureComplex>&& other

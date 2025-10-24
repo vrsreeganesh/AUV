@@ -70,10 +70,10 @@ namespace   svr     {
                 // creating vector of mutexes
                 mutexes     =   std::vector<std::mutex>(num_plans);
             }
-            IFFTPlanUniformPool(const   IFFTPlanUniformPool&    other)              =   delete;
-            IFFTPlanUniformPool&    operator=(const IFFTPlanUniformPool&    other)  =   delete;
-            IFFTPlanUniformPool(IFFTPlanUniformPool&&   other)                      =   default;
-            IFFTPlanUniformPool&    operator=(IFFTPlanUniformPool&& other)          =   default;
+            IFFTPlanUniformPool(                const IFFTPlanUniformPool& other ) =   delete;
+            IFFTPlanUniformPool&    operator=(  const IFFTPlanUniformPool& other ) =   delete;
+            IFFTPlanUniformPool(                IFFTPlanUniformPool&& other      ) =   default;
+            IFFTPlanUniformPool&    operator=(  IFFTPlanUniformPool&& other      ) =   default;
 
             /*==================================================================
             Member-Functions
