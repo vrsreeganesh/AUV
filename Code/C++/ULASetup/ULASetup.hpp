@@ -1,11 +1,3 @@
-// template    <
-//     typename    T,
-//     typename    = std::enable_if_t<
-//         std::is_same_v<T, double>    ||
-//         std::is_same_v<T, float>
-//     >
-// >
-
 template <
     svr::PureFloatingPointType          T,
     svr::FFT_SourceDestination_Type     sourceType,

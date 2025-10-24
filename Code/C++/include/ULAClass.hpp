@@ -1187,7 +1187,7 @@ public:
     std::vector<T>                                  sensor_direction;
     std::vector<std::vector<T>>                     signal_matrix;
     std::vector<std::vector< T_PureComplex >>       decimated_signal_matrix;
-    std::size_t                     num_samples;
+    std::size_t                                     num_samples;
 
     // decimation related
     int                             decimation_factor;                              // the new decimation factor
@@ -1214,7 +1214,6 @@ public:
 
     // Artificial acoustic-image related
     std::vector<std::vector<T>>     currentArtificialAcousticImage;    // acoustic image directly produced
-
 
     // Basic Constructor
     ULAClass()  = default;
@@ -1254,15 +1253,21 @@ public:
 
     }
 
-    // // deleting copy constructor/assignment
-    // ULAClass<T>(const  ULAClass<T>&   other)                    = delete;
-    // ULAClass<T>&   operator=(const  ULAClass<T>&   other)       = delete;
-    ULAClass<T, sourceType, destinationType, T_PureComplex>(
+    // Copy-related Special Functions
+    ULAClass<  T, sourceType, destinationType, T_PureComplex  >(
+        const  ULAClass<T, sourceType, destinationType, T_PureComplex>&  other
+    )   =   delete;
+    ULAClass<  T, sourceType, destinationType, T_PureComplex  >&    operator=(
+        const  ULAClass<T, sourceType, destinationType, T_PureComplex>&  other
+    )   =   delete;
+
+    // Move-related Special Functions
+    ULAClass<  T, sourceType, destinationType, T_PureComplex  >(
         ULAClass<T, sourceType, destinationType, T_PureComplex>&&    other
-    )                         = delete;
-    ULAClass<T, sourceType, destinationType, T_PureComplex>&    operator=(
-        const ULAClass<T, sourceType, destinationType, T_PureComplex>& other
-    )         = default;
+    )   =   default;
+    ULAClass<  T, sourceType, destinationType, T_PureComplex  >&    operator=(
+        ULAClass<T, sourceType, destinationType, T_PureComplex>&& other
+    )   =   default;
 
     // member-functions
     void    buildCoordinatesBasedOnLocation();
@@ -1270,26 +1275,22 @@ public:
     void    init(
         const TransmitterClass<T>&                                          transmitterObj,
         svr::FFTPlanUniformPoolHandle<  T_PureComplex, T_PureComplex>&      fph_match_filter,
-        svr::IFFTPlanUniformPoolHandle< T_PureComplex, T_PureComplex>&      ifph_match_filter
-    );
+        svr::IFFTPlanUniformPoolHandle< T_PureComplex, T_PureComplex>&      ifph_match_filter);
     void    nfdc_CreateMatchFilter(
         const TransmitterClass<T>&                                              transmitterObj,
         svr::FFTPlanUniformPoolHandle<  T_PureComplex, T_PureComplex>&          fph_match_filter,
-        svr::IFFTPlanUniformPoolHandle< T_PureComplex, T_PureComplex>&          ifph_match_filter
-    );
+        svr::IFFTPlanUniformPoolHandle< T_PureComplex, T_PureComplex>&          ifph_match_filter);
     void    simulate_signals(
         const ScattererClass<T>&                                                seafloor,
         const std::vector<std::size_t>                                          scatterer_indices,
         const TransmitterClass<T>&                                              transmitter,
         svr::FFTPlanUniformPoolHandle<T, std::complex<T>>&                      fft_pool_handle,
-        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                     ifft_pool_handle
-    );
+        svr::IFFTPlanUniformPoolHandle<std::complex<T>, T>&                     ifft_pool_handle);
     void    build_sensor_coordinates_from_location();
     void    image(
         const  TransmitterClass<T>&                                                 transmitter,
         svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&          fph,
-        svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&          ifph
-    );
+        svr::IFFTPlanUniformPoolHandle<     T_PureComplex, T_PureComplex>&          ifph);
     void    decimate_signal(
         const  TransmitterClass<T>&                                             transmitter,
         svr::FFTPlanUniformPoolHandle<      T_PureComplex, T_PureComplex>&      fph,

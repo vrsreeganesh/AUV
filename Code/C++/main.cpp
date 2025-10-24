@@ -13,15 +13,15 @@ int main(){
     auto    num_plans                   {32};
     auto    nfft                        {16384};
     // pools for real-convolution
-    svr::FFTPlanUniformPoolHandle<      double, 
-                                        std::complex<double>    >  fft_pool_handle(num_plans,   nfft);
-    svr::IFFTPlanUniformPoolHandle<     std::complex<double>, 
-                                        double                  > ifft_pool_handle(num_plans,   nfft);
+    svr::FFTPlanUniformPoolHandle<  double, 
+                                    std::complex<double>  > fft_pool_handle(num_plans,   nfft);
+    svr::IFFTPlanUniformPoolHandle< std::complex<double>, 
+                                    double                > ifft_pool_handle(num_plans,   nfft);
     // pools for complex-convolution
-    svr::FFTPlanUniformPoolHandle<      std::complex<double>, 
-                                        std::complex<double>    >  fph_match_filter(num_plans,  128);
-    svr::IFFTPlanUniformPoolHandle<     std::complex<double>, 
-                                        std::complex<double>    >  ifph_match_filter(num_plans, 128);
+    svr::FFTPlanUniformPoolHandle<  std::complex<double>, 
+                                    std::complex<double>  >  fph_match_filter(num_plans,  128);
+    svr::IFFTPlanUniformPoolHandle< std::complex<double>, 
+                                    std::complex<double>  >  ifph_match_filter(num_plans, 128);
     // logging
     spdlog::info("Finished Setting up FFT-Plans");
 
