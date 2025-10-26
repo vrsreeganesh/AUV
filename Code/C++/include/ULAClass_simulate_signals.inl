@@ -66,12 +66,24 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::simulate_signal
     // convolving input-signal with each row
     for(auto row = 0; row < this->signal_matrix.size(); ++row)
     {
+        // // peforming convolution
+        // this->signal_matrix[row] = svr::conv1D_long_FFTPlanPool(
+        //     this->signal_matrix[row],
+        //     transmitter.signal,
+        //     fft_pool_handle,
+        //     ifft_pool_handle
+        // );
+
+        // // checking if nullptr
+        // if(this->fph_ptr_sigsim == nullptr)     {throw std::runtime_error("NULLPTR ISSUE");}
+        // if(this->ifph_ptr_sigsim == nullptr)     {throw std::runtime_error("NULLPTR ISSUE");}
+
         // peforming convolution
         this->signal_matrix[row] = svr::conv1D_long_FFTPlanPool(
             this->signal_matrix[row],
             transmitter.signal,
-            fft_pool_handle,
-            ifft_pool_handle
+            *(this->fph_ptr_sigsim),
+            *(this->ifph_ptr_sigsim)
         );
 
         // only keeping first num-samples amount of samples

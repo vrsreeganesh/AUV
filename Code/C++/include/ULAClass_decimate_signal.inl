@@ -34,6 +34,20 @@ void    ULAClass<T, sourceType, destinationType, T_PureComplex>::decimate_signal
             );
     }
 
+    // // low-pass filtering 
+    // auto&    basebanded_lowpassfiltered_signal_matrix    {basebanded_signal_matrix};
+    // for(auto row = 0; row < basebanded_signal_matrix.size(); ++row){
+    //     basebanded_lowpassfiltered_signal_matrix[row] = \
+    //         std::move(
+    //             svr::conv1D_long_FFTPlanPool(
+    //                 basebanded_signal_matrix[row],
+    //                 svr::complex(   this->lowpass_filter_coefficients_for_decimation    ),
+    //                 *this->fph_image_ptr, 
+    //                 *this->ifph_image_ptr
+    //             )
+    //         );
+    // }
+
     // decimating the signal
     auto&   decimated_signal_matrix_src     {basebanded_lowpassfiltered_signal_matrix};
     this->decimated_signal_matrix     =   svr::sample(

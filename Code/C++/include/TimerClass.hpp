@@ -32,9 +32,15 @@ namespace   svr {
             auto temp = std::chrono::high_resolution_clock::now();
             auto nsduration  = std::chrono::duration_cast<std::chrono::nanoseconds>(temp - startpoint);
             auto msduration  = std::chrono::duration_cast<std::chrono::microseconds>(temp - startpoint);
+            auto milliduration = std::chrono::duration_cast<std::chrono::milliseconds>(temp - startpoint);
             auto sduration   = std::chrono::duration_cast<std::chrono::seconds>(temp - startpoint);
-            cout << format("{} nanoseconds | {} microseconds | {} seconds \n", 
-                nsduration.count(), msduration.count(), sduration.count());
+            if (functionname.size() == 0)   {functionname = "un-initialized";}
+            cout << format("function-name = {} | {} nanoseconds | {} microseconds | {} milliseconds | {} seconds \n", 
+                functionname, 
+                nsduration.count(), 
+                msduration.count(), 
+                milliduration.count(), 
+                sduration.count());
         }
         ~Timer(){
             auto temp = std::chrono::high_resolution_clock::now();

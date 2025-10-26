@@ -1215,9 +1215,18 @@ public:
     // Artificial acoustic-image related
     std::vector<std::vector<T>>     currentArtificialAcousticImage;    // acoustic image directly produced
 
-    // FFT-Plan Handles
-    std::unique_ptr< svr::FFTPlanUniformPoolHandle<  T_PureComplex,T_PureComplex > >  fph_ptr  = nullptr;
-    std::unique_ptr< svr::IFFTPlanUniformPoolHandle< T_PureComplex,T_PureComplex > >  ifph_ptr = nullptr;
+    /*==========================================================================
+    FFT-Plan Handles
+    --------------------------------------------------------------------------*/
+    std::unique_ptr<
+        svr::FFTPlanUniformPoolHandle<sourceType, destinationType>
+    >   fph_ptr_sigsim  =   nullptr;
+    std::unique_ptr<
+        svr::IFFTPlanUniformPoolHandle<destinationType,sourceType>
+    >   ifph_ptr_sigsim =   nullptr;
+
+    std::unique_ptr< svr::FFTPlanUniformPoolHandle<  T_PureComplex,T_PureComplex > >  fph_image_ptr  = nullptr;
+    std::unique_ptr< svr::IFFTPlanUniformPoolHandle< T_PureComplex,T_PureComplex > >  ifph_image_ptr = nullptr;
 
     // Basic Constructor
     ULAClass()  = default;

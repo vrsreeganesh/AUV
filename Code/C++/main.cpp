@@ -99,18 +99,23 @@ int main(){
         svr::Timer timer_stophop_i   {"stop-hop, i = "+std::to_string(i)};
 
         // signal simulation
+        // svr::Timer timer_simulation     {"\t simulation, i = "+std::to_string(i)};
         auv.simulate_signal(seafloor_const, 
                             thread_pool,
                             fft_pool_handle,
                             ifft_pool_handle);
+        // timer_simulation.measure();
 
         // imaging
+        // svr::Timer timer_image          {"\t image, i = "+std::to_string(i)};
         auv.image(  thread_pool,
                     fph_match_filter,
                     ifph_match_filter);
+        // timer_image.measure();
 
         // moving to next hop-position 
         auv.step(0.5);
+        PRINTSPACE
     }
    
     // =====================================================
